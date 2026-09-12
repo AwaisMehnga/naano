@@ -57,4 +57,42 @@ class UserFactory extends Factory
             'two_factor_confirmed_at' => now(),
         ]);
     }
+
+    /**
+     * Assign the creator role and an empty profile.
+     */
+    public function creator(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            $user->assignRole('creator');
+            $user->creatorProfile()->create([]);
+        });
+    }
+
+    /**
+     * Assign the company role and an empty company.
+     */
+    public function company(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            $user->assignRole('company');
+            $user->company()->create([]);
+        });
+    }
+
+    /**
+     * Mark the user's side profile as onboarded.
+     */
+    public function onboarded(): static
+    {
+        return $this->afterCreating(function (User $user): void {
+            if ($user->hasRole('creator')) {
+                $user->creatorProfile()->update(['onboarded_at' => now()]);
+            }
+
+            if ($user->hasRole('company')) {
+                $user->company()->update(['onboarded_at' => now()]);
+            }
+        });
+    }
 }

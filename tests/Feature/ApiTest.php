@@ -26,6 +26,7 @@ test('authenticated users receive ajax success from api user', function () {
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'role' => null,
             ],
         ]);
 });

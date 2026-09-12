@@ -62,6 +62,16 @@ protected $attributes = [
 
 Implement `down()` when the change can be safely reversed. A rollback that drops populated columns or cannot restore transformed data is destructive even if it is syntactically reversible; document that limitation and prefer a forward-fix migration in production.
 
+## Use jsonb for JSON Columns
+
+This application uses Postgres. Store JSON as `jsonb` so it stays fast to search.
+
+```php
+$table->jsonb('industries')->nullable();
+```
+
+Do not use `$table->json()`. Eloquent still casts the column as `array`.
+
 ## Keep Migrations Focused
 
 Keep each migration small enough to reason about, deploy, and reverse. Separate long-running backfills from schema changes when doing so reduces locks and supports phased deployment, but do not split related operations merely to enforce a blanket separation between data definition and data manipulation.

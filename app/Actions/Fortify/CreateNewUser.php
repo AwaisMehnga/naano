@@ -6,6 +6,7 @@ use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Models\User;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
 
 class CreateNewUser implements CreatesNewUsers
@@ -15,19 +16,36 @@ class CreateNewUser implements CreatesNewUsers
     /**
      * Validate and create a newly registered user.
      *
-     * @param  array<string, string>  $input
+     * @param  array<string, mixed>  $input
      */
     public function create(array $input): User
     {
         Validator::make($input, [
-            ...$this->profileRules(),
+            'first_name' => ['required', 'string', 'max:255'],
+            'last_name' => ['required', 'string', 'max:255'],
+            'email' => $this->emailRules(),
             'password' => $this->passwordRules(),
+            'role' => ['required', Rule::in(['creator', 'company'])],
+            'hear_about' => ['required', 'string', Rule::in(array_keys(config('onboarding.hear_about')))],
         ])->validate();
 
-        return User::create([
-            'name' => $input['name'],
+        $user = User::create([
+            'name' => $input['first_name'].' '.$input['last_name'],
             'email' => $input['email'],
             'password' => $input['password'],
+            'hear_about' => $input['hear_about'],
         ]);
+
+        $user->assignRole($input['role']);
+
+        if ($input['role'] === 'creator') {
+            $user->creatorProfile()->create([]);
+        } else {
+            $user->company()->create([]);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return $user;
     }
 }

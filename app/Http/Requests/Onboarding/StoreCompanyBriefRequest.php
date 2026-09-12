@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Http\Requests\Onboarding;
+
+use Illuminate\Contracts\Validation\ValidationRule;
+use Illuminate\Foundation\Http\FormRequest;
+
+class StoreCompanyBriefRequest extends FormRequest
+{
+    public function authorize(): bool
+    {
+        return $this->user()?->hasRole('company') ?? false;
+    }
+
+    /**
+     * @return array<string, list<string|ValidationRule>>
+     */
+    public function rules(): array
+    {
+        return [
+            'value_proposition' => ['required', 'string', 'min:40', 'max:4000'],
+            'icps' => ['required', 'array', 'size:3'],
+            'icps.*.title' => ['required', 'string', 'max:120'],
+            'icps.*.description' => ['required', 'string', 'max:800'],
+        ];
+    }
+}

@@ -9,6 +9,7 @@ export default defineConfig({
         laravel({
             input: [
                 'resources/css/app.css',
+                'resources/js/onboarding.js',
                 'resources/js/company/app.tsx',
                 'resources/js/creator/app.tsx',
             ],
