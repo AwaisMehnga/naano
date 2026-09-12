@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureCurrentCompany;
 use App\Http\Middleware\EnsureOnboarded;
 use App\Http\Middleware\HandleAppearance;
 use App\Support\AjaxResponse;
@@ -37,6 +38,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'onboarded' => EnsureOnboarded::class,
+            'current.company' => EnsureCurrentCompany::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

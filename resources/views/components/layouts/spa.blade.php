@@ -21,12 +21,9 @@
             $user = auth()->user();
             $naano = [
                 'name' => config('app.name'),
-                'user' => $user === null ? null : [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'email_verified_at' => $user->email_verified_at,
-                ],
+                'user' => $user === null
+                    ? null
+                    : app(\App\Services\UserService::class)->current($user, request()),
             ];
         @endphp
         <script>

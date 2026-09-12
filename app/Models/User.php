@@ -106,7 +106,7 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     {
         return match ($this->side()) {
             'creator' => $this->creatorProfile?->onboarded_at !== null,
-            'company' => $this->company?->onboarded_at !== null,
+            'company' => $this->companies()->whereNotNull('companies.onboarded_at')->exists(),
             default => false,
         };
     }

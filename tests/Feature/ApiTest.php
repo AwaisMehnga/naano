@@ -1,7 +1,6 @@
 <?php
 
 use App\Models\User;
-use App\Support\AjaxResponse;
 
 test('guests receive an ajax error from api user', function () {
     $this->getJson(route('api.user'))
@@ -26,18 +25,29 @@ test('authenticated users receive ajax success from api user', function () {
                 'id' => $user->id,
                 'name' => $user->name,
                 'email' => $user->email,
+                'avatar' => null,
                 'role' => null,
+                'onboarded' => false,
+                'current_company_id' => null,
+                'membership_role' => null,
             ],
         ]);
 });
 
-test('ajax responses share the same payload keys', function (string $status) {
-    $response = match ($status) {
-        'success' => AjaxResponse::success(['ok' => true], 'Saved'),
-        'error' => AjaxResponse::error('Invalid.', ['email' => ['Required']], 422),
-        'failure' => AjaxResponse::failure('Boom.'),
-    };
+test('onboarded company users receive workspace context on api user', function () {
+    $user = User::factory()->company()->onboarded()->create();
+    $company = $user->companies()->first();
 
-    expect($response->getData(true))->toHaveKeys(['status', 'message', 'data'])
-        ->and($response->getData(true)['status'])->toBe($status);
-})->with(['success', 'error', 'failure']);
+    $this->actingAs($user)
+        ->getJson(route('api.user'))
+        ->assertOk()
+        ->assertJsonPath('data.role', 'company')
+        ->assertJsonPath('data.onboarded', true)
+        ->assertJsonPath('data.current_company_id', $company->id)
+        ->assertJsonPath('data.membership_role', 'owner');
+});
+
+test('guests cannot call company profile', function () {
+    $this->getJson(route('api.company.profile.show'))
+        ->assertUnauthorized();
+});

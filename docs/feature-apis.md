@@ -67,36 +67,45 @@ Success for this repo: book a post (wallet hold), approve the draft, submit the 
 
 | Method | Path | What it does |
 | --- | --- | --- |
-| GET | `/api/user` | Current user, role/side, onboarded, current company id |
+| GET | `/api/user` | Current user, role/side, onboarded, current company id, avatar (creator photo or company logo) |
 | GET | `/api/niches` | Active niche lookup (filters + creator profile) |
 
 ### Company
 
+Owner-gated money: members can update profile, ICPs, and targeting. Only **owners** invite/change/remove members, change `billing_email`, and (later) top up, book, and manage billing. Last owner cannot be demoted or removed.
+
+Routes use `apiResource` / `apiSingleton`. Workspace switch is `PATCH /api/company/workspaces/{workspace}`. Audience refresh is `POST /api/creator/audience`.
+
 | Method | Path | What it does |
 | --- | --- | --- |
 | GET | `/api/company/workspaces` | Companies this login belongs to |
-| POST | `/api/company/workspaces` | Create another company (owner membership) |
-| POST | `/api/company/workspaces/{company}/switch` | Set current workspace |
-| GET | `/api/company/profile` | Current company profile |
-| PATCH | `/api/company/profile` | Name, website, logo, billing email, country, value proposition |
-| GET | `/api/company/icps` | Structured ICPs |
+| PATCH | `/api/company/workspaces/{workspace}` | Set current workspace |
+| GET | `/api/company/profile` | Current company profile (`can_manage_money`) |
+| PATCH | `/api/company/profile` | Name, website, logo, country, value proposition. `billing_email` owner-only. `remove_logo` clears the logo |
+| GET | `/api/company/audience` | Targeting jsonb + lookups (industries, regions, seniority, sizes, titles) |
+| PATCH | `/api/company/audience` | Save targeting |
+| GET | `/api/company/icps` | Structured ICPs (seeds from `companies.icps` if empty) |
 | POST | `/api/company/icps` | Add ICP |
-| PATCH | `/api/company/icps/{companyIcp}` | Update ICP |
-| DELETE | `/api/company/icps/{companyIcp}` | Soft-delete ICP |
-| GET | `/api/company/members` | Workspace members |
-| POST | `/api/company/members` | Invite member (email → pending membership) |
-| PATCH | `/api/company/members/{member}` | Change role (`owner` / `member`) |
-| DELETE | `/api/company/members/{member}` | Remove member |
+| PATCH | `/api/company/icps/{icp}` | Update ICP |
+| DELETE | `/api/company/icps/{icp}` | Soft-delete ICP |
+| GET | `/api/company/members` | Workspace members plus pending email invites |
+| POST | `/api/company/members` | Invite by email. Existing company-role users auto-join; unknown emails get an invite mail and a pending `company_invites` row. Creators are rejected. Owner-only |
+| PATCH | `/api/company/members/{member}` | Change role (`owner` / `member`). Owner-only |
+| DELETE | `/api/company/members/{member}` | Remove member. Owner-only |
 
 ### Creator
 
+No creator team APIs. Creators are 1:1 with a user.
+
 | Method | Path | What it does |
 | --- | --- | --- |
-| GET | `/api/creator/profile` | Media kit: display name, LinkedIn, headline, photo, bio, country, vetting |
-| PATCH | `/api/creator/profile` | Update card (not rate — that is offers) |
+| GET | `/api/creator/profile` | Media kit: display name, LinkedIn, headline, photo, bio, country, vetting, niches |
+| PATCH | `/api/creator/profile` | Update card (not rate — that is offers). `remove_photo` clears the photo |
 | PUT | `/api/creator/niches` | Replace claimed niches |
 | GET | `/api/creator/audience` | Latest audience snapshot |
-| POST | `/api/creator/audience/refresh` | Pull / save LinkedIn audience mix (job) |
+| POST | `/api/creator/audience` | Persist/refresh current mix (no LinkedIn job in v1) |
+| GET | `/api/creator/billing` | `{ stripe_connect_id, payouts_enabled: false, bank_summary: null }` |
+| DELETE | `/api/creator/account` | Password confirm, logout, delete user |
 | GET | `/api/creator/offers` | Public rates (single post + bundles) |
 | POST | `/api/creator/offers` | Create offer (`single_post` / `bundle`, `posts_count`, `price_cents`) |
 | PATCH | `/api/creator/offers/{offer}` | Update price / active |

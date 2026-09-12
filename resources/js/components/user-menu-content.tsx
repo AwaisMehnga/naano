@@ -1,4 +1,5 @@
 import { LogOut, Settings } from 'lucide-react';
+import { AppLink } from '@/components/app-link';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -27,13 +28,13 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
-                    <a
+                    <AppLink
                         className="block w-full cursor-pointer"
-                        href="/settings/profile"
+                        href="/setting/profile"
                     >
                         <Settings className="mr-2" />
                         Settings
-                    </a>
+                    </AppLink>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />

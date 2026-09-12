@@ -6,6 +6,7 @@ use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
 use App\Enums\CompanyMemberRole;
 use App\Models\User;
+use App\Services\CompanyMemberService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -15,6 +16,8 @@ use Spatie\Permission\Models\Role;
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules, ProfileValidationRules;
+
+    public function __construct(private CompanyMemberService $members) {}
 
     /**
      * Validate and create a newly registered user.
@@ -55,6 +58,8 @@ class CreateNewUser implements CreatesNewUsers
                     'role' => CompanyMemberRole::Owner,
                     'joined_at' => now(),
                 ]);
+
+                $this->members->acceptPendingInvites($user);
             }
 
             return $user;

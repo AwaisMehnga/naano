@@ -20,6 +20,7 @@ class CompanyFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
+            'name' => fake()->company(),
             'website' => 'https://example.com',
             'value_proposition' => fake()->paragraph(),
             'icps' => [

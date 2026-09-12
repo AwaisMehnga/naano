@@ -1,4 +1,5 @@
 import { ChevronsUpDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -14,8 +15,18 @@ import { UserInfo } from '@/components/user-info';
 import { UserMenuContent } from '@/components/user-menu-content';
 
 export function NavUser() {
-    const user = window.Naano?.user;
+    const [user, setUser] = useState(window.Naano?.user);
     const { state, isMobile } = useSidebar();
+
+    useEffect(() => {
+        function sync(): void {
+            setUser(window.Naano?.user);
+        }
+
+        window.addEventListener('naano:user', sync);
+
+        return () => window.removeEventListener('naano:user', sync);
+    }, []);
 
     if (!user) {
         return null;

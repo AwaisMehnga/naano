@@ -89,6 +89,19 @@ Who can open a company workspace. This is “multiple company accounts”.
 
 Spatie `company` role still means “this login is on the company side”. This table says *which* companies.
 
+### `company_invites`
+
+Pending workspace invites for emails that do not have a company login yet.
+
+- company
+- email
+- member role: `owner` \| `member`
+- invited-by user
+- accepted_at
+- unique (company, email) while pending
+
+When that email registers as a company user, a `company_members` row is created and `accepted_at` is set.
+
 ### `company_icps`
 
 Structured ICPs for matching. Replaces `companies.icps` jsonb.

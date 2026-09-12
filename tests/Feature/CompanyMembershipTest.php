@@ -14,6 +14,45 @@ test('company factory users belong to their company workspace', function () {
         ->and($user->company->members)->toHaveCount(1);
 });
 
+test('company registration joins pending workspace invites for that email', function () {
+    Notification::fake();
+
+    $owner = User::factory()->company()->onboarded()->create();
+    $company = $owner->companies()->first();
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.members.store'), [
+            'email' => 'phuski@yopmail.com',
+            'role' => 'member',
+        ])
+        ->assertOk();
+
+    auth()->logout();
+
+    $this->post(route('register.store'), [
+        'first_name' => 'Phuski',
+        'last_name' => 'Guest',
+        'email' => 'phuski@yopmail.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'role' => 'company',
+        'hear_about' => 'linkedin',
+    ])->assertRedirect(route('verification.notice', absolute: false));
+
+    $user = User::query()->where('email', 'phuski@yopmail.com')->first();
+
+    expect($user)->not->toBeNull()
+        ->and($user->companyMemberships)->toHaveCount(2);
+
+    expect(
+        CompanyMember::query()
+            ->where('company_id', $company->id)
+            ->where('user_id', $user->id)
+            ->where('role', CompanyMemberRole::Member)
+            ->exists(),
+    )->toBeTrue();
+});
+
 test('new companies receive an owner membership on registration', function () {
     Notification::fake();
 

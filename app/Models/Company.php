@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $stripe_customer_id
  * @property string|null $value_proposition
  * @property list<array{title: string, description: string}>|null $icps
+ * @property array{industries?: list<string>, regions?: list<string>, titles?: list<string>, seniority?: list<string>, company_sizes?: list<string>}|null $audience_targeting
  * @property Carbon|null $onboarded_at
  */
 #[Fillable([
@@ -36,6 +37,7 @@ use Illuminate\Support\Carbon;
     'stripe_customer_id',
     'value_proposition',
     'icps',
+    'audience_targeting',
     'onboarded_at',
 ])]
 class Company extends Model
@@ -50,6 +52,7 @@ class Company extends Model
     {
         return [
             'icps' => 'array',
+            'audience_targeting' => 'array',
             'onboarded_at' => 'datetime',
         ];
     }
@@ -68,6 +71,14 @@ class Company extends Model
     public function members(): HasMany
     {
         return $this->hasMany(CompanyMember::class);
+    }
+
+    /**
+     * @return HasMany<CompanyInvite, $this>
+     */
+    public function invites(): HasMany
+    {
+        return $this->hasMany(CompanyInvite::class);
     }
 
     /**

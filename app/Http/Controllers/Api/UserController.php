@@ -24,6 +24,6 @@ class UserController extends Controller
             return AjaxResponse::error('Unauthenticated.', status: 401);
         }
 
-        return AjaxResponse::success($this->users->current($user));
+        return AjaxResponse::success($this->users->current($user, $request));
     }
 }

@@ -56,7 +56,7 @@
                 id="email"
                 type="email"
                 name="email"
-                value="{{ old('email') }}"
+                value="{{ old('email', request('email')) }}"
                 required
                 autocomplete="email"
                 placeholder="{{ $isCreator ? 'you@email.com' : 'you@company.com' }}"

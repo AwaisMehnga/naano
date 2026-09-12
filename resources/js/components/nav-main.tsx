@@ -16,11 +16,20 @@ export function NavMain({ items }: { items: NavItem[] }) {
         <SidebarGroup className="px-2 py-0">
             <SidebarGroupLabel>Platform</SidebarGroupLabel>
             <SidebarMenu>
-                {items.map((item) => (
+                {items.map((item) => {
+                    const isActive =
+                        item.href === '/'
+                            ? pathname === '/'
+                            : item.href.startsWith('/setting')
+                              ? pathname.startsWith('/setting')
+                              : pathname === item.href ||
+                                pathname.startsWith(`${item.href}/`);
+
+                    return (
                     <SidebarMenuItem key={item.title}>
                         <SidebarMenuButton
                             asChild
-                            isActive={pathname === item.href}
+                            isActive={isActive}
                             tooltip={{ children: item.title }}
                         >
                             <AppLink href={item.href}>
@@ -29,7 +38,8 @@ export function NavMain({ items }: { items: NavItem[] }) {
                             </AppLink>
                         </SidebarMenuButton>
                     </SidebarMenuItem>
-                ))}
+                    );
+                })}
             </SidebarMenu>
         </SidebarGroup>
     );
