@@ -20,10 +20,27 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
+const MOBILE_BREAKPOINT = 768
+
+function useIsMobile() {
+  const [mobile, setMobile] = React.useState(false)
+
+  React.useEffect(() => {
+    const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`)
+    const onChange = () => setMobile(mql.matches)
+
+    mql.addEventListener("change", onChange)
+    setMobile(mql.matches)
+
+    return () => mql.removeEventListener("change", onChange)
+  }, [])
+
+  return mobile
+}
+
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
 const SIDEBAR_WIDTH = "16rem"
 const SIDEBAR_WIDTH_MOBILE = "18rem"

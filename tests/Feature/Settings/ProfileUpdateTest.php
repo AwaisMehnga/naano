@@ -9,7 +9,9 @@ test('profile page is displayed', function () {
         ->actingAs($user)
         ->get(route('profile.edit'));
 
-    $response->assertOk();
+    $response
+        ->assertOk()
+        ->assertViewIs('settings.profile');
 });
 
 test('profile information can be updated', function () {
