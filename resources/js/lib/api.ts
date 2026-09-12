@@ -27,7 +27,11 @@ export async function api<T>(url: string, init: RequestInit = {}): Promise<T> {
     headers.set('X-CSRF-TOKEN', csrfToken());
     headers.set('X-Requested-With', 'XMLHttpRequest');
 
-    if (init.body && !(init.body instanceof FormData) && !headers.has('Content-Type')) {
+    if (
+        init.body &&
+        !(init.body instanceof FormData) &&
+        !headers.has('Content-Type')
+    ) {
         headers.set('Content-Type', 'application/json');
     }
 
@@ -55,6 +59,41 @@ export const companyApi = {
     member: (id: number) => `/api/company/members/${id}`,
     workspaces: '/api/company/workspaces',
     workspace: (id: number) => `/api/company/workspaces/${id}`,
+    creators: (query: Record<string, string | number | undefined> = {}) => {
+        const params = new URLSearchParams();
+
+        for (const [key, value] of Object.entries(query)) {
+            if (value === undefined || value === '') {
+                continue;
+            }
+
+            params.set(key, String(value));
+        }
+
+        const encoded = params.toString();
+
+        return encoded === ''
+            ? '/api/company/creators'
+            : `/api/company/creators?${encoded}`;
+    },
+    creator: (id: number) => `/api/company/creators/${id}`,
+    campaigns: (query: Record<string, string | number | undefined> = {}) => {
+        const params = new URLSearchParams();
+
+        for (const [key, value] of Object.entries(query)) {
+            if (value === undefined || value === '') {
+                continue;
+            }
+
+            params.set(key, String(value));
+        }
+
+        const encoded = params.toString();
+
+        return encoded === ''
+            ? '/api/company/campaigns'
+            : `/api/company/campaigns?${encoded}`;
+    },
 };
 
 export const creatorApi = {

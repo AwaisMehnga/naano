@@ -1,0 +1,424 @@
+import { useEffect, useState, type FormEvent } from 'react';
+import {
+    CalendarDays,
+    Linkedin,
+    ShieldCheck,
+    Star,
+    Wallet,
+} from 'lucide-react';
+import { toast } from 'sonner';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import CampaignSearchSelect, {
+    type CampaignOption,
+} from '@/company/pages/creators/campaign-search-select';
+import {
+    countryLabel,
+    euros,
+    initials,
+    offerLabel,
+} from '@/company/pages/creators/format';
+import type {
+    CreatorListItem,
+    CreatorProfileCard,
+} from '@/company/pages/creators/types';
+import { api, ApiError, companyApi } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
+type Tab = 'overview' | 'audience' | 'content';
+type Intent = 'book' | 'negotiate';
+
+export default function CreatorProfileDialog({
+    creatorId,
+    starred,
+    intent,
+    onClose,
+    onStar,
+}: {
+    creatorId: number | null;
+    starred: boolean;
+    intent: Intent;
+    onClose: () => void;
+    onStar: (creator: CreatorListItem) => void;
+}) {
+    const [creator, setCreator] = useState<CreatorProfileCard | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [tab, setTab] = useState<Tab>('overview');
+    const [mode, setMode] = useState<Intent>(intent);
+    const [campaign, setCampaign] = useState<CampaignOption | null>(null);
+    const [postDate, setPostDate] = useState('');
+    const [approveFirst, setApproveFirst] = useState(true);
+    const [offerEuros, setOfferEuros] = useState('');
+
+    useEffect(() => {
+        setMode(intent);
+    }, [intent]);
+
+    useEffect(() => {
+        if (creatorId === null) {
+            setCreator(null);
+            setError(null);
+            setTab('overview');
+            setCampaign(null);
+            setPostDate('');
+            setApproveFirst(true);
+            setOfferEuros('');
+
+            return;
+        }
+
+        api<CreatorProfileCard>(companyApi.creator(creatorId))
+            .then((data) => {
+                setCreator(data);
+                setError(null);
+                const listed = data.from_price_cents;
+
+                if (listed !== null) {
+                    setOfferEuros(String(Math.round(listed / 100)));
+                }
+            })
+            .catch((caught: unknown) => {
+                setCreator(null);
+                setError(
+                    caught instanceof ApiError
+                        ? caught.message
+                        : 'Could not load this creator.',
+                );
+            });
+    }, [creatorId]);
+
+    function submit(event: FormEvent) {
+        event.preventDefault();
+        toast.message(
+            mode === 'negotiate'
+                ? 'Negotiation is UI-only for now. Wallet and Stripe land next.'
+                : 'Booking is UI-only for now. Wallet and Stripe land next.',
+        );
+    }
+
+    const listedOffer = creator?.offers[0] ?? null;
+
+    return (
+        <Dialog
+            open={creatorId !== null}
+            onOpenChange={(open) => !open && onClose()}
+        >
+            <DialogContent className="flex max-h-[90vh] max-w-5xl flex-col gap-0 overflow-hidden p-0 sm:max-w-5xl">
+                <DialogTitle className="sr-only">
+                    {creator?.display_name ?? 'Creator'}
+                </DialogTitle>
+                <DialogDescription className="sr-only">
+                    Creator overview, audience, and booking.
+                </DialogDescription>
+                {error && (
+                    <p className="text-destructive p-6 text-sm">{error}</p>
+                )}
+                {creator && (
+                    <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_20rem]">
+                        <div className="min-h-0 overflow-y-auto">
+                            <header className="border-border flex items-start gap-4 border-b px-6 py-5 pr-24">
+                                <Avatar className="size-14 rounded-full">
+                                    {creator.photo_url && (
+                                        <AvatarImage
+                                            src={creator.photo_url}
+                                            alt=""
+                                        />
+                                    )}
+                                    <AvatarFallback>
+                                        {initials(creator.display_name)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div className="min-w-0">
+                                    <p className="text-lg font-semibold">
+                                        {creator.display_name ??
+                                            'Untitled creator'}
+                                    </p>
+                                    <p className="text-muted-foreground text-sm">
+                                        {creator.headline ??
+                                            countryLabel(creator.country)}
+                                    </p>
+                                    <p className="text-muted-foreground mt-1 text-xs">
+                                        {creator.niches
+                                            .map((niche) => niche.name)
+                                            .join(' · ') || 'LinkedIn creator'}
+                                    </p>
+                                </div>
+                                <Button
+                                    type="button"
+                                    size="icon"
+                                    variant="ghost"
+                                    className="absolute top-4 right-12 size-8 rounded-full"
+                                    aria-label={
+                                        starred
+                                            ? 'Remove from shortlist'
+                                            : 'Add to shortlist'
+                                    }
+                                    onClick={() => onStar(creator)}
+                                >
+                                    <Star
+                                        className={cn(
+                                            'size-4',
+                                            starred &&
+                                                'fill-primary text-primary',
+                                        )}
+                                    />
+                                </Button>
+                            </header>
+                            <nav className="border-border flex gap-6 border-b px-6">
+                                {(
+                                    [
+                                        ['overview', 'Overview'],
+                                        ['audience', 'Audience'],
+                                        ['content', 'Content'],
+                                    ] as const
+                                ).map(([id, label]) => (
+                                    <button
+                                        key={id}
+                                        type="button"
+                                        className={cn(
+                                            'border-b-2 py-3 text-sm',
+                                            tab === id
+                                                ? 'border-primary text-foreground font-medium'
+                                                : 'text-muted-foreground border-transparent',
+                                        )}
+                                        onClick={() => setTab(id)}
+                                    >
+                                        {label}
+                                    </button>
+                                ))}
+                            </nav>
+                            <div className="space-y-6 p-6">
+                                {tab === 'overview' && (
+                                    <div className="space-y-4">
+                                        <h3 className="text-sm font-semibold">
+                                            Creator overview
+                                        </h3>
+                                        <p className="text-muted-foreground text-sm">
+                                            {creator.bio ??
+                                                'Review this creator’s audience before booking.'}
+                                        </p>
+                                        <div className="text-muted-foreground flex flex-wrap gap-3 text-sm">
+                                            <span>
+                                                {creator.followers_count?.toLocaleString() ??
+                                                    '—'}{' '}
+                                                followers
+                                            </span>
+                                            <span>
+                                                {countryLabel(creator.country)}
+                                            </span>
+                                            {creator.linkedin_url && (
+                                                <a
+                                                    href={creator.linkedin_url}
+                                                    className="text-primary inline-flex items-center gap-1 hover:underline"
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                >
+                                                    <Linkedin className="size-3.5" />
+                                                    LinkedIn
+                                                </a>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+                                {tab === 'audience' && (
+                                    <AudienceSnapshot
+                                        mix={creator.audience_mix}
+                                    />
+                                )}
+                                {tab === 'content' && (
+                                    <p className="text-muted-foreground text-sm">
+                                        Recent post metrics show here after
+                                        campaigns run.
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <aside className="border-border bg-muted/40 border-t p-5 lg:border-t-0 lg:border-l">
+                            <h3 className="text-sm font-semibold">
+                                Book this creator
+                            </h3>
+                            <div className="border-border bg-card mt-4 rounded-xl border p-4">
+                                <p className="text-muted-foreground text-xs">
+                                    {listedOffer
+                                        ? offerLabel(listedOffer.label)
+                                        : 'Single post'}
+                                </p>
+                                <p className="mt-1 text-2xl font-semibold">
+                                    {euros(
+                                        listedOffer?.price_cents ??
+                                            creator.from_price_cents,
+                                    )}
+                                </p>
+                            </div>
+                            <div className="mt-4 grid grid-cols-2 gap-2">
+                                <Button
+                                    type="button"
+                                    variant={
+                                        mode === 'book' ? 'default' : 'outline'
+                                    }
+                                    size="sm"
+                                    onClick={() => setMode('book')}
+                                >
+                                    Book
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={
+                                        mode === 'negotiate'
+                                            ? 'default'
+                                            : 'outline'
+                                    }
+                                    size="sm"
+                                    onClick={() => setMode('negotiate')}
+                                >
+                                    Negotiate
+                                </Button>
+                            </div>
+                            <form className="mt-4 space-y-4" onSubmit={submit}>
+                                <div className="space-y-2">
+                                    <Label>Campaign</Label>
+                                    <CampaignSearchSelect
+                                        value={campaign}
+                                        onChange={setCampaign}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="post_date">
+                                        <span className="inline-flex items-center gap-1.5">
+                                            <CalendarDays className="size-3.5" />
+                                            Post date
+                                        </span>
+                                    </Label>
+                                    <Input
+                                        id="post_date"
+                                        type="date"
+                                        value={postDate}
+                                        onChange={(event) =>
+                                            setPostDate(event.target.value)
+                                        }
+                                    />
+                                </div>
+                                {mode === 'negotiate' && (
+                                    <div className="space-y-2">
+                                        <Label htmlFor="offer">
+                                            Your offer (€)
+                                        </Label>
+                                        <Input
+                                            id="offer"
+                                            type="number"
+                                            min={0}
+                                            value={offerEuros}
+                                            onChange={(event) =>
+                                                setOfferEuros(
+                                                    event.target.value,
+                                                )
+                                            }
+                                        />
+                                    </div>
+                                )}
+                                <label className="flex items-start gap-2 text-sm">
+                                    <Checkbox
+                                        checked={approveFirst}
+                                        onCheckedChange={(value) =>
+                                            setApproveFirst(value === true)
+                                        }
+                                    />
+                                    <span className="text-muted-foreground inline-flex items-start gap-1.5">
+                                        <ShieldCheck className="mt-0.5 size-3.5 shrink-0" />
+                                        Company approves the post first
+                                    </span>
+                                </label>
+                                <Separator />
+                                <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                                    <Wallet className="size-3.5" />
+                                    Wallet top-up with Stripe comes later. No
+                                    subscription — campaign spend uses balance.
+                                </p>
+                                <Button type="submit" className="w-full">
+                                    {mode === 'negotiate'
+                                        ? `Send offer to ${creator.display_name ?? 'creator'}`
+                                        : `Collaborate with ${creator.display_name ?? 'creator'}`}
+                                </Button>
+                            </form>
+                        </aside>
+                    </div>
+                )}
+            </DialogContent>
+        </Dialog>
+    );
+}
+
+function AudienceSnapshot({
+    mix,
+}: {
+    mix: Record<string, unknown> | unknown[];
+}) {
+    if (Array.isArray(mix) || mix === null || typeof mix !== 'object') {
+        return (
+            <p className="text-muted-foreground text-sm">
+                No audience mix yet.
+            </p>
+        );
+    }
+
+    const groups = Object.entries(mix).filter(
+        (entry): entry is [string, Record<string, number>] =>
+            typeof entry[1] === 'object' &&
+            entry[1] !== null &&
+            !Array.isArray(entry[1]),
+    );
+
+    if (groups.length === 0) {
+        return (
+            <p className="text-muted-foreground text-sm">
+                No audience mix yet.
+            </p>
+        );
+    }
+
+    return (
+        <div className="space-y-6">
+            <h3 className="text-sm font-semibold">Audience snapshot</h3>
+            <div className="grid gap-6 md:grid-cols-2">
+                {groups.map(([title, shares]) => (
+                    <div key={title} className="space-y-3">
+                        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                            {title.replaceAll('_', ' ')}
+                        </p>
+                        {Object.entries(shares)
+                            .sort((left, right) => right[1] - left[1])
+                            .slice(0, 6)
+                            .map(([label, share]) => (
+                                <div key={label} className="space-y-1">
+                                    <div className="flex justify-between text-xs">
+                                        <span>{label}</span>
+                                        <span className="text-muted-foreground">
+                                            {share}%
+                                        </span>
+                                    </div>
+                                    <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+                                        <div
+                                            className="bg-primary h-full rounded-full"
+                                            style={{
+                                                width: `${Math.min(100, Number(share))}%`,
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}

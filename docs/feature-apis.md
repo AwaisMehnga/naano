@@ -111,7 +111,7 @@ No creator team APIs. Creators are 1:1 with a user.
 | PATCH | `/api/creator/offers/{offer}` | Update price / active |
 | DELETE | `/api/creator/offers/{offer}` | Soft-delete offer |
 
-Marketplace listing only uses **vetted** creators with at least one **active** offer.
+Marketplace listing uses **vetted + onboarded** creators. Listed price is the cheapest **active** offer, else `creator_profiles.price_cents`. Offers CRUD is later — onboarding still stores the rate on the profile.
 
 ---
 
@@ -121,13 +121,15 @@ Company-only. Core **Company → Creator**.
 
 Browse without a campaign uses niches, country, rate, followers. Fit scores are stored per **campaign** (`creator_match_scores`).
 
+The two GETs below are **live**. Campaign recommendation and fit endpoints wait until campaigns exist.
+
 | Method | Path | What it does |
 | --- | --- | --- |
-| GET | `/api/company/creators` | Search/filter vetted creators. Query: `q`, `niche_id`, `country`, `min_price_cents`, `max_price_cents`, `min_followers`, `max_followers`, `campaign_id` (sort by fit when set) |
-| GET | `/api/company/creators/{creatorProfile}` | Public card: profile, niches, audience, offers, recent post metrics |
-| GET | `/api/company/campaigns/{campaign}/recommendations` | Ranked creators for this campaign (cached scores) |
-| POST | `/api/company/campaigns/{campaign}/recommendations` | Recompute fit scores (rule-based now; AI later) |
-| GET | `/api/company/campaigns/{campaign}/creators/{creatorProfile}/fit` | Score + reasons (“why this creator”, Fit 92% on the marketing site) |
+| GET | `/api/company/creators` | **Live.** Search/filter vetted onboarded creators. Query: `q`, `niche_id`, `country`, `min_price_cents`, `max_price_cents`, `min_followers`, `max_followers`, `page`. Paginated 24. `campaign_id` (sort by fit) later |
+| GET | `/api/company/creators/{creatorProfile}` | **Live.** Public card: profile, niches, audience, active offers. `recent_metrics` is always `[]` until posts exist. Pending/rejected 404 |
+| GET | `/api/company/campaigns/{campaign}/recommendations` | Later. Ranked creators for this campaign (cached scores) |
+| POST | `/api/company/campaigns/{campaign}/recommendations` | Later. Recompute fit scores (rule-based now; AI later) |
+| GET | `/api/company/campaigns/{campaign}/creators/{creatorProfile}/fit` | Later. Score + reasons (“why this creator”, Fit 92% on the marketing site) |
 
 Selecting a creator for a campaign is **3. / 4.** (invite or book), not a separate table.
 

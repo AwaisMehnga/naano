@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             NicheSeeder::class,
+            CreatorSeeder::class,
         ]);
 
         $user = User::factory()->create([
@@ -33,5 +34,7 @@ class DatabaseSeeder extends Seeder
             'role' => CompanyMemberRole::Owner,
             'joined_at' => now(),
         ]);
+
+        $this->call(CampaignSeeder::class);
     }
 }

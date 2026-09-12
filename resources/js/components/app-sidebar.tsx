@@ -1,4 +1,4 @@
-import { LayoutGrid  } from 'lucide-react';
+import { LayoutGrid, Users } from 'lucide-react';
 import { AppLink } from '@/components/app-link';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -35,6 +35,15 @@ export function AppSidebar({ homeHref = '/' }: { homeHref?: string } = {}) {
             href: homeHref,
             icon: LayoutGrid,
         },
+        ...(window.Naano?.user?.role === 'company'
+            ? [
+                  {
+                      title: 'Creators',
+                      href: '/creators',
+                      icon: Users,
+                  } satisfies NavItem,
+              ]
+            : []),
     ];
 
     return (

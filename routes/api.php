@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\Company\AudienceController as CompanyAudienceController;
+use App\Http\Controllers\Api\Company\CampaignController;
+use App\Http\Controllers\Api\Company\CreatorController;
 use App\Http\Controllers\Api\Company\IcpController;
 use App\Http\Controllers\Api\Company\MemberController;
 use App\Http\Controllers\Api\Company\ProfileController as CompanyProfileController;
@@ -25,6 +27,10 @@ Route::middleware('auth')->group(function () {
         Route::apiSingleton('audience', CompanyAudienceController::class)->only(['show', 'update']);
         Route::apiResource('icps', IcpController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::apiResource('members', MemberController::class)->only(['index', 'store', 'update', 'destroy']);
+        Route::apiResource('campaigns', CampaignController::class)->only(['index']);
+        Route::apiResource('creators', CreatorController::class)
+            ->only(['index', 'show'])
+            ->parameters(['creators' => 'creatorProfile']);
     });
 
     Route::middleware(['verified', 'role:creator', 'onboarded'])->prefix('creator')->name('creator.')->group(function () {

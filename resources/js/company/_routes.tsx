@@ -1,6 +1,7 @@
 import DashboardLayout from '@/layouts/dashboard';
 import SpaHome from '@/pages/spa-home';
 import { Navigate } from 'react-router';
+import CompanyCreatorsPage from './pages/creators';
 import CompanySettingLayout from './pages/setting';
 import CompanyAudiencePage from './pages/setting/audience';
 import CompanyProfilePage from './pages/setting/profile';
@@ -14,6 +15,14 @@ export const routes = [
             {
                 index: true,
                 element: <SpaHome title="Company" />,
+            },
+            {
+                path: 'creators',
+                element: <CompanyCreatorsPage />,
+            },
+            {
+                path: 'creators/:id',
+                element: <CompanyCreatorsPage />,
             },
             {
                 path: 'setting',

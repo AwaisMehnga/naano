@@ -4,4 +4,5 @@ export type User = {
     email: string;
     avatar?: string | null;
     email_verified_at: string | null;
+    role?: string | null;
 };
