@@ -45,3 +45,11 @@ test('incomplete creator onboarding is sent back to onboarding from the creator 
         ->get('/creator')
         ->assertRedirect(route('onboarding.creator'));
 });
+
+test('incomplete company onboarding is sent back to onboarding from the company spa', function () {
+    $user = User::factory()->company()->create();
+
+    $this->actingAs($user)
+        ->get('/company')
+        ->assertRedirect(route('onboarding.company'));
+});
