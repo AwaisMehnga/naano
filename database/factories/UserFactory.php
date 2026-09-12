@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\CompanyMemberRole;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -76,7 +77,12 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user): void {
             $user->assignRole('company');
-            $user->company()->create([]);
+            $company = $user->company()->create([]);
+            $company->members()->create([
+                'user_id' => $user->id,
+                'role' => CompanyMemberRole::Owner,
+                'joined_at' => now(),
+            ]);
         });
     }
 

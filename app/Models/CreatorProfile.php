@@ -2,19 +2,27 @@
 
 namespace App\Models;
 
+use App\Enums\CreatorVettingStatus;
 use Database\Factories\CreatorProfileFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
  * @property int $user_id
+ * @property string|null $display_name
  * @property string|null $linkedin_url
  * @property string|null $headline
  * @property string|null $photo_path
+ * @property string|null $bio
+ * @property CreatorVettingStatus $vetting_status
+ * @property string|null $stripe_connect_id
  * @property string|null $country
  * @property list<string>|null $industries
  * @property int|null $price_cents
@@ -23,9 +31,13 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'user_id',
+    'display_name',
     'linkedin_url',
     'headline',
     'photo_path',
+    'bio',
+    'vetting_status',
+    'stripe_connect_id',
     'country',
     'industries',
     'price_cents',
@@ -35,7 +47,7 @@ use Illuminate\Support\Carbon;
 class CreatorProfile extends Model
 {
     /** @use HasFactory<CreatorProfileFactory> */
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     /**
      * @return array<string, string>
@@ -45,6 +57,7 @@ class CreatorProfile extends Model
         return [
             'industries' => 'array',
             'bundles' => 'array',
+            'vetting_status' => CreatorVettingStatus::class,
             'onboarded_at' => 'datetime',
         ];
     }
@@ -55,5 +68,49 @@ class CreatorProfile extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsToMany<Niche, $this>
+     */
+    public function niches(): BelongsToMany
+    {
+        return $this->belongsToMany(Niche::class, 'creator_niche')
+            ->using(CreatorNiche::class)
+            ->withTimestamps()
+            ->withPivot(['id', 'deleted_at'])
+            ->wherePivotNull('deleted_at');
+    }
+
+    /**
+     * @return HasMany<CreatorAudienceProfile, $this>
+     */
+    public function audienceProfiles(): HasMany
+    {
+        return $this->hasMany(CreatorAudienceProfile::class);
+    }
+
+    /**
+     * @return HasMany<CreatorOffer, $this>
+     */
+    public function offers(): HasMany
+    {
+        return $this->hasMany(CreatorOffer::class);
+    }
+
+    /**
+     * @return HasMany<Collaboration, $this>
+     */
+    public function collaborations(): HasMany
+    {
+        return $this->hasMany(Collaboration::class);
+    }
+
+    /**
+     * @return HasMany<Payout, $this>
+     */
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(Payout::class);
     }
 }

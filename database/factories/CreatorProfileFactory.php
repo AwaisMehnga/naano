@@ -19,7 +19,7 @@ class CreatorProfileFactory extends Factory
     public function definition(): array
     {
         return [
-            'user_id' => User::factory()->creator(),
+            'user_id' => User::factory(),
             'linkedin_url' => 'https://www.linkedin.com/in/'.fake()->userName(),
             'headline' => fake()->sentence(6),
             'country' => 'FR',

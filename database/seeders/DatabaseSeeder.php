@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\CompanyMemberRole;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -15,7 +16,10 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call(RoleSeeder::class);
+        $this->call([
+            RoleSeeder::class,
+            NicheSeeder::class,
+        ]);
 
         $user = User::factory()->create([
             'name' => 'Test User',
@@ -23,6 +27,11 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $user->assignRole('company');
-        $user->company()->create(['onboarded_at' => now()]);
+        $company = $user->company()->create(['onboarded_at' => now()]);
+        $company->members()->create([
+            'user_id' => $user->id,
+            'role' => CompanyMemberRole::Owner,
+            'joined_at' => now(),
+        ]);
     }
 }

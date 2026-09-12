@@ -4,6 +4,7 @@ namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Enums\CompanyMemberRole;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -48,7 +49,12 @@ class CreateNewUser implements CreatesNewUsers
             if ($role === 'creator') {
                 $user->creatorProfile()->create([]);
             } else {
-                $user->company()->create([]);
+                $company = $user->company()->create([]);
+                $company->members()->create([
+                    'user_id' => $user->id,
+                    'role' => CompanyMemberRole::Owner,
+                    'joined_at' => now(),
+                ]);
             }
 
             return $user;

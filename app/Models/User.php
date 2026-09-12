@@ -8,6 +8,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -66,6 +68,25 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function company(): HasOne
     {
         return $this->hasOne(Company::class);
+    }
+
+    /**
+     * @return HasMany<CompanyMember, $this>
+     */
+    public function companyMemberships(): HasMany
+    {
+        return $this->hasMany(CompanyMember::class);
+    }
+
+    /**
+     * @return BelongsToMany<Company, $this>
+     */
+    public function companies(): BelongsToMany
+    {
+        return $this->belongsToMany(Company::class, 'company_members')
+            ->withTimestamps()
+            ->withPivot(['id', 'role', 'invited_at', 'joined_at', 'deleted_at'])
+            ->wherePivotNull('deleted_at');
     }
 
     public function side(): ?string
