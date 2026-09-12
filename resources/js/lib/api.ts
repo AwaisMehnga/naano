@@ -1,3 +1,5 @@
+import axios, { AxiosError, type AxiosRequestConfig } from 'axios';
+
 export type AjaxPayload<T> = {
     status: 'success' | 'error' | 'failure';
     message: string;
@@ -21,33 +23,73 @@ function csrfToken(): string {
     );
 }
 
+export const http = axios.create({
+    withCredentials: true,
+    headers: {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+    },
+});
+
+http.interceptors.request.use((config) => {
+    config.headers.set('X-CSRF-TOKEN', csrfToken());
+
+    return config;
+});
+
+http.interceptors.response.use(
+    (response) => {
+        const payload = response.data as AjaxPayload<unknown>;
+
+        if (payload.status !== 'success') {
+            throw new ApiError(response.status, payload);
+        }
+
+        response.data = payload.data;
+
+        return response;
+    },
+    (error: AxiosError<AjaxPayload<unknown>>) => {
+        if (error.response?.data) {
+            throw new ApiError(error.response.status, error.response.data);
+        }
+
+        throw error;
+    },
+);
+
 export async function api<T>(url: string, init: RequestInit = {}): Promise<T> {
-    const headers = new Headers(init.headers);
-    headers.set('Accept', 'application/json');
-    headers.set('X-CSRF-TOKEN', csrfToken());
-    headers.set('X-Requested-With', 'XMLHttpRequest');
+    const method = (init.method ?? 'GET').toLowerCase();
+    const config: AxiosRequestConfig = { url, method };
 
-    if (
-        init.body &&
-        !(init.body instanceof FormData) &&
-        !headers.has('Content-Type')
-    ) {
-        headers.set('Content-Type', 'application/json');
+    if (init.body instanceof FormData) {
+        config.data = init.body;
+    } else if (typeof init.body === 'string' && init.body !== '') {
+        config.data = JSON.parse(init.body) as unknown;
     }
 
-    const response = await fetch(url, {
-        ...init,
-        headers,
-        credentials: 'same-origin',
-    });
+    const response = await http.request<T>(config);
 
-    const payload = (await response.json()) as AjaxPayload<T>;
+    return response.data;
+}
 
-    if (!response.ok || payload.status !== 'success') {
-        throw new ApiError(response.status, payload);
+function withQuery(
+    path: string,
+    query: Record<string, string | number | undefined> = {},
+): string {
+    const params = new URLSearchParams();
+
+    for (const [key, value] of Object.entries(query)) {
+        if (value === undefined || value === '') {
+            continue;
+        }
+
+        params.set(key, String(value));
     }
 
-    return payload.data;
+    const encoded = params.toString();
+
+    return encoded === '' ? path : `${path}?${encoded}`;
 }
 
 export const companyApi = {
@@ -59,41 +101,27 @@ export const companyApi = {
     member: (id: number) => `/api/company/members/${id}`,
     workspaces: '/api/company/workspaces',
     workspace: (id: number) => `/api/company/workspaces/${id}`,
-    creators: (query: Record<string, string | number | undefined> = {}) => {
-        const params = new URLSearchParams();
-
-        for (const [key, value] of Object.entries(query)) {
-            if (value === undefined || value === '') {
-                continue;
-            }
-
-            params.set(key, String(value));
-        }
-
-        const encoded = params.toString();
-
-        return encoded === ''
-            ? '/api/company/creators'
-            : `/api/company/creators?${encoded}`;
-    },
+    creators: (query: Record<string, string | number | undefined> = {}) =>
+        withQuery('/api/company/creators', query),
     creator: (id: number) => `/api/company/creators/${id}`,
-    campaigns: (query: Record<string, string | number | undefined> = {}) => {
-        const params = new URLSearchParams();
-
-        for (const [key, value] of Object.entries(query)) {
-            if (value === undefined || value === '') {
-                continue;
-            }
-
-            params.set(key, String(value));
-        }
-
-        const encoded = params.toString();
-
-        return encoded === ''
-            ? '/api/company/campaigns'
-            : `/api/company/campaigns?${encoded}`;
-    },
+    campaigns: (query: Record<string, string | number | undefined> = {}) =>
+        withQuery('/api/company/campaigns', query),
+    campaign: (id: number) => `/api/company/campaigns/${id}`,
+    campaignLaunch: (id: number) => `/api/company/campaigns/${id}/launch`,
+    campaignPause: (id: number) => `/api/company/campaigns/${id}/pause`,
+    campaignResume: (id: number) => `/api/company/campaigns/${id}/resume`,
+    campaignReopen: (id: number) => `/api/company/campaigns/${id}/reopen`,
+    campaignComplete: (id: number) => `/api/company/campaigns/${id}/complete`,
+    campaignCancel: (id: number) => `/api/company/campaigns/${id}/cancel`,
+    campaignCollaborations: (
+        id: number,
+        query: Record<string, string | number | undefined> = {},
+    ) => withQuery(`/api/company/campaigns/${id}/collaborations`, query),
+    campaignInvites: (id: number) => `/api/company/campaigns/${id}/invites`,
+    collaborationSelect: (id: number) =>
+        `/api/company/collaborations/${id}/select`,
+    collaborationCancel: (id: number) =>
+        `/api/company/collaborations/${id}/cancel`,
 };
 
 export const creatorApi = {

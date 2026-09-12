@@ -27,6 +27,7 @@ class CampaignFactory extends Factory
             'objective' => CampaignObjective::Pipeline,
             'status' => CampaignStatus::Draft,
             'budget_cents' => 100000,
+            'brief' => null,
             'created_by_user_id' => User::factory(),
         ];
     }

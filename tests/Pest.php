@@ -1,5 +1,8 @@
 <?php
 
+use App\Enums\CreatorVettingStatus;
+use App\Models\CreatorProfile;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -44,6 +47,22 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+function marketplaceCreator(array $overrides = []): CreatorProfile
+{
+    $user = User::factory()->creator()->onboarded()->create();
+
+    $user->creatorProfile->update(array_merge([
+        'vetting_status' => CreatorVettingStatus::Vetted,
+        'display_name' => 'Ada Lovelace',
+        'headline' => 'B2B creator',
+        'bio' => 'Writes for SaaS',
+        'country' => 'FR',
+        'price_cents' => 24000,
+    ], $overrides));
+
+    return $user->creatorProfile->fresh();
+}
 
 function fakePng(string $name = 'photo.png'): UploadedFile
 {

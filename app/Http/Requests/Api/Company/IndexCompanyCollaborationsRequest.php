@@ -2,11 +2,11 @@
 
 namespace App\Http\Requests\Api\Company;
 
-use App\Enums\CampaignStatus;
+use App\Enums\CollaborationStatus;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class IndexCompanyCampaignsRequest extends FormRequest
+class IndexCompanyCollaborationsRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,7 +15,7 @@ class IndexCompanyCampaignsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        foreach (['q', 'status'] as $key) {
+        foreach (['pipeline', 'status'] as $key) {
             if ($this->input($key) === '') {
                 $this->merge([$key => null]);
             }
@@ -28,9 +28,15 @@ class IndexCompanyCampaignsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'q' => ['sometimes', 'nullable', 'string', 'max:120'],
-            'status' => ['sometimes', 'nullable', Rule::enum(CampaignStatus::class)],
-            'page' => ['sometimes', 'integer', 'min:1'],
+            'pipeline' => ['sometimes', 'nullable', 'string', Rule::in([
+                'all',
+                'active',
+                'invitations_received',
+                'invitations_sent',
+                'todo',
+                'completed',
+            ])],
+            'status' => ['sometimes', 'nullable', Rule::enum(CollaborationStatus::class)],
         ];
     }
 }

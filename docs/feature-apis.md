@@ -1,6 +1,6 @@
 # Feature APIs v1
 
-JSON APIs for the company and creator SPAs. Mapped from [naano.com](https://naano.com/) (home, `/creators`, `/agencies`, pricing, creator-led growth playbook, 2026-09-12) plus [`main-features.md`](main-features.md) and [`database-design-v1.md`](database-design-v1.md).
+JSON APIs for the company and creator SPAs. Mapped from [naano.com](https://naano.com/) (home, `/creators`, `/agencies`, pricing, creator-led growth playbook, 2026-09-12) plus `[main-features.md](main-features.md)` and `[database-design-v1.md](database-design-v1.md)`.
 
 This file is the endpoint list. It does not implement routes.
 
@@ -10,26 +10,30 @@ Auth, onboarding, and `GET /api/user` already exist on web / Fortify. Dashboard 
 
 ## Conventions
 
-| Rule | Detail |
-| --- | --- |
-| Prefix | `/api` (web middleware, session cookie). Named `api.*`. |
-| Company | `/api/company/…` — `auth`, `verified`, `role:company`, `onboarded` |
-| Creator | `/api/creator/…` — `auth`, `verified`, `role:creator`, `onboarded` |
-| Shared | `/api/…` — `auth` (and `verified` where noted) |
-| Response | `AjaxResponse`: `{ status, message, data }` |
-| Money | Integer cents, EUR |
-| IDs | Numeric route params. No DB foreign keys; services load related rows |
+
+| Rule            | Detail                                                                                                                          |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| Prefix          | `/api` (web middleware, session cookie). Named `api.*`.                                                                         |
+| Company         | `/api/company/…` — `auth`, `verified`, `role:company`, `onboarded`                                                              |
+| Creator         | `/api/creator/…` — `auth`, `verified`, `role:creator`, `onboarded`                                                              |
+| Shared          | `/api/…` — `auth` (and `verified` where noted)                                                                                  |
+| Response        | `AjaxResponse`: `{ status, message, data }`                                                                                     |
+| Money           | Integer cents, EUR                                                                                                              |
+| IDs             | Numeric route params. No DB foreign keys; services load related rows                                                            |
 | Current company | For users in several workspaces: `X-Company-Id` header, or the sole membership. Every company route is scoped to that workspace |
-| Controllers | `[Controller::class, 'method']` only in `routes/api.php`. Work in services |
-| Stripe webhook | `POST /api/stripe/webhook` — Stripe signature only, CSRF-exempt, not role-scoped |
+| Controllers     | `[Controller::class, 'method']` only in `routes/api.php`. Work in services                                                      |
+| Stripe webhook  | `POST /api/stripe/webhook` — Stripe signature only, CSRF-exempt, not role-scoped                                                |
+
 
 **Already live (do not reinvent)**
 
-| Method | Path | Name |
-| --- | --- | --- |
-| GET | `/api/user` | `api.user` |
-| GET | `/api/company/ping` | `api.company.ping` |
-| GET | `/api/creator/ping` | `api.creator.ping` |
+
+| Method | Path                | Name               |
+| ------ | ------------------- | ------------------ |
+| GET    | `/api/user`         | `api.user`         |
+| GET    | `/api/company/ping` | `api.company.ping` |
+| GET    | `/api/creator/ping` | `api.creator.ping` |
+
 
 Web: register, login, email code, company/creator onboarding, Fortify settings. Those stay web until a later SPA auth pass.
 
@@ -37,7 +41,11 @@ Web: register, login, email code, company/creator onboarding, Fortify settings. 
 
 ---
 
+
+
 ## Product flows (from naano.com)
+
+
 
 ### Company (home + pricing)
 
@@ -61,14 +69,22 @@ Success for this repo: book a post (wallet hold), approve the draft, submit the 
 
 ---
 
+
+
 ## 1. Users and profiles
+
+
 
 ### Shared
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/user` | Current user, role/side, onboarded, current company id, avatar (creator photo or company logo) |
-| GET | `/api/niches` | Active niche lookup (filters + creator profile) |
+
+| Method | Path          | What it does                                                                                   |
+| ------ | ------------- | ---------------------------------------------------------------------------------------------- |
+| GET    | `/api/user`   | Current user, role/side, onboarded, current company id, avatar (creator photo or company logo) |
+| GET    | `/api/niches` | Active niche lookup (filters + creator profile)                                                |
+
+
+
 
 ### Company
 
@@ -76,44 +92,52 @@ Owner-gated money: members can update profile, ICPs, and targeting. Only **owner
 
 Routes use `apiResource` / `apiSingleton`. Workspace switch is `PATCH /api/company/workspaces/{workspace}`. Audience refresh is `POST /api/creator/audience`.
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/company/workspaces` | Companies this login belongs to |
-| PATCH | `/api/company/workspaces/{workspace}` | Set current workspace |
-| GET | `/api/company/profile` | Current company profile (`can_manage_money`) |
-| PATCH | `/api/company/profile` | Name, website, logo, country, value proposition. `billing_email` owner-only. `remove_logo` clears the logo |
-| GET | `/api/company/audience` | Targeting jsonb + lookups (industries, regions, seniority, sizes, titles) |
-| PATCH | `/api/company/audience` | Save targeting |
-| GET | `/api/company/icps` | Structured ICPs (seeds from `companies.icps` if empty) |
-| POST | `/api/company/icps` | Add ICP |
-| PATCH | `/api/company/icps/{icp}` | Update ICP |
-| DELETE | `/api/company/icps/{icp}` | Soft-delete ICP |
-| GET | `/api/company/members` | Workspace members plus pending email invites |
-| POST | `/api/company/members` | Invite by email. Existing company-role users auto-join; unknown emails get an invite mail and a pending `company_invites` row. Creators are rejected. Owner-only |
-| PATCH | `/api/company/members/{member}` | Change role (`owner` / `member`). Owner-only |
-| DELETE | `/api/company/members/{member}` | Remove member. Owner-only |
+
+| Method | Path                                  | What it does                                                                                                                                                     |
+| ------ | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/company/workspaces`             | Companies this login belongs to                                                                                                                                  |
+| PATCH  | `/api/company/workspaces/{workspace}` | Set current workspace                                                                                                                                            |
+| GET    | `/api/company/profile`                | Current company profile (`can_manage_money`)                                                                                                                     |
+| PATCH  | `/api/company/profile`                | Name, website, logo, country, value proposition. `billing_email` owner-only. `remove_logo` clears the logo                                                       |
+| GET    | `/api/company/audience`               | Targeting jsonb + lookups (industries, regions, seniority, sizes, titles)                                                                                        |
+| PATCH  | `/api/company/audience`               | Save targeting                                                                                                                                                   |
+| GET    | `/api/company/icps`                   | Structured ICPs (seeds from `companies.icps` if empty)                                                                                                           |
+| POST   | `/api/company/icps`                   | Add ICP                                                                                                                                                          |
+| PATCH  | `/api/company/icps/{icp}`             | Update ICP                                                                                                                                                       |
+| DELETE | `/api/company/icps/{icp}`             | Soft-delete ICP                                                                                                                                                  |
+| GET    | `/api/company/members`                | Workspace members plus pending email invites                                                                                                                     |
+| POST   | `/api/company/members`                | Invite by email. Existing company-role users auto-join; unknown emails get an invite mail and a pending `company_invites` row. Creators are rejected. Owner-only |
+| PATCH  | `/api/company/members/{member}`       | Change role (`owner` / `member`). Owner-only                                                                                                                     |
+| DELETE | `/api/company/members/{member}`       | Remove member. Owner-only                                                                                                                                        |
+
+
+
 
 ### Creator
 
 No creator team APIs. Creators are 1:1 with a user.
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/creator/profile` | Media kit: display name, LinkedIn, headline, photo, bio, country, vetting, niches |
-| PATCH | `/api/creator/profile` | Update card (not rate — that is offers). `remove_photo` clears the photo |
-| PUT | `/api/creator/niches` | Replace claimed niches |
-| GET | `/api/creator/audience` | Latest audience snapshot |
-| POST | `/api/creator/audience` | Persist/refresh current mix (no LinkedIn job in v1) |
-| GET | `/api/creator/billing` | `{ stripe_connect_id, payouts_enabled: false, bank_summary: null }` |
-| DELETE | `/api/creator/account` | Password confirm, logout, delete user |
-| GET | `/api/creator/offers` | Public rates (single post + bundles) |
-| POST | `/api/creator/offers` | Create offer (`single_post` / `bundle`, `posts_count`, `price_cents`) |
-| PATCH | `/api/creator/offers/{offer}` | Update price / active |
-| DELETE | `/api/creator/offers/{offer}` | Soft-delete offer |
+
+| Method | Path                          | What it does                                                                      |
+| ------ | ----------------------------- | --------------------------------------------------------------------------------- |
+| GET    | `/api/creator/profile`        | Media kit: display name, LinkedIn, headline, photo, bio, country, vetting, niches |
+| PATCH  | `/api/creator/profile`        | Update card (not rate — that is offers). `remove_photo` clears the photo          |
+| PUT    | `/api/creator/niches`         | Replace claimed niches                                                            |
+| GET    | `/api/creator/audience`       | Latest audience snapshot                                                          |
+| POST   | `/api/creator/audience`       | Persist/refresh current mix (no LinkedIn job in v1)                               |
+| GET    | `/api/creator/billing`        | `{ stripe_connect_id, payouts_enabled: false, bank_summary: null }`               |
+| DELETE | `/api/creator/account`        | Password confirm, logout, delete user                                             |
+| GET    | `/api/creator/offers`         | Public rates (single post + bundles)                                              |
+| POST   | `/api/creator/offers`         | Create offer (`single_post` / `bundle`, `posts_count`, `price_cents`)             |
+| PATCH  | `/api/creator/offers/{offer}` | Update price / active                                                             |
+| DELETE | `/api/creator/offers/{offer}` | Soft-delete offer                                                                 |
+
 
 Marketplace listing uses **vetted + onboarded** creators. Listed price is the cheapest **active** offer, else `creator_profiles.price_cents`. Offers CRUD is later — onboarding still stores the rate on the profile.
 
 ---
+
+
 
 ## 2. Creator discovery and matching
 
@@ -123,36 +147,44 @@ Browse without a campaign uses niches, country, rate, followers. Fit scores are 
 
 The two GETs below are **live**. Campaign recommendation and fit endpoints wait until campaigns exist.
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/company/creators` | **Live.** Search/filter vetted onboarded creators. Query: `q`, `niche_id`, `country`, `min_price_cents`, `max_price_cents`, `min_followers`, `max_followers`, `page`. Paginated 24. `campaign_id` (sort by fit) later |
-| GET | `/api/company/creators/{creatorProfile}` | **Live.** Public card: profile, niches, audience, active offers. `recent_metrics` is always `[]` until posts exist. Pending/rejected 404 |
-| GET | `/api/company/campaigns/{campaign}/recommendations` | Later. Ranked creators for this campaign (cached scores) |
-| POST | `/api/company/campaigns/{campaign}/recommendations` | Later. Recompute fit scores (rule-based now; AI later) |
-| GET | `/api/company/campaigns/{campaign}/creators/{creatorProfile}/fit` | Later. Score + reasons (“why this creator”, Fit 92% on the marketing site) |
+
+| Method | Path                                                              | What it does                                                                                                                                                                                                          |
+| ------ | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/company/creators`                                           | **Live.** Search/filter vetted onboarded creators. Query: `q`, `niche_id`, `country`, `min_price_cents`, `max_price_cents`, `min_followers`, `max_followers`, `page`. Paginated 24. `campaign_id` (sort by fit) later |
+| GET    | `/api/company/creators/{creatorProfile}`                          | **Live.** Public card: profile, niches, audience, active offers. `recent_metrics` is always `[]` until posts exist. Pending/rejected 404                                                                              |
+| GET    | `/api/company/campaigns/{campaign}/recommendations`               | Later. Ranked creators for this campaign (cached scores)                                                                                                                                                              |
+| POST   | `/api/company/campaigns/{campaign}/recommendations`               | Later. Recompute fit scores (rule-based now; AI later)                                                                                                                                                                |
+| GET    | `/api/company/campaigns/{campaign}/creators/{creatorProfile}/fit` | Later. Score + reasons (“why this creator”, Fit 92% on the marketing site)                                                                                                                                            |
+
 
 Selecting a creator for a campaign is **3. / 4.** (invite or book), not a separate table.
 
 ---
 
+
+
 ## 3. Campaigns
 
 Company owns the brief. The campaign **is** the brief (no `campaign_briefs` table).
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/company/campaigns` | List. Query: `status` |
-| POST | `/api/company/campaigns` | Create draft: name, type, objective, budget_cents, company_icp_id |
-| GET | `/api/company/campaigns/{campaign}` | Full brief + collab counts |
-| PATCH | `/api/company/campaigns/{campaign}` | Update goal, key_messages, guidelines, dates, budget, type, objective, ICP |
-| POST | `/api/company/campaigns/{campaign}/launch` | `draft` → `active` |
-| POST | `/api/company/campaigns/{campaign}/pause` | `active` → `paused` |
-| POST | `/api/company/campaigns/{campaign}/complete` | `active`/`paused` → `completed` |
-| POST | `/api/company/campaigns/{campaign}/cancel` | → `cancelled` |
+
+| Method | Path                                         | What it does                                                               |
+| ------ | -------------------------------------------- | -------------------------------------------------------------------------- |
+| GET    | `/api/company/campaigns`                     | List. Query: `status`                                                      |
+| POST   | `/api/company/campaigns`                     | Create draft: name, type, objective, budget_cents, company_icp_id          |
+| GET    | `/api/company/campaigns/{campaign}`          | Full brief + collab counts                                                 |
+| PATCH  | `/api/company/campaigns/{campaign}`          | Update goal, key_messages, guidelines, dates, budget, type, objective, ICP |
+| POST   | `/api/company/campaigns/{campaign}/launch`   | `draft` → `active`                                                         |
+| POST   | `/api/company/campaigns/{campaign}/pause`    | `active` → `paused`                                                        |
+| POST   | `/api/company/campaigns/{campaign}/complete` | `active`/`paused` → `completed`                                            |
+| POST   | `/api/company/campaigns/{campaign}/cancel`   | → `cancelled`                                                              |
+
 
 Creator sees a campaign only through an opportunity or a collaboration (section 4).
 
 ---
+
+
 
 ## 4. Creator–campaign workflow
 
@@ -166,37 +198,47 @@ selected → booked (company wallet hold + contract) → posts
 declined / cancelled / completed
 ```
 
+
+
 ### Company
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/company/campaigns/{campaign}/collaborations` | Pipeline. Query: `status` |
-| GET | `/api/company/collaborations` | All collabs for current company |
-| GET | `/api/company/collaborations/{collaboration}` | Detail + events + posts |
-| POST | `/api/company/campaigns/{campaign}/invites` | Invite creator (`source=invite`, `status=invited`) |
-| POST | `/api/company/campaigns/{campaign}/sourcing` | Add sourced creator (`source=sourced`, `status=outreach`) — Managed-style |
-| POST | `/api/company/collaborations/{collaboration}/select` | `invited`/`applied`/`outreach` → `selected` |
-| POST | `/api/company/collaborations/{collaboration}/book` | → `booked` only if company wallet `available_cents` ≥ offer price. Snapshot price, ledger `hold`, generate contract. 422 + Checkout URL if underfunded |
-| POST | `/api/company/collaborations/{collaboration}/cancel` | → `cancelled`, ledger `release` of unused hold |
-| POST | `/api/company/collaborations/{collaboration}/follow-ups` | Timeline event (`follow_up` / `note`) |
-| GET | `/api/company/collaborations/{collaboration}/events` | Status + ops timeline |
+
+| Method | Path                                                     | What it does                                                                                                                                           |
+| ------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/company/campaigns/{campaign}/collaborations`       | Pipeline. Query: `status`                                                                                                                              |
+| GET    | `/api/company/collaborations`                            | All collabs for current company                                                                                                                        |
+| GET    | `/api/company/collaborations/{collaboration}`            | Detail + events + posts                                                                                                                                |
+| POST   | `/api/company/campaigns/{campaign}/invites`              | Invite creator (`source=invite`, `status=invited`)                                                                                                     |
+| POST   | `/api/company/campaigns/{campaign}/sourcing`             | Add sourced creator (`source=sourced`, `status=outreach`) — Managed-style                                                                              |
+| POST   | `/api/company/collaborations/{collaboration}/select`     | `invited`/`applied`/`outreach` → `selected`                                                                                                            |
+| POST   | `/api/company/collaborations/{collaboration}/book`       | → `booked` only if company wallet `available_cents` ≥ offer price. Snapshot price, ledger `hold`, generate contract. 422 + Checkout URL if underfunded |
+| POST   | `/api/company/collaborations/{collaboration}/cancel`     | → `cancelled`, ledger `release` of unused hold                                                                                                         |
+| POST   | `/api/company/collaborations/{collaboration}/follow-ups` | Timeline event (`follow_up` / `note`)                                                                                                                  |
+| GET    | `/api/company/collaborations/{collaboration}/events`     | Status + ops timeline                                                                                                                                  |
+
+
+
 
 ### Creator
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/creator/opportunities` | Active campaigns this creator can apply to (vetted + matching niches; exclude existing collab) |
-| GET | `/api/creator/opportunities/{campaign}` | Campaign brief the creator is allowed to see |
-| POST | `/api/creator/opportunities/{campaign}/apply` | `source=apply`, `status=applied` |
-| GET | `/api/creator/collaborations` | Deal inbox. Query: `status` |
-| GET | `/api/creator/collaborations/{collaboration}` | Deal + brief + posts |
-| POST | `/api/creator/collaborations/{collaboration}/accept` | Invite → `selected` or `booked` (if company already selected; booking still company-side if wallet required) |
-| POST | `/api/creator/collaborations/{collaboration}/decline` | → `declined` |
-| POST | `/api/creator/deals/external` | Bring-your-own: creator supplies brand/campaign payload; ops/company completes booking. Extra bonus is a payout line later |
+
+| Method | Path                                                  | What it does                                                                                                               |
+| ------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/creator/opportunities`                          | Active campaigns this creator can apply to (vetted + matching niches; exclude existing collab)                             |
+| GET    | `/api/creator/opportunities/{campaign}`               | Campaign brief the creator is allowed to see                                                                               |
+| POST   | `/api/creator/opportunities/{campaign}/apply`         | `source=apply`, `status=applied`                                                                                           |
+| GET    | `/api/creator/collaborations`                         | Deal inbox. Query: `status`                                                                                                |
+| GET    | `/api/creator/collaborations/{collaboration}`         | Deal + brief + posts                                                                                                       |
+| POST   | `/api/creator/collaborations/{collaboration}/accept`  | Invite → `selected` or `booked` (if company already selected; booking still company-side if wallet required)               |
+| POST   | `/api/creator/collaborations/{collaboration}/decline` | → `declined`                                                                                                               |
+| POST   | `/api/creator/deals/external`                         | Bring-your-own: creator supplies brand/campaign payload; ops/company completes booking. Extra bonus is a payout line later |
+
 
 **Accept semantics:** creator accept on an `invited` row → `selected`. Company `book` still places the wallet hold and contract so the brand’s funds are reserved first. Money does not leave the company wallet until the live post URL is submitted (§5 / §7).
 
 ---
+
+
 
 ## 5. Content and publishing
 
@@ -204,36 +246,46 @@ declined / cancelled / completed
 
 ### Creator
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/creator/collaborations/{collaboration}/posts` | Posts for this deal (bundles = several) |
-| POST | `/api/creator/collaborations/{collaboration}/posts` | Create draft |
-| PATCH | `/api/creator/posts/{post}` | Edit draft / changes_requested body |
-| POST | `/api/creator/posts/{post}/submit` | → `in_review` |
-| POST | `/api/creator/posts/{post}/schedule` | After `approved`, set `scheduled_at` → `scheduled` |
-| POST | `/api/creator/posts/{post}/publish` | Attach canonical `published_url` + LinkedIn post id → `published`. This is payment proof: capture the company hold and credit the creator wallet (§7). Draft approval does not do this |
+
+| Method | Path                                                | What it does                                                                                                                                                                           |
+| ------ | --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/creator/collaborations/{collaboration}/posts` | Posts for this deal (bundles = several)                                                                                                                                                |
+| POST   | `/api/creator/collaborations/{collaboration}/posts` | Create draft                                                                                                                                                                           |
+| PATCH  | `/api/creator/posts/{post}`                         | Edit draft / changes_requested body                                                                                                                                                    |
+| POST   | `/api/creator/posts/{post}/submit`                  | → `in_review`                                                                                                                                                                          |
+| POST   | `/api/creator/posts/{post}/schedule`                | After `approved`, set `scheduled_at` → `scheduled`                                                                                                                                     |
+| POST   | `/api/creator/posts/{post}/publish`                 | Attach canonical `published_url` + LinkedIn post id → `published`. This is payment proof: capture the company hold and credit the creator wallet (§7). Draft approval does not do this |
+
+
+
 
 ### Company
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/company/collaborations/{collaboration}/posts` | Review queue for a collab |
-| GET | `/api/company/posts/{post}` | Draft + guidelines + tracking links |
-| POST | `/api/company/posts/{post}/approve` | → `approved`. Lets the creator publish. Does **not** capture the hold, credit earnings, or call Stripe |
-| POST | `/api/company/posts/{post}/changes` | → `changes_requested` + `review_note` |
-| POST | `/api/company/posts/{post}/reject` | → `rejected` |
-| GET | `/api/company/campaigns/{campaign}/tracking-links` | Campaign/collab UTMs |
-| POST | `/api/company/campaigns/{campaign}/tracking-links` | Create destination + UTM (+ optional `collaboration_id`) |
-| PATCH | `/api/company/tracking-links/{trackingLink}` | Update URL / UTMs |
-| DELETE | `/api/company/tracking-links/{trackingLink}` | Soft-delete |
+
+| Method | Path                                                | What it does                                                                                           |
+| ------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/company/collaborations/{collaboration}/posts` | Review queue for a collab                                                                              |
+| GET    | `/api/company/posts/{post}`                         | Draft + guidelines + tracking links                                                                    |
+| POST   | `/api/company/posts/{post}/approve`                 | → `approved`. Lets the creator publish. Does **not** capture the hold, credit earnings, or call Stripe |
+| POST   | `/api/company/posts/{post}/changes`                 | → `changes_requested` + `review_note`                                                                  |
+| POST   | `/api/company/posts/{post}/reject`                  | → `rejected`                                                                                           |
+| GET    | `/api/company/campaigns/{campaign}/tracking-links`  | Campaign/collab UTMs                                                                                   |
+| POST   | `/api/company/campaigns/{campaign}/tracking-links`  | Create destination + UTM (+ optional `collaboration_id`)                                               |
+| PATCH  | `/api/company/tracking-links/{trackingLink}`        | Update URL / UTMs                                                                                      |
+| DELETE | `/api/company/tracking-links/{trackingLink}`        | Soft-delete                                                                                            |
+
 
 Public click (not SPA, still needed for tracking):
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/t/{slug}` | Redirect to destination, record click (later: qualified if dwell ≥ 30s) |
+
+| Method | Path        | What it does                                                            |
+| ------ | ----------- | ----------------------------------------------------------------------- |
+| GET    | `/t/{slug}` | Redirect to destination, record click (later: qualified if dwell ≥ 30s) |
+
 
 ---
+
+
 
 ## 6. Campaign analytics
 
@@ -241,27 +293,35 @@ Same facts on both sides; company gets rollups (campaign, creator, post, pipelin
 
 ### Company
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/company/analytics/overview` | Workspace: impressions, clicks, qualified clicks, leads, spend, pipeline |
-| GET | `/api/company/campaigns/{campaign}/analytics` | Campaign performance |
-| GET | `/api/company/campaigns/{campaign}/analytics/creators` | Per-creator breakdown |
-| GET | `/api/company/posts/{post}/metrics` | Latest snapshot |
-| GET | `/api/company/campaigns/{campaign}/leads` | Attributed leads |
-| POST | `/api/company/campaigns/{campaign}/leads` | Manual lead (`source=manual`) |
-| GET | `/api/company/reports/campaigns/{campaign}` | Export payload for reporting (JSON; CSV later) |
+
+| Method | Path                                                   | What it does                                                             |
+| ------ | ------------------------------------------------------ | ------------------------------------------------------------------------ |
+| GET    | `/api/company/analytics/overview`                      | Workspace: impressions, clicks, qualified clicks, leads, spend, pipeline |
+| GET    | `/api/company/campaigns/{campaign}/analytics`          | Campaign performance                                                     |
+| GET    | `/api/company/campaigns/{campaign}/analytics/creators` | Per-creator breakdown                                                    |
+| GET    | `/api/company/posts/{post}/metrics`                    | Latest snapshot                                                          |
+| GET    | `/api/company/campaigns/{campaign}/leads`              | Attributed leads                                                         |
+| POST   | `/api/company/campaigns/{campaign}/leads`              | Manual lead (`source=manual`)                                            |
+| GET    | `/api/company/reports/campaigns/{campaign}`            | Export payload for reporting (JSON; CSV later)                           |
+
+
+
 
 ### Creator
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/creator/analytics/overview` | Own impressions, clicks, engagement, earnings |
-| GET | `/api/creator/collaborations/{collaboration}/metrics` | Deal-level rollup of posts |
-| GET | `/api/creator/posts/{post}/metrics` | Same snapshot the company sees |
+
+| Method | Path                                                  | What it does                                  |
+| ------ | ----------------------------------------------------- | --------------------------------------------- |
+| GET    | `/api/creator/analytics/overview`                     | Own impressions, clicks, engagement, earnings |
+| GET    | `/api/creator/collaborations/{collaboration}/metrics` | Deal-level rollup of posts                    |
+| GET    | `/api/creator/posts/{post}/metrics`                   | Same snapshot the company sees                |
+
 
 Ingest (system/job, not SPA): sync LinkedIn impressions/likes/comments onto `post_metrics`. Not a public creator/company route in v1.
 
 ---
+
+
 
 ## 7. Payments (Naano flow + Stripe)
 
@@ -299,14 +359,16 @@ Cancel a booked collab before publish → `release` the hold back to company ava
 
 ### Stripe objects
 
-| Role | Stripe | Stored on |
-| --- | --- | --- |
-| Company buyer | Customer | `companies.stripe_customer_id` |
-| Company campaign funds | Checkout Session (mode `payment`) or PaymentIntent, EUR | `wallet_transactions.stripe_id` |
-| Company tax invoice for top-ups / plan | Invoice (or Checkout invoice creation) | `invoices.stripe_invoice_id` |
-| Managed €700/mo | Subscription + Checkout mode `subscription` + Billing Portal | `company_subscriptions.stripe_subscription_id` |
-| Creator payee | Connect Express account | `creator_profiles.stripe_connect_id` |
-| Creator cash-out | Transfer (platform balance → Connect) | `payouts.stripe_transfer_id` |
+
+| Role                                   | Stripe                                                       | Stored on                                      |
+| -------------------------------------- | ------------------------------------------------------------ | ---------------------------------------------- |
+| Company buyer                          | Customer                                                     | `companies.stripe_customer_id`                 |
+| Company campaign funds                 | Checkout Session (mode `payment`) or PaymentIntent, EUR      | `wallet_transactions.stripe_id`                |
+| Company tax invoice for top-ups / plan | Invoice (or Checkout invoice creation)                       | `invoices.stripe_invoice_id`                   |
+| Managed €700/mo                        | Subscription + Checkout mode `subscription` + Billing Portal | `company_subscriptions.stripe_subscription_id` |
+| Creator payee                          | Connect Express account                                      | `creator_profiles.stripe_connect_id`           |
+| Creator cash-out                       | Transfer (platform balance → Connect)                        | `payouts.stripe_transfer_id`                   |
+
 
 Model is **separate charges and transfers**, not destination charges. Company money lands on the **platform** Stripe balance (via wallet top-up). Internal holds/captures are ledger only. Stripe Transfer runs only on creator withdrawal.
 
@@ -316,39 +378,45 @@ Creator marketing copy (“paid within 24h”, “instant SEPA”) is the withdr
 
 Unauthenticated except `Stripe-Signature`. CSRF-exempt. Not under company/creator role middleware.
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| POST | `/api/stripe/webhook` | Verify signature. Idempotent by event id. Post ledger from Stripe, never from the SPA guessing success |
+
+| Method | Path                  | What it does                                                                                           |
+| ------ | --------------------- | ------------------------------------------------------------------------------------------------------ |
+| POST   | `/api/stripe/webhook` | Verify signature. Idempotent by event id. Post ledger from Stripe, never from the SPA guessing success |
+
 
 Handle at least:
 
-| Event | Effect |
-| --- | --- |
-| `checkout.session.completed` | Wallet `topup` → `posted`; or Managed subscription row |
-| `payment_intent.payment_failed` | Top-up txn → `failed` |
-| `invoice.paid` / `invoice.payment_failed` | Company `invoices` + subscription |
-| `customer.subscription.updated` / `deleted` | `company_subscriptions` |
-| `account.updated` | Creator Connect: `payouts_enabled`, requirements |
+
+| Event                                                                      | Effect                                                     |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `checkout.session.completed`                                               | Wallet `topup` → `posted`; or Managed subscription row     |
+| `payment_intent.payment_failed`                                            | Top-up txn → `failed`                                      |
+| `invoice.paid` / `invoice.payment_failed`                                  | Company `invoices` + subscription                          |
+| `customer.subscription.updated` / `deleted`                                | `company_subscriptions`                                    |
+| `account.updated`                                                          | Creator Connect: `payouts_enabled`, requirements           |
 | `transfer.created` / `transfer.reversed` / `payout.paid` / `payout.failed` | Creator withdrawal status `in_transit` → `paid` / `failed` |
+
 
 SPA success/cancel URLs may poll; **posted balances only come from the webhook**.
 
 ### Company
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/company/wallet` | `available_cents`, `held_cents`, per-campaign holds, `currency=EUR` |
-| GET | `/api/company/wallet/transactions` | Ledger. Query: `campaign_id`, `type`, `status` |
-| POST | `/api/company/wallet/topups` | Ensure Stripe Customer. Create Checkout Session (`mode=payment`, EUR). Body: `amount_cents` (min to be set, e.g. 5000). Returns `checkout_url`, `stripe_session_id`. Insert `topup` txn `pending` |
-| GET | `/api/company/wallet/topups/{walletTransaction}` | Poll pending top-up until webhook posts it |
-| GET | `/api/company/billing` | Customer id, default payment method last4 (from Stripe), billing email |
-| GET | `/api/company/invoices` | Platform invoices (top-ups + Managed). Query: `status` |
-| GET | `/api/company/invoices/{invoice}` | Detail + hosted invoice / PDF URL from Stripe |
-| GET | `/api/company/collaborations/{collaboration}/contract` | Platform contract (generated on book) |
-| GET | `/api/company/subscription` | `self_serve` (default, no Stripe sub) or `managed` |
-| POST | `/api/company/subscription/checkout` | Checkout Session `mode=subscription` for Managed €700/mo. Campaign wallet is unchanged |
-| POST | `/api/company/subscription/portal` | Stripe Billing Portal URL (upgrade/cancel/payment method) |
-| DELETE | `/api/company/subscription` | Cancel Managed at period end (or via portal) |
+
+| Method | Path                                                   | What it does                                                                                                                                                                                      |
+| ------ | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/company/wallet`                                  | `available_cents`, `held_cents`, per-campaign holds, `currency=EUR`                                                                                                                               |
+| GET    | `/api/company/wallet/transactions`                     | Ledger. Query: `campaign_id`, `type`, `status`                                                                                                                                                    |
+| POST   | `/api/company/wallet/topups`                           | Ensure Stripe Customer. Create Checkout Session (`mode=payment`, EUR). Body: `amount_cents` (min to be set, e.g. 5000). Returns `checkout_url`, `stripe_session_id`. Insert `topup` txn `pending` |
+| GET    | `/api/company/wallet/topups/{walletTransaction}`       | Poll pending top-up until webhook posts it                                                                                                                                                        |
+| GET    | `/api/company/billing`                                 | Customer id, default payment method last4 (from Stripe), billing email                                                                                                                            |
+| GET    | `/api/company/invoices`                                | Platform invoices (top-ups + Managed). Query: `status`                                                                                                                                            |
+| GET    | `/api/company/invoices/{invoice}`                      | Detail + hosted invoice / PDF URL from Stripe                                                                                                                                                     |
+| GET    | `/api/company/collaborations/{collaboration}/contract` | Platform contract (generated on book)                                                                                                                                                             |
+| GET    | `/api/company/subscription`                            | `self_serve` (default, no Stripe sub) or `managed`                                                                                                                                                |
+| POST   | `/api/company/subscription/checkout`                   | Checkout Session `mode=subscription` for Managed €700/mo. Campaign wallet is unchanged                                                                                                            |
+| POST   | `/api/company/subscription/portal`                     | Stripe Billing Portal URL (upgrade/cancel/payment method)                                                                                                                                         |
+| DELETE | `/api/company/subscription`                            | Cancel Managed at period end (or via portal)                                                                                                                                                      |
+
 
 Book (`POST …/collaborations/{collaboration}/book`) is the spend reservation: refuse unless `available_cents` ≥ snapshot price. It does not charge the card again.
 
@@ -358,18 +426,20 @@ Creators have an **earnings wallet** (available vs pending vs withdrawn). v1 sch
 
 Pending = booked / in delivery, not yet live. Available = live URL submitted, not yet withdrawn. In transit / paid = withdrawal rows.
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/creator/wallet` | `pending_cents`, `available_cents`, `in_transit_cents`, `paid_cents`, `currency=EUR`, `withdrawable` (available ≥ 10000 **and** Connect `payouts_enabled`) |
-| GET | `/api/creator/wallet/transactions` | Earnings credits (per collaboration, after live URL) and withdrawals |
-| GET | `/api/creator/connect` | Stripe Connect status: onboarded, `payouts_enabled`, outstanding requirements |
-| POST | `/api/creator/connect/onboarding` | Create Express account if missing. Return Account Link URL (`return_url` / `refresh_url`) |
-| POST | `/api/creator/connect/dashboard` | Express login link (manage bank / SEPA) |
-| POST | `/api/creator/wallet/withdrawals` | Body: `amount_cents` (≤ available, ≥ 10000). Create `payouts` row `pending`, Stripe Transfer. 422 if Connect incomplete or under minimum |
-| GET | `/api/creator/payouts` | Withdrawal history. Query: `status` |
-| GET | `/api/creator/payouts/{payout}` | One withdrawal + Stripe transfer id |
-| GET | `/api/creator/collaborations/{collaboration}/contract` | Same contract the brand sees |
-| GET | `/api/creator/earnings` | Alias of wallet totals plus per-campaign earned list (payment statement: campaign, live URL, amount — the document instead of a creator invoice) |
+
+| Method | Path                                                   | What it does                                                                                                                                               |
+| ------ | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/creator/wallet`                                  | `pending_cents`, `available_cents`, `in_transit_cents`, `paid_cents`, `currency=EUR`, `withdrawable` (available ≥ 10000 **and** Connect `payouts_enabled`) |
+| GET    | `/api/creator/wallet/transactions`                     | Earnings credits (per collaboration, after live URL) and withdrawals                                                                                       |
+| GET    | `/api/creator/connect`                                 | Stripe Connect status: onboarded, `payouts_enabled`, outstanding requirements                                                                              |
+| POST   | `/api/creator/connect/onboarding`                      | Create Express account if missing. Return Account Link URL (`return_url` / `refresh_url`)                                                                  |
+| POST   | `/api/creator/connect/dashboard`                       | Express login link (manage bank / SEPA)                                                                                                                    |
+| POST   | `/api/creator/wallet/withdrawals`                      | Body: `amount_cents` (≤ available, ≥ 10000). Create `payouts` row `pending`, Stripe Transfer. 422 if Connect incomplete or under minimum                   |
+| GET    | `/api/creator/payouts`                                 | Withdrawal history. Query: `status`                                                                                                                        |
+| GET    | `/api/creator/payouts/{payout}`                        | One withdrawal + Stripe transfer id                                                                                                                        |
+| GET    | `/api/creator/collaborations/{collaboration}/contract` | Same contract the brand sees                                                                                                                               |
+| GET    | `/api/creator/earnings`                                | Alias of wallet totals plus per-campaign earned list (payment statement: campaign, live URL, amount — the document instead of a creator invoice)           |
+
 
 There is no creator “invoice the brand” endpoint. There is no auto-payout job on approve. Optional later: auto-Transfer when available ≥ €100 and Connect is ready; v1 is an explicit withdrawal request.
 
@@ -385,62 +455,76 @@ BYO deals: same ledger. Bonus is an extra earnings credit (`type` on the creator
 
 ---
 
+
+
 ## 8. Communication
 
 Company ↔ creator chat is **not** `agent_conversations`. One `conversations` row per collaboration.
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| GET | `/api/company/collaborations/{collaboration}/messages` | Thread |
-| POST | `/api/company/collaborations/{collaboration}/messages` | Send |
-| POST | `/api/company/collaborations/{collaboration}/messages/read` | Mark read |
-| GET | `/api/creator/collaborations/{collaboration}/messages` | Thread |
-| POST | `/api/creator/collaborations/{collaboration}/messages` | Send |
-| POST | `/api/creator/collaborations/{collaboration}/messages/read` | Mark read |
-| GET | `/api/notifications` | Database notifications (invites, applications, campaign updates) |
-| POST | `/api/notifications/{notification}/read` | Mark one read |
-| POST | `/api/notifications/read` | Mark all read |
-| GET | `/api/notification-preferences` | Email toggles |
-| PUT | `/api/notification-preferences` | Update toggles |
+
+| Method | Path                                                        | What it does                                                     |
+| ------ | ----------------------------------------------------------- | ---------------------------------------------------------------- |
+| GET    | `/api/company/collaborations/{collaboration}/messages`      | Thread                                                           |
+| POST   | `/api/company/collaborations/{collaboration}/messages`      | Send                                                             |
+| POST   | `/api/company/collaborations/{collaboration}/messages/read` | Mark read                                                        |
+| GET    | `/api/creator/collaborations/{collaboration}/messages`      | Thread                                                           |
+| POST   | `/api/creator/collaborations/{collaboration}/messages`      | Send                                                             |
+| POST   | `/api/creator/collaborations/{collaboration}/messages/read` | Mark read                                                        |
+| GET    | `/api/notifications`                                        | Database notifications (invites, applications, campaign updates) |
+| POST   | `/api/notifications/{notification}/read`                    | Mark one read                                                    |
+| POST   | `/api/notifications/read`                                   | Mark all read                                                    |
+| GET    | `/api/notification-preferences`                             | Email toggles                                                    |
+| PUT    | `/api/notification-preferences`                             | Update toggles                                                   |
+
 
 Follow-ups that are ops notes stay on `collaboration_events` (section 4), not chat.
 
 ---
 
+
+
 ## 9. AI (after marketplace works)
 
 Reuse `campaigns` columns, `creator_match_scores`, and `agent_conversations`. Do not add `ai_recommendations`.
 
-| Method | Path | What it does |
-| --- | --- | --- |
-| POST | `/api/company/profile/analyze-url` | Company URL → value proposition + ICP drafts (onboarding already has a web variant) |
-| POST | `/api/company/campaigns/{campaign}/brief/generate` | Fill goal, key messages, guidelines from ICP + URL |
-| POST | `/api/company/campaigns/{campaign}/recommendations` | Same as §2; AI writes score + reasons |
-| GET | `/api/company/campaigns/{campaign}/creators/{creatorProfile}/fit` | AI explanation copy |
-| POST | `/api/company/campaigns/{campaign}/budget-suggest` | Suggested `budget_cents` from format + creator set |
-| POST | `/api/company/campaigns/{campaign}/format-suggest` | Suggested `type` / post count |
+
+| Method | Path                                                              | What it does                                                                        |
+| ------ | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| POST   | `/api/company/profile/analyze-url`                                | Company URL → value proposition + ICP drafts (onboarding already has a web variant) |
+| POST   | `/api/company/campaigns/{campaign}/brief/generate`                | Fill goal, key messages, guidelines from ICP + URL                                  |
+| POST   | `/api/company/campaigns/{campaign}/recommendations`               | Same as §2; AI writes score + reasons                                               |
+| GET    | `/api/company/campaigns/{campaign}/creators/{creatorProfile}/fit` | AI explanation copy                                                                 |
+| POST   | `/api/company/campaigns/{campaign}/budget-suggest`                | Suggested `budget_cents` from format + creator set                                  |
+| POST   | `/api/company/campaigns/{campaign}/format-suggest`                | Suggested `type` / post count                                                       |
+
 
 Ship matching/booking/pay/track first. These stay listed so the SPA can hide them behind a flag.
 
 ---
 
+
+
 ## Status cheat sheet
 
 Used by the workflow endpoints above.
 
-| Resource | Values |
-| --- | --- |
-| Campaign | `draft`, `active`, `paused`, `completed`, `cancelled` |
-| Collaboration | `invited`, `applied`, `outreach`, `declined`, `selected`, `booked`, `cancelled`, `completed` |
-| Collaboration source | `invite`, `apply`, `sourced` |
-| Post | `draft`, `in_review`, `changes_requested`, `approved`, `scheduled`, `published`, `rejected` |
-| Wallet txn | `topup`, `hold`, `capture`, `release`, `refund`, `payout`, `platform_fee` |
-| Wallet txn status | `pending`, `posted`, `failed` |
-| Invoice | `draft`, `open`, `paid`, `void` |
-| Payout (creator withdrawal) | `pending`, `in_transit`, `paid`, `failed` |
-| Plan | `self_serve`, `managed` |
+
+| Resource                    | Values                                                                                       |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| Campaign                    | `draft`, `active`, `paused`, `completed`, `cancelled`                                        |
+| Collaboration               | `invited`, `applied`, `outreach`, `declined`, `selected`, `booked`, `cancelled`, `completed` |
+| Collaboration source        | `invite`, `apply`, `sourced`                                                                 |
+| Post                        | `draft`, `in_review`, `changes_requested`, `approved`, `scheduled`, `published`, `rejected`  |
+| Wallet txn                  | `topup`, `hold`, `capture`, `release`, `refund`, `payout`, `platform_fee`                    |
+| Wallet txn status           | `pending`, `posted`, `failed`                                                                |
+| Invoice                     | `draft`, `open`, `paid`, `void`                                                              |
+| Payout (creator withdrawal) | `pending`, `in_transit`, `paid`, `failed`                                                    |
+| Plan                        | `self_serve`, `managed`                                                                      |
+
 
 ---
+
+
 
 ## Build order
 

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -26,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $goal
  * @property list<string>|null $key_messages
  * @property string|null $guidelines
+ * @property array<string, mixed>|null $brief
  * @property Carbon|null $start_at
  * @property Carbon|null $end_at
  * @property int $created_by_user_id
@@ -41,6 +43,7 @@ use Illuminate\Support\Carbon;
     'goal',
     'key_messages',
     'guidelines',
+    'brief',
     'start_at',
     'end_at',
     'created_by_user_id',
@@ -60,6 +63,7 @@ class Campaign extends Model
             'objective' => CampaignObjective::class,
             'status' => CampaignStatus::class,
             'key_messages' => 'array',
+            'brief' => 'array',
             'start_at' => 'datetime',
             'end_at' => 'datetime',
         ];
@@ -95,6 +99,14 @@ class Campaign extends Model
     public function collaborations(): HasMany
     {
         return $this->hasMany(Collaboration::class);
+    }
+
+    /**
+     * @return HasManyThrough<Post, Collaboration, $this>
+     */
+    public function posts(): HasManyThrough
+    {
+        return $this->hasManyThrough(Post::class, Collaboration::class);
     }
 
     /**

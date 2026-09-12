@@ -3,7 +3,6 @@
 use App\Enums\CreatorVettingStatus;
 use App\Models\CreatorAudienceProfile;
 use App\Models\CreatorOffer;
-use App\Models\CreatorProfile;
 use App\Models\Niche;
 use App\Models\User;
 
@@ -145,19 +144,3 @@ test('guests and creators cannot browse the company marketplace', function () {
         ->getJson(route('api.company.creators.index'))
         ->assertForbidden();
 });
-
-function marketplaceCreator(array $overrides = []): CreatorProfile
-{
-    $user = User::factory()->creator()->onboarded()->create();
-
-    $user->creatorProfile->update(array_merge([
-        'vetting_status' => CreatorVettingStatus::Vetted,
-        'display_name' => 'Ada Lovelace',
-        'headline' => 'B2B creator',
-        'bio' => 'Writes for SaaS',
-        'country' => 'FR',
-        'price_cents' => 24000,
-    ], $overrides));
-
-    return $user->creatorProfile->fresh();
-}

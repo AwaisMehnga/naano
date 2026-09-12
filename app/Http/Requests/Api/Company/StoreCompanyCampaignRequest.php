@@ -2,11 +2,12 @@
 
 namespace App\Http\Requests\Api\Company;
 
-use App\Enums\CampaignStatus;
+use App\Enums\CampaignObjective;
+use App\Enums\CampaignType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class IndexCompanyCampaignsRequest extends FormRequest
+class StoreCompanyCampaignRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -15,7 +16,7 @@ class IndexCompanyCampaignsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        foreach (['q', 'status'] as $key) {
+        foreach (['company_icp_id', 'budget_cents'] as $key) {
             if ($this->input($key) === '') {
                 $this->merge([$key => null]);
             }
@@ -28,9 +29,11 @@ class IndexCompanyCampaignsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'q' => ['sometimes', 'nullable', 'string', 'max:120'],
-            'status' => ['sometimes', 'nullable', Rule::enum(CampaignStatus::class)],
-            'page' => ['sometimes', 'integer', 'min:1'],
+            'name' => ['required', 'string', 'max:120'],
+            'type' => ['required', Rule::enum(CampaignType::class)],
+            'objective' => ['required', Rule::enum(CampaignObjective::class)],
+            'budget_cents' => ['sometimes', 'nullable', 'integer', 'min:0'],
+            'company_icp_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
         ];
     }
 }

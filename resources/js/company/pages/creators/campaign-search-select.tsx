@@ -9,6 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { api, companyApi } from '@/lib/api';
+import type { CampaignList } from '@/company/pages/campaigns/types';
 
 export type CampaignOption = {
     id: number;
@@ -35,8 +36,8 @@ export default function CampaignSearchSelect({
 
         const handle = window.setTimeout(() => {
             setLoading(true);
-            api<CampaignOption[]>(companyApi.campaigns({ q: q || undefined }))
-                .then(setItems)
+            api<CampaignList>(companyApi.campaigns({ q: q || undefined }))
+                .then((data) => setItems(data.items))
                 .catch(() => setItems([]))
                 .finally(() => setLoading(false));
         }, 200);
