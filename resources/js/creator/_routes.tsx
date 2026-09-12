@@ -1,6 +1,10 @@
 import DashboardLayout from '@/layouts/dashboard';
 import SpaHome from '@/pages/spa-home';
 import { Navigate } from 'react-router';
+import CreatorDealsPage from './pages/deals';
+import CreatorContractPage from './pages/deals/contract';
+import CreatorOpportunitiesPage from './pages/opportunities';
+import CreatorOpportunityShowPage from './pages/opportunities/show';
 import CreatorSettingLayout from './pages/setting';
 import CreatorAccountPage from './pages/setting/account';
 import CreatorAudiencePage from './pages/setting/audience';
@@ -15,6 +19,22 @@ export const routes = [
             {
                 index: true,
                 element: <SpaHome title="Creator" />,
+            },
+            {
+                path: 'opportunities',
+                element: <CreatorOpportunitiesPage />,
+            },
+            {
+                path: 'opportunities/:id',
+                element: <CreatorOpportunityShowPage />,
+            },
+            {
+                path: 'deals',
+                element: <CreatorDealsPage />,
+            },
+            {
+                path: 'collaborations/:id/contract',
+                element: <CreatorContractPage />,
             },
             {
                 path: 'setting',

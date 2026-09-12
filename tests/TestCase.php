@@ -2,6 +2,8 @@
 
 namespace Tests;
 
+use App\Services\Stripe\FakeStripeGateway;
+use App\Services\Stripe\StripeGateway;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Laravel\Fortify\Features;
@@ -13,6 +15,7 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         $this->seed(RoleSeeder::class);
+        $this->app->singleton(StripeGateway::class, FakeStripeGateway::class);
     }
 
     protected function skipUnlessFortifyHas(string $feature, ?string $message = null): void

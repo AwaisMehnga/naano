@@ -123,6 +123,18 @@ test('company users can view a vetted creator card', function () {
         ->assertJsonPath('data.recent_metrics', []);
 });
 
+test('company users can find a creator by account email', function () {
+    $company = User::factory()->company()->onboarded()->create();
+    $creator = marketplaceCreator(['display_name' => 'Visible Ada']);
+    $creator->user->update(['email' => 'ambmera@yopmail.com']);
+
+    $this->actingAs($company)
+        ->getJson(route('api.company.creators.index', ['q' => 'ambmera@yopmail.com']))
+        ->assertOk()
+        ->assertJsonPath('data.total', 1)
+        ->assertJsonPath('data.items.0.id', $creator->id);
+});
+
 test('pending creators return 404 on the marketplace card', function () {
     $company = User::factory()->company()->onboarded()->create();
     $creator = marketplaceCreator([

@@ -1,6 +1,9 @@
 <?php
 
+use App\Enums\CompanyMemberRole;
 use App\Enums\CreatorVettingStatus;
+use App\Models\Company;
+use App\Models\CompanyMember;
 use App\Models\CreatorProfile;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -62,6 +65,25 @@ function marketplaceCreator(array $overrides = []): CreatorProfile
     ], $overrides));
 
     return $user->creatorProfile->fresh();
+}
+
+/**
+ * @return array{0: User, 1: Company, 2: User}
+ */
+function companyWithMember(): array
+{
+    $owner = User::factory()->company()->onboarded()->create();
+    $company = $owner->companies()->first();
+    $member = User::factory()->company()->onboarded()->create();
+
+    CompanyMember::factory()->create([
+        'company_id' => $company->id,
+        'user_id' => $member->id,
+        'role' => CompanyMemberRole::Member,
+        'joined_at' => now(),
+    ]);
+
+    return [$owner, $company, $member];
 }
 
 function fakePng(string $name = 'photo.png'): UploadedFile

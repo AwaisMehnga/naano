@@ -1,4 +1,4 @@
-import { LayoutGrid, Megaphone, Users } from 'lucide-react';
+import { Briefcase, Handshake, LayoutGrid, Megaphone, Users, Wallet } from 'lucide-react';
 import { AppLink } from '@/components/app-link';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -43,12 +43,30 @@ export function AppSidebar({ homeHref = '/' }: { homeHref?: string } = {}) {
                       icon: Megaphone,
                   } satisfies NavItem,
                   {
+                      title: 'Wallet',
+                      href: '/wallet',
+                      icon: Wallet,
+                  } satisfies NavItem,
+                  {
                       title: 'Creators',
                       href: '/creators',
                       icon: Users,
                   } satisfies NavItem,
               ]
-            : []),
+            : window.Naano?.user?.role === 'creator'
+              ? [
+                    {
+                        title: 'Opportunities',
+                        href: '/opportunities',
+                        icon: Briefcase,
+                    } satisfies NavItem,
+                    {
+                        title: 'Deals',
+                        href: '/deals',
+                        icon: Handshake,
+                    } satisfies NavItem,
+                ]
+              : []),
     ];
 
     return (

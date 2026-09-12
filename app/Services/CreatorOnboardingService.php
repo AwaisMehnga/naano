@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CreatorVettingStatus;
 use App\Models\CreatorProfile;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
@@ -74,6 +75,7 @@ class CreatorOnboardingService
     {
         $profile->update([
             'onboarded_at' => now(),
+            'vetting_status' => CreatorVettingStatus::Vetted,
         ]);
     }
 }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CreatorVettingStatus;
 use App\Models\User;
 
 test('creator onboarding starts on the linkedin step', function () {
@@ -58,7 +59,8 @@ test('creator can complete onboarding steps', function () {
         ->and($profile->industries)->toBe(['SaaS', 'AI'])
         ->and($profile->price_cents)->toBe(24000)
         ->and($profile->bundles)->toBe([['posts' => 5, 'total_cents' => 102000]])
-        ->and($profile->onboarded_at)->not->toBeNull();
+        ->and($profile->onboarded_at)->not->toBeNull()
+        ->and($profile->vetting_status)->toBe(CreatorVettingStatus::Vetted);
 });
 
 test('creator linkedin url must be a public profile', function () {

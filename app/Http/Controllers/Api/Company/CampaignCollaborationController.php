@@ -39,6 +39,16 @@ class CampaignCollaborationController extends Controller
         ));
     }
 
+    public function source(InviteCompanyCampaignCreatorRequest $request, Campaign $campaign): JsonResponse
+    {
+        return AjaxResponse::success($this->collaborations->source(
+            $this->currentCompany->fromRequest($request),
+            $this->actor($request),
+            $campaign,
+            (int) $request->validated('creator_profile_id'),
+        ));
+    }
+
     private function actor(Request $request): User
     {
         $user = $request->user();

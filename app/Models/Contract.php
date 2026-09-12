@@ -15,12 +15,14 @@ use Illuminate\Support\Carbon;
  * @property int $id
  * @property int $collaboration_id
  * @property string|null $pdf_path
+ * @property array<string, mixed>|null $terms
  * @property ContractStatus $status
  * @property Carbon|null $generated_at
  */
 #[Fillable([
     'collaboration_id',
     'pdf_path',
+    'terms',
     'status',
     'generated_at',
 ])]
@@ -36,6 +38,7 @@ class Contract extends Model
     {
         return [
             'status' => ContractStatus::class,
+            'terms' => 'array',
             'generated_at' => 'datetime',
         ];
     }

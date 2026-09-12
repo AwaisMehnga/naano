@@ -14,6 +14,13 @@ class CompanyAccess
         return self::role($user, $company) === CompanyMemberRole::Owner;
     }
 
+    public static function ensureCanManageMoney(User $user, Company $company): void
+    {
+        if (! self::canManageMoney($user, $company)) {
+            abort(403, 'Only owners can manage campaign funds.');
+        }
+    }
+
     public static function role(User $user, Company $company): ?CompanyMemberRole
     {
         $membership = CompanyMember::query()

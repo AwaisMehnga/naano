@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\InvalidStripeSignatureException;
+use App\Exceptions\WalletUnderfundedException;
 use App\Http\Middleware\EnsureCurrentCompany;
 use App\Http\Middleware\EnsureOnboarded;
 use App\Http\Middleware\HandleAppearance;
@@ -30,6 +32,10 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
+        $middleware->validateCsrfTokens(except: [
+            'api/stripe/webhook',
+        ]);
+
         $middleware->web(append: [
             HandleAppearance::class,
             AddLinkHeadersForPreloadedAssets::class,
@@ -57,6 +63,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
             if ($e instanceof ValidationException) {
                 return AjaxResponse::error($e->getMessage(), $e->errors(), 422);
+            }
+
+            if ($e instanceof InvalidStripeSignatureException) {
+                return AjaxResponse::error($e->getMessage(), status: 400);
+            }
+
+            if ($e instanceof WalletUnderfundedException) {
+                return AjaxResponse::error($e->getMessage(), $e->payload, 422);
             }
 
             if ($e instanceof HttpExceptionInterface) {

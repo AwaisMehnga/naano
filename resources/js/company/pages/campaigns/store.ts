@@ -42,6 +42,7 @@ type CampaignsState = {
     ) => Promise<void>;
     invite: (campaignId: number, creatorProfileId: number) => Promise<void>;
     select: (campaignId: number, collaborationId: number) => Promise<void>;
+    book: (campaignId: number, collaborationId: number) => Promise<void>;
     cancelCollab: (
         campaignId: number,
         collaborationId: number,
@@ -179,6 +180,14 @@ export const useCampaigns = create<CampaignsState>((set, get) => ({
 
     async select(campaignId, collaborationId) {
         await http.post(companyApi.collaborationSelect(collaborationId));
+        await Promise.all([
+            get().fetchCampaign(campaignId),
+            get().fetchCollaborations(campaignId),
+        ]);
+    },
+
+    async book(campaignId, collaborationId) {
+        await http.post(companyApi.collaborationBook(collaborationId));
         await Promise.all([
             get().fetchCampaign(campaignId),
             get().fetchCollaborations(campaignId),

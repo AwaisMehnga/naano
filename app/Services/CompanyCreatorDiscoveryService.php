@@ -27,7 +27,11 @@ class CompanyCreatorDiscoveryService
             $query->where(function (Builder $builder) use ($like): void {
                 $builder->where('display_name', 'like', $like)
                     ->orWhere('headline', 'like', $like)
-                    ->orWhere('bio', 'like', $like);
+                    ->orWhere('bio', 'like', $like)
+                    ->orWhereHas('user', function (Builder $user) use ($like): void {
+                        $user->where('email', 'like', $like)
+                            ->orWhere('name', 'like', $like);
+                    });
             });
         }
 

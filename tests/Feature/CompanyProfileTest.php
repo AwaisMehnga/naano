@@ -1,8 +1,5 @@
 <?php
 
-use App\Enums\CompanyMemberRole;
-use App\Models\Company;
-use App\Models\CompanyMember;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
@@ -105,22 +102,3 @@ test('companies can remove their logo', function () {
     expect($company->fresh()->logo_path)->toBeNull();
     Storage::disk('public')->assertMissing($path);
 });
-
-/**
- * @return array{0: User, 1: Company, 2: User}
- */
-function companyWithMember(): array
-{
-    $owner = User::factory()->company()->onboarded()->create();
-    $company = $owner->companies()->first();
-    $member = User::factory()->company()->onboarded()->create();
-
-    CompanyMember::factory()->create([
-        'company_id' => $company->id,
-        'user_id' => $member->id,
-        'role' => CompanyMemberRole::Member,
-        'joined_at' => now(),
-    ]);
-
-    return [$owner, $company, $member];
-}

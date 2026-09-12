@@ -1,8 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { UserPlus } from 'lucide-react';
+import { toast } from 'sonner';
+import { AppLink } from '@/components/app-link';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { euros, initials } from '@/company/pages/creators/format';
+import { ApiError, companyApi, http } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import InviteCreatorDialog from './invite-dialog';
 import { useCampaigns } from './store';
@@ -28,9 +31,41 @@ export default function CampaignCollaborations({
         pipeline,
         fetchCollaborations,
         select,
+        book,
         cancelCollab,
     } = useCampaigns();
     const [inviteOpen, setInviteOpen] = useState(false);
+    const [canManage, setCanManage] = useState(false);
+
+    useEffect(() => {
+        http.get<{ can_manage_money: boolean }>(companyApi.profile)
+            .then(({ data }) => setCanManage(data.can_manage_money))
+            .catch(() => undefined);
+    }, []);
+
+    async function bookRow(rowId: number) {
+        try {
+            await book(campaignId, rowId);
+            toast.success('Creator booked');
+        } catch (caught) {
+            const data =
+                caught instanceof ApiError
+                    ? (caught.payload.data as { checkout_url?: string })
+                    : null;
+
+            if (data?.checkout_url) {
+                window.location.href = data.checkout_url;
+
+                return;
+            }
+
+            toast.error(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not book this creator.',
+            );
+        }
+    }
 
     if (!campaign) {
         return null;
@@ -124,6 +159,24 @@ export default function CampaignCollaborations({
                                             }
                                         >
                                             Shortlist
+                                        </Button>
+                                    )}
+                                    {canManage && row.status === 'selected' && (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => void bookRow(row.id)}
+                                        >
+                                            Book
+                                        </Button>
+                                    )}
+                                    {row.status === 'booked' && (
+                                        <Button type="button" size="sm" variant="outline" asChild>
+                                            <AppLink
+                                                href={`/collaborations/${row.id}/contract`}
+                                            >
+                                                Contract
+                                            </AppLink>
                                         </Button>
                                     )}
                                     {row.status !== 'cancelled' &&

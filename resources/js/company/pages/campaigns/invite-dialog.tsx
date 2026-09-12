@@ -77,7 +77,7 @@ export default function InviteCreatorDialog({
                     <Input
                         value={q}
                         onChange={(event) => setQ(event.target.value)}
-                        placeholder="Search creators…"
+                        placeholder="Search name or email…"
                         className="pl-7"
                     />
                 </div>

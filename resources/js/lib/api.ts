@@ -118,10 +118,27 @@ export const companyApi = {
         query: Record<string, string | number | undefined> = {},
     ) => withQuery(`/api/company/campaigns/${id}/collaborations`, query),
     campaignInvites: (id: number) => `/api/company/campaigns/${id}/invites`,
+    campaignSourcing: (id: number) => `/api/company/campaigns/${id}/sourcing`,
+    collaborations: (query: Record<string, string | number | undefined> = {}) =>
+        withQuery('/api/company/collaborations', query),
+    collaboration: (id: number) => `/api/company/collaborations/${id}`,
     collaborationSelect: (id: number) =>
         `/api/company/collaborations/${id}/select`,
+    collaborationBook: (id: number) => `/api/company/collaborations/${id}/book`,
     collaborationCancel: (id: number) =>
         `/api/company/collaborations/${id}/cancel`,
+    collaborationFollowUps: (id: number) =>
+        `/api/company/collaborations/${id}/follow-ups`,
+    collaborationEvents: (id: number) =>
+        `/api/company/collaborations/${id}/events`,
+    collaborationContract: (id: number) =>
+        `/api/company/collaborations/${id}/contract`,
+    wallet: '/api/company/wallet',
+    walletTransactions: (
+        query: Record<string, string | number | undefined> = {},
+    ) => withQuery('/api/company/wallet/transactions', query),
+    walletTopups: '/api/company/wallet/topups',
+    walletTopup: (id: number) => `/api/company/wallet/topups/${id}`,
 };
 
 export const creatorApi = {
@@ -130,6 +147,18 @@ export const creatorApi = {
     audience: '/api/creator/audience',
     billing: '/api/creator/billing',
     account: '/api/creator/account',
+    opportunities: '/api/creator/opportunities',
+    opportunity: (id: number) => `/api/creator/opportunities/${id}`,
+    opportunityApply: (id: number) => `/api/creator/opportunities/${id}/apply`,
+    collaborations: (query: Record<string, string | number | undefined> = {}) =>
+        withQuery('/api/creator/collaborations', query),
+    collaboration: (id: number) => `/api/creator/collaborations/${id}`,
+    collaborationAccept: (id: number) =>
+        `/api/creator/collaborations/${id}/accept`,
+    collaborationDecline: (id: number) =>
+        `/api/creator/collaborations/${id}/decline`,
+    collaborationContract: (id: number) =>
+        `/api/creator/collaborations/${id}/contract`,
 };
 
 export const sharedApi = {

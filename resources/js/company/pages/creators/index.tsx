@@ -210,7 +210,7 @@ export default function CompanyCreatorsPage() {
                                     q: event.target.value,
                                 }))
                             }
-                            placeholder="Search for a creator…"
+                            placeholder="Search name or email…"
                             className="bg-muted/60 h-10 border-0 pl-9 shadow-none"
                         />
                     </div>

@@ -9,6 +9,9 @@ use App\Enums\CollaborationSource;
 use App\Enums\CollaborationStatus;
 use App\Enums\LeadSource;
 use App\Enums\PostStatus;
+use App\Enums\WalletTransactionDirection;
+use App\Enums\WalletTransactionStatus;
+use App\Enums\WalletTransactionType;
 use App\Models\Campaign;
 use App\Models\Collaboration;
 use App\Models\Company;
@@ -16,6 +19,8 @@ use App\Models\CreatorProfile;
 use App\Models\Lead;
 use App\Models\Post;
 use App\Models\User;
+use App\Models\Wallet;
+use App\Services\ContractService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
 
@@ -161,12 +166,15 @@ class CampaignSeeder extends Seeder
         ]);
 
         if ($creators->count() < 6) {
+            $this->seedWallet($company, $visibility);
+
             return;
         }
 
         $this->seedVisibilityCollaborations($visibility, $ownerId, $creators);
         $this->seedInvites($pipeline, $ownerId, $creators);
         $this->seedCompletedHiring($hiring, $creators);
+        $this->seedWallet($company, $visibility);
     }
 
     /**
@@ -330,6 +338,56 @@ class CampaignSeeder extends Seeder
             'published_url' => 'https://www.linkedin.com/posts/phil-demo-hiring',
             'published_at' => now()->subWeeks(3),
         ]);
+    }
+
+    private function seedWallet(Company $company, Campaign $campaign): void
+    {
+        $wallet = Wallet::query()->firstOrCreate(
+            ['company_id' => $company->id],
+            [
+                'available_cents' => 250000,
+                'currency' => 'EUR',
+            ],
+        );
+
+        if ($wallet->available_cents < 250000 && $wallet->transactions()->doesntExist()) {
+            $wallet->available_cents = 250000;
+            $wallet->save();
+        }
+
+        $contracts = app(ContractService::class);
+
+        foreach ($campaign->collaborations()->where('status', CollaborationStatus::Booked)->get() as $collaboration) {
+            $price = (int) ($collaboration->booked_price_cents ?? 0);
+
+            if ($price < 1) {
+                continue;
+            }
+
+            $hasHold = $wallet->transactions()
+                ->where('collaboration_id', $collaboration->id)
+                ->where('type', WalletTransactionType::Hold)
+                ->exists();
+
+            if (! $hasHold && $wallet->available_cents >= $price) {
+                $wallet->available_cents -= $price;
+                $wallet->save();
+                $wallet->transactions()->create([
+                    'campaign_id' => $campaign->id,
+                    'collaboration_id' => $collaboration->id,
+                    'type' => WalletTransactionType::Hold,
+                    'direction' => WalletTransactionDirection::Debit,
+                    'amount_cents' => $price,
+                    'status' => WalletTransactionStatus::Posted,
+                ]);
+            }
+
+            $collaboration->load(['campaign', 'creatorProfile', 'contract']);
+
+            if ($collaboration->contract === null) {
+                $contracts->generate($company, $collaboration);
+            }
+        }
     }
 
     /**
