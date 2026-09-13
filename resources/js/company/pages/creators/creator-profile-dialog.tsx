@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { useNavigate } from 'react-router';
 import {
     CalendarDays,
     Linkedin,
@@ -32,7 +33,7 @@ import type {
     CreatorListItem,
     CreatorProfileCard,
 } from '@/company/pages/creators/types';
-import { api, ApiError, companyApi } from '@/lib/api';
+import { api, ApiError, companyApi, http } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
 type Tab = 'overview' | 'audience' | 'content';
@@ -51,6 +52,7 @@ export default function CreatorProfileDialog({
     onClose: () => void;
     onStar: (creator: CreatorListItem) => void;
 }) {
+    const navigate = useNavigate();
     const [creator, setCreator] = useState<CreatorProfileCard | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [tab, setTab] = useState<Tab>('overview');
@@ -59,6 +61,9 @@ export default function CreatorProfileDialog({
     const [postDate, setPostDate] = useState('');
     const [approveFirst, setApproveFirst] = useState(true);
     const [offerEuros, setOfferEuros] = useState('');
+    const [canManage, setCanManage] = useState(false);
+    const [availableCents, setAvailableCents] = useState<number | null>(null);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         setMode(intent);
@@ -73,9 +78,18 @@ export default function CreatorProfileDialog({
             setPostDate('');
             setApproveFirst(true);
             setOfferEuros('');
+            setSaving(false);
 
             return;
         }
+
+        http.get<{ can_manage_money: boolean }>(companyApi.profile)
+            .then(({ data }) => setCanManage(data.can_manage_money))
+            .catch(() => undefined);
+
+        http.get<{ available_cents: number }>(companyApi.wallet)
+            .then(({ data }) => setAvailableCents(data.available_cents))
+            .catch(() => setAvailableCents(null));
 
         api<CreatorProfileCard>(companyApi.creator(creatorId))
             .then((data) => {
@@ -97,16 +111,65 @@ export default function CreatorProfileDialog({
             });
     }, [creatorId]);
 
-    function submit(event: FormEvent) {
-        event.preventDefault();
-        toast.message(
-            mode === 'negotiate'
-                ? 'Negotiation is UI-only for now. Wallet and Stripe land next.'
-                : 'Booking is UI-only for now. Wallet and Stripe land next.',
-        );
-    }
-
     const listedOffer = creator?.offers[0] ?? null;
+
+    async function submit(event: FormEvent) {
+        event.preventDefault();
+
+        if (mode === 'negotiate') {
+            toast.message('Negotiation is UI-only for now.');
+
+            return;
+        }
+
+        if (creatorId === null) {
+            return;
+        }
+
+        if (campaign === null) {
+            toast.error('Select a campaign.');
+
+            return;
+        }
+
+        if (!canManage) {
+            toast.error('Only owners can book creators.');
+
+            return;
+        }
+
+        setSaving(true);
+
+        try {
+            await http.post(companyApi.campaignBook(campaign.id), {
+                creator_profile_id: creatorId,
+                ...(listedOffer
+                    ? { creator_offer_id: listedOffer.id }
+                    : {}),
+            });
+            toast.success('Creator booked');
+            onClose();
+            void navigate(`/collaboration?campaign=${campaign.id}`);
+        } catch (caught) {
+            const data =
+                caught instanceof ApiError
+                    ? (caught.payload.data as { checkout_url?: string })
+                    : null;
+
+            if (data?.checkout_url) {
+                window.location.href = data.checkout_url;
+
+                return;
+            }
+
+            toast.error(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not book this creator.',
+            );
+            setSaving(false);
+        }
+    }
 
     return (
         <Dialog
@@ -341,13 +404,23 @@ export default function CreatorProfileDialog({
                                 <Separator />
                                 <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
                                     <Wallet className="size-3.5" />
-                                    Wallet top-up with Stripe comes later. No
-                                    subscription — campaign spend uses balance.
+                                    {availableCents === null
+                                        ? 'Booking holds the listed price from your wallet.'
+                                        : `${euros(availableCents)} available. Booking holds the listed price.`}
                                 </p>
-                                <Button type="submit" className="w-full">
+                                <Button
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={
+                                        saving ||
+                                        (mode === 'book' && !canManage)
+                                    }
+                                >
                                     {mode === 'negotiate'
                                         ? `Send offer to ${creator.display_name ?? 'creator'}`
-                                        : `Collaborate with ${creator.display_name ?? 'creator'}`}
+                                        : saving
+                                          ? 'Booking…'
+                                          : `Collaborate with ${creator.display_name ?? 'creator'}`}
                                 </Button>
                             </form>
                         </aside>

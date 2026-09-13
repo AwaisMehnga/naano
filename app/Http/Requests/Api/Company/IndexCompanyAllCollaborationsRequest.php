@@ -15,8 +15,10 @@ class IndexCompanyAllCollaborationsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        if ($this->input('status') === '') {
-            $this->merge(['status' => null]);
+        foreach (['status', 'pipeline', 'q', 'campaign_id'] as $key) {
+            if ($this->input($key) === '') {
+                $this->merge([$key => null]);
+            }
         }
     }
 
@@ -27,6 +29,18 @@ class IndexCompanyAllCollaborationsRequest extends FormRequest
     {
         return [
             'status' => ['sometimes', 'nullable', Rule::enum(CollaborationStatus::class)],
+            'pipeline' => ['sometimes', 'nullable', 'string', Rule::in([
+                'all',
+                'active',
+                'invitations_received',
+                'invitations_sent',
+                'todo',
+                'completed',
+            ])],
+            'campaign_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'q' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
         ];
     }
 }

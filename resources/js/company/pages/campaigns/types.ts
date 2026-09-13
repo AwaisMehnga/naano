@@ -60,10 +60,13 @@ export type CampaignListItem = {
 };
 
 export type CampaignList = {
-    items: CampaignListItem[];
+    data: CampaignListItem[];
     current_page: number;
     last_page: number;
+    per_page: number;
     total: number;
+    from: number | null;
+    to: number | null;
 };
 
 export type CollabCounts = {
@@ -122,6 +125,7 @@ export type CollaborationRow = {
     booked_posts_count: number | null;
     has_published_post: boolean;
     review_post_id: number | null;
+    campaign?: { id: number; name: string };
     creator: {
         id: number;
         display_name: string | null;
@@ -130,6 +134,17 @@ export type CollaborationRow = {
         country: string | null;
         from_price_cents: number | null;
     };
+};
+
+export type CollaborationList = {
+    data: CollaborationRow[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    from: number | null;
+    to: number | null;
+    counts: CollabCounts;
 };
 
 export type IcpOption = {
@@ -189,8 +204,6 @@ export const pipelineLabels: Record<PipelineTab, string> = {
     todo: 'To do',
     completed: 'Completed',
 };
-
-export type DetailTab = 'collaborations' | 'brief' | 'tracking' | 'analytics';
 
 export type StatusAction =
     | 'launch'

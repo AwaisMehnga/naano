@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\CampaignStatus;
 use App\Enums\CollaborationSource;
 use App\Enums\CollaborationStatus;
 use App\Enums\ContractStatus;
@@ -250,6 +251,227 @@ test('company select does not set accepted_at', function () {
     expect($collaboration->fresh()->accepted_at)->toBeNull();
 });
 
+test('owners can book a listed creator onto a campaign', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    $creator = marketplaceCreator();
+    Wallet::factory()->create([
+        'company_id' => $owner->company->id,
+        'available_cents' => 50000,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.campaigns.book', $campaign), [
+            'creator_profile_id' => $creator->id,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.status', 'booked')
+        ->assertJsonPath('data.booked_price_cents', 24000)
+        ->assertJsonPath('data.creator.id', $creator->id);
+
+    $collaboration = Collaboration::query()
+        ->where('campaign_id', $campaign->id)
+        ->where('creator_profile_id', $creator->id)
+        ->first();
+
+    expect($collaboration)->not->toBeNull()
+        ->and($collaboration->status)->toBe(CollaborationStatus::Booked)
+        ->and($collaboration->source)->toBe(CollaborationSource::Invite)
+        ->and($owner->company->wallet->fresh()->available_cents)->toBe(26000);
+
+    $this->assertDatabaseHas('wallet_transactions', [
+        'collaboration_id' => $collaboration->id,
+        'type' => WalletTransactionType::Hold->value,
+        'status' => WalletTransactionStatus::Posted->value,
+        'amount_cents' => 24000,
+    ]);
+});
+
+test('booking a listed creator reuses a selected collaboration', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    $creator = marketplaceCreator();
+    $collaboration = Collaboration::factory()->create([
+        'campaign_id' => $campaign->id,
+        'creator_profile_id' => $creator->id,
+        'status' => CollaborationStatus::Selected,
+        'source' => CollaborationSource::Invite,
+    ]);
+    Wallet::factory()->create([
+        'company_id' => $owner->company->id,
+        'available_cents' => 50000,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.campaigns.book', $campaign), [
+            'creator_profile_id' => $creator->id,
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.id', $collaboration->id)
+        ->assertJsonPath('data.status', 'booked');
+
+    expect(Collaboration::query()->where('campaign_id', $campaign->id)->count())->toBe(1);
+});
+
+test('booking a listed creator when underfunded returns a checkout url', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    $creator = marketplaceCreator();
+    Wallet::factory()->create([
+        'company_id' => $owner->company->id,
+        'available_cents' => 100,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.campaigns.book', $campaign), [
+            'creator_profile_id' => $creator->id,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonPath('data.checkout_url', fn ($url) => is_string($url) && $url !== '')
+        ->assertJsonPath('data.required_cents', 24000)
+        ->assertJsonPath('data.available_cents', 100);
+
+    $collaboration = Collaboration::query()
+        ->where('campaign_id', $campaign->id)
+        ->where('creator_profile_id', $creator->id)
+        ->first();
+
+    expect($collaboration)->not->toBeNull()
+        ->and($collaboration->status)->toBe(CollaborationStatus::Selected);
+});
+
+test('members cannot book a listed creator', function () {
+    [$owner, $company, $member] = companyWithMember();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    Wallet::factory()->create([
+        'company_id' => $company->id,
+        'available_cents' => 50000,
+    ]);
+
+    $this->actingAs($member)
+        ->withHeaders(['X-Company-Id' => (string) $company->id])
+        ->postJson(route('api.company.campaigns.book', $campaign), [
+            'creator_profile_id' => marketplaceCreator()->id,
+        ])
+        ->assertForbidden();
+});
+
+test('booking a listed creator who is already booked returns 422', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    $creator = marketplaceCreator();
+    Collaboration::factory()->create([
+        'campaign_id' => $campaign->id,
+        'creator_profile_id' => $creator->id,
+        'status' => CollaborationStatus::Booked,
+    ]);
+    Wallet::factory()->create([
+        'company_id' => $owner->company->id,
+        'available_cents' => 50000,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.campaigns.book', $campaign), [
+            'creator_profile_id' => $creator->id,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonPath('data.status.0', 'This creator is already booked on the campaign.');
+});
+
+test('booking a listed creator onto a closed campaign returns 422', function (CampaignStatus $status) {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'status' => $status,
+    ]);
+    Wallet::factory()->create([
+        'company_id' => $owner->company->id,
+        'available_cents' => 50000,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.campaigns.book', $campaign), [
+            'creator_profile_id' => marketplaceCreator()->id,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonPath('data.campaign.0', 'This campaign cannot accept bookings.');
+})->with([
+    CampaignStatus::Completed,
+    CampaignStatus::Cancelled,
+]);
+
+test('booking a listed creator who left the pipeline returns 422', function (CollaborationStatus $status) {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    $creator = marketplaceCreator();
+    Collaboration::factory()->create([
+        'campaign_id' => $campaign->id,
+        'creator_profile_id' => $creator->id,
+        'status' => $status,
+    ]);
+    Wallet::factory()->create([
+        'company_id' => $owner->company->id,
+        'available_cents' => 50000,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.campaigns.book', $campaign), [
+            'creator_profile_id' => $creator->id,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonPath('data.creator_profile_id.0', 'This creator is already on the campaign.');
+})->with([
+    CollaborationStatus::Declined,
+    CollaborationStatus::Cancelled,
+]);
+
+test('booking a listed creator requires a creator profile id', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.campaigns.book', $campaign))
+        ->assertUnprocessable()
+        ->assertJsonPath('data.creator_profile_id.0', 'The creator profile id field is required.');
+});
+
+test('company users cannot book a listed creator onto another workspace campaign', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $other = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $other->company->id,
+        'created_by_user_id' => $other->id,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.campaigns.book', $campaign), [
+            'creator_profile_id' => marketplaceCreator()->id,
+        ])
+        ->assertNotFound();
+});
+
 test('owners can source a creator and list company collaborations', function () {
     $owner = User::factory()->company()->onboarded()->create();
     $campaign = Campaign::factory()->create([
@@ -269,5 +491,7 @@ test('owners can source a creator and list company collaborations', function () 
     $this->actingAs($owner)
         ->getJson(route('api.company.collaborations.index'))
         ->assertOk()
-        ->assertJsonPath('data.0.creator.display_name', 'Sourced Ada');
+        ->assertJsonPath('data.data.0.creator.display_name', 'Sourced Ada')
+        ->assertJsonPath('data.counts.todo', 1)
+        ->assertJsonPath('data.per_page', 25);
 });

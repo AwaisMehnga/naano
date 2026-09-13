@@ -1,7 +1,12 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router';
-import { Megaphone, PlusSquare } from 'lucide-react';
+import { Eye, Pencil, PlusSquare, Trash2, Users } from 'lucide-react';
 import { toast } from 'sonner';
+import { ConfirmDialog } from '@/components/confirm-dialog';
+import {
+    DataTable,
+    type DataTableQuery,
+} from '@/components/data-table';
 import { AppLink } from '@/components/app-link';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
@@ -25,117 +30,239 @@ import {
 } from '@/components/ui/select';
 import { centsFromEuros, euros } from '@/company/pages/creators/format';
 import { ApiError, api, companyApi } from '@/lib/api';
-import { cn } from '@/lib/utils';
 import { useCampaigns } from './store';
 import {
     objectiveLabels,
     statusLabels,
     typeLabels,
+    type CampaignListItem,
     type CampaignObjective,
     type CampaignStatus,
     type CampaignType,
     type IcpOption,
 } from './types';
 
-const statusTabs: Array<CampaignStatus | ''> = [
-    '',
-    'draft',
-    'active',
-    'paused',
-    'completed',
-    'cancelled',
-];
+const emptyQuery: DataTableQuery = {
+    page: 1,
+    per_page: 25,
+    q: '',
+    filters: { status: null, type: null },
+};
 
 export default function CompanyCampaignsPage() {
-    const { list, listStatus, loading, error, fetchList } = useCampaigns();
+    const { list, loading, error, fetchList, transition } = useCampaigns();
+    const [query, setQuery] = useState<DataTableQuery>(emptyQuery);
     const [createOpen, setCreateOpen] = useState(false);
+    const [pendingDelete, setPendingDelete] = useState<CampaignListItem | null>(
+        null,
+    );
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
-        void fetchList();
-    }, [fetchList]);
+        void fetchList({
+            page: query.page,
+            per_page: query.per_page,
+            q: query.q || undefined,
+            status: (query.filters.status as CampaignStatus | '') ?? '',
+            type: (query.filters.type as CampaignType | '') ?? '',
+        });
+    }, [fetchList, query]);
+
+    async function confirmDelete() {
+        if (pendingDelete === null) {
+            return;
+        }
+
+        setDeleting(true);
+
+        try {
+            await transition(pendingDelete.id, 'cancel');
+            toast.success('Campaign deleted');
+            setPendingDelete(null);
+            void fetchList({
+                page: query.page,
+                per_page: query.per_page,
+                q: query.q || undefined,
+                status: (query.filters.status as CampaignStatus | '') ?? '',
+                type: (query.filters.type as CampaignType | '') ?? '',
+            });
+        } catch (caught) {
+            toast.error(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not delete this campaign.',
+            );
+        } finally {
+            setDeleting(false);
+        }
+    }
 
     return (
         <div className="flex w-full flex-1 flex-col gap-6">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
-                        Campaigns
-                    </h1>
-                    <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
-                        Briefs, creator pipeline, and posts for each campaign.
-                    </p>
-                </div>
-                <Button type="button" onClick={() => setCreateOpen(true)}>
-                    <PlusSquare className="size-4" />
-                    New campaign
-                </Button>
-            </div>
-            <div className="border-border flex flex-wrap gap-6 border-b">
-                {statusTabs.map((status) => (
-                    <button
-                        key={status || 'all'}
-                        type="button"
-                        className={cn(
-                            'border-b-2 pb-3 text-sm',
-                            listStatus === status
-                                ? 'border-primary text-foreground font-medium'
-                                : 'text-muted-foreground border-transparent',
-                        )}
-                        onClick={() => void fetchList({ status })}
-                    >
-                        {status === '' ? 'All' : statusLabels[status]}
-                    </button>
-                ))}
+            <div>
+                <h1 className="text-2xl font-semibold tracking-tight">
+                    Campaigns
+                </h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                    Briefs, creator pipeline, and posts for each campaign.
+                </p>
             </div>
             <InputError message={error ?? undefined} />
-            {loading && list === null ? (
-                <p className="text-muted-foreground text-sm">Loading…</p>
-            ) : list?.items.length === 0 ? (
-                <div className="border-border bg-card flex flex-col items-center gap-3 rounded-2xl border px-6 py-16 text-center">
-                    <Megaphone className="text-muted-foreground size-8" />
-                    <p className="font-medium">No campaigns yet</p>
-                    <p className="text-muted-foreground max-w-sm text-sm">
-                        Create a draft, write the brief, then invite creators.
-                    </p>
-                    <Button type="button" onClick={() => setCreateOpen(true)}>
-                        New campaign
-                    </Button>
-                </div>
-            ) : (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {list?.items.map((campaign) => (
-                        <AppLink
-                            key={campaign.id}
-                            href={`/campaigns/${campaign.id}`}
-                            className="border-border bg-card hover:border-primary/40 flex flex-col gap-4 rounded-2xl border p-5 shadow-sm transition-colors"
-                        >
-                            <div className="flex items-start justify-between gap-3">
-                                <h2 className="text-base font-semibold">
-                                    {campaign.name}
-                                </h2>
-                                <Badge variant="secondary">
-                                    {statusLabels[campaign.status]}
-                                </Badge>
+            <DataTable
+                page={list}
+                query={query}
+                onQueryChange={setQuery}
+                loading={loading}
+                searchPlaceholder="Search campaigns"
+                empty="No campaigns yet. Create a draft, write the brief, then invite creators."
+                rowKey={(row) => row.id}
+                filterGroups={[
+                    {
+                        label: 'Campaign',
+                        filters: [
+                            {
+                                key: 'status',
+                                label: 'Status',
+                                options: Object.entries(statusLabels).map(
+                                    ([value, label]) => ({ value, label }),
+                                ),
+                            },
+                            {
+                                key: 'type',
+                                label: 'Type',
+                                options: Object.entries(typeLabels).map(
+                                    ([value, label]) => ({ value, label }),
+                                ),
+                            },
+                        ],
+                    },
+                ]}
+                actions={[
+                    {
+                        label: 'New campaign',
+                        icon: <PlusSquare className="size-4" />,
+                        onClick: () => setCreateOpen(true),
+                    },
+                ]}
+                columns={[
+                    {
+                        key: 'name',
+                        header: 'Name',
+                        cell: (row) => (
+                            <span className="font-medium">{row.name}</span>
+                        ),
+                    },
+                    {
+                        key: 'status',
+                        header: 'Status',
+                        cell: (row) => (
+                            <Badge variant="secondary">
+                                {statusLabels[row.status]}
+                            </Badge>
+                        ),
+                    },
+                    {
+                        key: 'kind',
+                        header: 'Type',
+                        cell: (row) => (
+                            <span className="text-muted-foreground">
+                                {typeLabels[row.type]} ·{' '}
+                                {objectiveLabels[row.objective]}
+                            </span>
+                        ),
+                    },
+                    {
+                        key: 'dates',
+                        header: 'Dates',
+                        cell: (row) => dateRange(row.start_at, row.end_at),
+                    },
+                    {
+                        key: 'budget',
+                        header: 'Budget',
+                        cell: (row) => euros(row.budget_cents),
+                    },
+                    {
+                        key: 'collabs',
+                        header: 'Collaborations',
+                        cell: (row) => row.collab_count,
+                    },
+                    {
+                        key: 'actions',
+                        header: '',
+                        cell: (row) => (
+                            <div className="flex justify-end gap-1">
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    asChild
+                                    title="View"
+                                >
+                                    <AppLink href={`/campaigns/${row.id}`}>
+                                        <Eye />
+                                    </AppLink>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    asChild
+                                    title="Edit brief"
+                                >
+                                    <AppLink
+                                        href={`/brief?campaign=${row.id}`}
+                                    >
+                                        <Pencil />
+                                    </AppLink>
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="icon"
+                                    asChild
+                                    title="Collaborations"
+                                >
+                                    <AppLink
+                                        href={`/collaboration?campaign=${row.id}`}
+                                    >
+                                        <Users />
+                                    </AppLink>
+                                </Button>
+                                {row.status !== 'completed' &&
+                                    row.status !== 'cancelled' && (
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Delete"
+                                            onClick={() =>
+                                                setPendingDelete(row)
+                                            }
+                                        >
+                                            <Trash2 />
+                                        </Button>
+                                    )}
                             </div>
-                            <p className="text-muted-foreground text-sm">
-                                {typeLabels[campaign.type]} ·{' '}
-                                {objectiveLabels[campaign.objective]}
-                            </p>
-                            <div className="text-muted-foreground flex justify-between text-xs">
-                                <span>{dateRange(campaign.start_at, campaign.end_at)}</span>
-                                <span>{euros(campaign.budget_cents)}</span>
-                            </div>
-                            <p className="text-sm">
-                                {campaign.collab_count} collaboration
-                                {campaign.collab_count === 1 ? '' : 's'}
-                            </p>
-                        </AppLink>
-                    ))}
-                </div>
-            )}
+                        ),
+                    },
+                ]}
+            />
             <CreateCampaignDialog
                 open={createOpen}
                 onOpenChange={setCreateOpen}
+            />
+            <ConfirmDialog
+                open={pendingDelete !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setPendingDelete(null);
+                    }
+                }}
+                title="Delete this campaign?"
+                description="This cancels the campaign and hides it from the default list. You can reopen it later from a cancelled filter."
+                confirmLabel="Delete campaign"
+                pending={deleting}
+                onConfirm={confirmDelete}
             />
         </div>
     );
@@ -185,7 +312,7 @@ function CreateCampaignDialog({
             });
             toast.success('Campaign created');
             onOpenChange(false);
-            void navigate(`/campaigns/${campaign.id}`);
+            void navigate(`/brief?campaign=${campaign.id}`);
         } catch (caught) {
             setError(
                 caught instanceof ApiError

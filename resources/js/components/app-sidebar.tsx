@@ -43,6 +43,11 @@ export function AppSidebar({ homeHref = '/' }: { homeHref?: string } = {}) {
                       icon: Megaphone,
                   } satisfies NavItem,
                   {
+                      title: 'Collaborations',
+                      href: '/collaboration',
+                      icon: Handshake,
+                  } satisfies NavItem,
+                  {
                       title: 'Wallet',
                       href: '/wallet',
                       icon: Wallet,

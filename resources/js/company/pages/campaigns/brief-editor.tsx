@@ -24,9 +24,11 @@ const panes: { id: BriefPane; label: string; hint: string }[] = [
 export default function CampaignBriefEditor({
     campaignId,
     brief,
+    readOnly = false,
 }: {
     campaignId: number;
     brief: CampaignBrief | null;
+    readOnly?: boolean;
 }) {
     const updateBrief = useCampaigns((state) => state.updateBrief);
     const saving = useCampaigns((state) => state.saving);
@@ -81,7 +83,7 @@ export default function CampaignBriefEditor({
                     type="button"
                     className="mt-4 w-full"
                     onClick={() => void save()}
-                    disabled={saving}
+                    disabled={saving || readOnly}
                 >
                     {saving ? 'Saving…' : 'Save brief'}
                 </Button>

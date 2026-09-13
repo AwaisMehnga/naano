@@ -20,11 +20,12 @@ class CompanyCampaignService
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return array{items: list<array<string, mixed>>, current_page: int, last_page: int, total: int}
+     * @return array{data: list<array<string, mixed>>, current_page: int, last_page: int, per_page: int, total: int, from: int|null, to: int|null}
      */
     public function index(Company $company, array $filters): array
     {
         $q = isset($filters['q']) ? trim((string) $filters['q']) : '';
+        $perPage = min(50, max(1, (int) ($filters['per_page'] ?? 25)));
 
         $query = $company->campaigns()
             ->withCount('collaborations')
@@ -36,20 +37,27 @@ class CompanyCampaignService
             $query->whereNot('status', CampaignStatus::Cancelled);
         }
 
+        if (isset($filters['type']) && $filters['type'] !== '') {
+            $query->where('type', $filters['type']);
+        }
+
         if ($q !== '') {
             $query->where('name', 'like', '%'.$q.'%');
         }
 
-        $page = $query->paginate(24);
+        $page = $query->paginate($perPage);
 
         return [
-            'items' => $page->getCollection()
+            'data' => $page->getCollection()
                 ->map(fn (Campaign $campaign): array => $this->listPayload($campaign))
                 ->values()
                 ->all(),
             'current_page' => $page->currentPage(),
             'last_page' => $page->lastPage(),
+            'per_page' => $page->perPage(),
             'total' => $page->total(),
+            'from' => $page->firstItem(),
+            'to' => $page->lastItem(),
         ];
     }
 
@@ -129,6 +137,22 @@ class CompanyCampaignService
     public function update(Company $company, Campaign $campaign, array $data): array
     {
         $this->ensureOwned($company, $campaign);
+
+        if (in_array($campaign->status, [CampaignStatus::Completed, CampaignStatus::Cancelled], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'This campaign cannot be edited.',
+            ]);
+        }
+
+        if ($campaign->status !== CampaignStatus::Draft) {
+            foreach (['type', 'objective'] as $field) {
+                if (array_key_exists($field, $data)) {
+                    throw ValidationException::withMessages([
+                        $field => 'This field cannot be changed after launch.',
+                    ]);
+                }
+            }
+        }
 
         if (array_key_exists('company_icp_id', $data) && $data['company_icp_id'] !== null) {
             $this->ownedIcp($company, (int) $data['company_icp_id']);

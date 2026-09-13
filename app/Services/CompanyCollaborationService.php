@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CampaignStatus;
 use App\Enums\CollaborationEventType;
 use App\Enums\CollaborationSource;
 use App\Enums\CollaborationStatus;
@@ -212,6 +213,60 @@ class CompanyCollaborationService
     /**
      * @return array<string, mixed>
      */
+    public function bookListed(
+        Company $company,
+        User $actor,
+        Campaign $campaign,
+        int $creatorProfileId,
+        ?int $offerId = null,
+    ): array {
+        $this->ensureCampaignOwned($company, $campaign);
+        CompanyAccess::ensureCanManageMoney($actor, $company);
+
+        if (in_array($campaign->status, [CampaignStatus::Completed, CampaignStatus::Cancelled], true)) {
+            throw ValidationException::withMessages([
+                'campaign' => 'This campaign cannot accept bookings.',
+            ]);
+        }
+
+        $collaboration = $campaign->collaborations()
+            ->where('creator_profile_id', $creatorProfileId)
+            ->first();
+
+        if ($collaboration === null) {
+            $this->invite($company, $actor, $campaign, $creatorProfileId);
+            $collaboration = $campaign->collaborations()
+                ->where('creator_profile_id', $creatorProfileId)
+                ->firstOrFail();
+        }
+
+        if (in_array($collaboration->status, [CollaborationStatus::Booked, CollaborationStatus::Completed], true)) {
+            throw ValidationException::withMessages([
+                'status' => 'This creator is already booked on the campaign.',
+            ]);
+        }
+
+        if (in_array($collaboration->status, [CollaborationStatus::Declined, CollaborationStatus::Cancelled], true)) {
+            throw ValidationException::withMessages([
+                'creator_profile_id' => 'This creator is already on the campaign.',
+            ]);
+        }
+
+        if (in_array($collaboration->status, [
+            CollaborationStatus::Invited,
+            CollaborationStatus::Applied,
+            CollaborationStatus::Outreach,
+        ], true)) {
+            $this->select($company, $actor, $collaboration);
+            $collaboration->refresh();
+        }
+
+        return $this->book($company, $actor, $collaboration, $offerId);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function book(Company $company, User $actor, Collaboration $collaboration, ?int $offerId = null): array
     {
         $this->ensureCollaborationOwned($company, $collaboration);
@@ -338,34 +393,84 @@ class CompanyCollaborationService
 
     /**
      * @param  array<string, mixed>  $filters
-     * @return list<array<string, mixed>>
+     * @return array{data: list<array<string, mixed>>, current_page: int, last_page: int, per_page: int, total: int, from: int|null, to: int|null, counts: array{all: int, active: int, invitations_received: int, invitations_sent: int, todo: int, completed: int}}
      */
     public function indexForCompany(Company $company, array $filters): array
     {
+        $campaignId = isset($filters['campaign_id']) ? (int) $filters['campaign_id'] : null;
+        $q = isset($filters['q']) ? trim((string) $filters['q']) : '';
+        $perPage = min(50, max(1, (int) ($filters['per_page'] ?? 25)));
+
         $query = Collaboration::query()
             ->whereHas('campaign', fn ($campaign) => $campaign->where('company_id', $company->id))
             ->with($this->creatorRelations())
             ->with('campaign')
+            ->with(['posts' => fn ($posts) => $posts->where('status', PostStatus::InReview)->orderByDesc('id')])
             ->withExists($this->publishedPostExists())
             ->orderByDesc('id');
 
+        $countsQuery = Collaboration::query()
+            ->whereHas('campaign', fn ($campaign) => $campaign->where('company_id', $company->id));
+
+        if ($campaignId !== null && $campaignId > 0) {
+            $query->where('campaign_id', $campaignId);
+            $countsQuery->where('campaign_id', $campaignId);
+        }
+
+        $pipeline = $filters['pipeline'] ?? null;
         $status = $filters['status'] ?? null;
 
-        if (is_string($status) && $status !== '') {
+        if (is_string($pipeline) && $pipeline !== '' && $pipeline !== 'all') {
+            $statuses = self::PIPELINES[$pipeline] ?? null;
+
+            if ($statuses !== null) {
+                $query->whereIn('status', $statuses);
+            }
+        } elseif (is_string($status) && $status !== '') {
             $query->where('status', $status);
-        } else {
+        }
+
+        if ($pipeline === 'all' || ($pipeline === null && $status === null)) {
             $query->whereNot('status', CollaborationStatus::Cancelled);
         }
 
-        return $query->get()
-            ->map(fn (Collaboration $collaboration): array => [
-                ...$this->payload($collaboration),
-                'campaign' => [
-                    'id' => $collaboration->campaign->id,
-                    'name' => $collaboration->campaign->name,
-                ],
-            ])
-            ->all();
+        if ($q !== '') {
+            $query->where(function ($inner) use ($q): void {
+                $inner->whereHas(
+                    'creatorProfile',
+                    fn ($profile) => $profile->where('display_name', 'like', '%'.$q.'%'),
+                )->orWhereHas(
+                    'campaign',
+                    fn ($campaign) => $campaign->where('name', 'like', '%'.$q.'%'),
+                );
+            });
+        }
+
+        $page = $query->paginate($perPage);
+        $statusCounts = $countsQuery
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        return [
+            'data' => $page->getCollection()
+                ->map(fn (Collaboration $collaboration): array => [
+                    ...$this->payload($collaboration),
+                    'campaign' => [
+                        'id' => $collaboration->campaign->id,
+                        'name' => $collaboration->campaign->name,
+                    ],
+                ])
+                ->values()
+                ->all(),
+            'current_page' => $page->currentPage(),
+            'last_page' => $page->lastPage(),
+            'per_page' => $page->perPage(),
+            'total' => $page->total(),
+            'from' => $page->firstItem(),
+            'to' => $page->lastItem(),
+            'counts' => $this->countsFromStatuses($statusCounts->all()),
+        ];
     }
 
     /**

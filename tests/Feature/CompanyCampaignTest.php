@@ -29,9 +29,9 @@ test('company users can search their campaigns by name', function () {
     $this->actingAs($owner)
         ->getJson(route('api.company.campaigns.index', ['q' => 'Pipeline']))
         ->assertOk()
-        ->assertJsonCount(1, 'data.items')
-        ->assertJsonPath('data.items.0.id', $match->id)
-        ->assertJsonPath('data.items.0.name', 'Q4 Pipeline')
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.id', $match->id)
+        ->assertJsonPath('data.data.0.name', 'Q4 Pipeline')
         ->assertJsonPath('data.total', 1);
 });
 
@@ -47,7 +47,7 @@ test('company users do not see another workspace campaigns', function () {
     $this->actingAs($owner)
         ->getJson(route('api.company.campaigns.index', ['q' => 'Secret']))
         ->assertOk()
-        ->assertJsonCount(0, 'data.items');
+        ->assertJsonCount(0, 'data.data');
 });
 
 test('guests and creators cannot search company campaigns', function () {
@@ -315,12 +315,83 @@ test('cancelled campaigns are hidden from the default list', function () {
     $this->actingAs($owner)
         ->getJson(route('api.company.campaigns.index'))
         ->assertOk()
-        ->assertJsonCount(1, 'data.items')
-        ->assertJsonPath('data.items.0.id', $live->id);
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.id', $live->id);
 
     $this->actingAs($owner)
         ->getJson(route('api.company.campaigns.index', ['status' => 'cancelled']))
         ->assertOk()
-        ->assertJsonCount(1, 'data.items')
-        ->assertJsonPath('data.items.0.name', 'Dead');
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.name', 'Dead');
+});
+
+test('campaign index paginates and filters by type', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'type' => CampaignType::Product,
+        'name' => 'Product A',
+    ]);
+    Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'type' => CampaignType::Hiring,
+        'name' => 'Hiring B',
+    ]);
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.campaigns.index', ['per_page' => 1]))
+        ->assertOk()
+        ->assertJsonPath('data.per_page', 1)
+        ->assertJsonPath('data.last_page', 2)
+        ->assertJsonCount(1, 'data.data');
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.campaigns.index', ['type' => CampaignType::Hiring->value]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.name', 'Hiring B');
+});
+
+test('after launch the name can change but type cannot', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'status' => CampaignStatus::Active,
+        'type' => CampaignType::Product,
+        'name' => 'Live product',
+    ]);
+
+    $this->actingAs($owner)
+        ->patchJson(route('api.company.campaigns.update', $campaign), [
+            'type' => CampaignType::Hiring->value,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonPath('data.type.0', 'This field cannot be changed after launch.');
+
+    $this->actingAs($owner)
+        ->patchJson(route('api.company.campaigns.update', $campaign), [
+            'name' => 'Renamed live',
+        ])
+        ->assertOk()
+        ->assertJsonPath('data.name', 'Renamed live');
+});
+
+test('completed campaigns cannot be edited', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'status' => CampaignStatus::Completed,
+        'name' => 'Done',
+    ]);
+
+    $this->actingAs($owner)
+        ->patchJson(route('api.company.campaigns.update', $campaign), [
+            'name' => 'Nope',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonPath('data.status.0', 'This campaign cannot be edited.');
 });

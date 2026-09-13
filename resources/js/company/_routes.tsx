@@ -1,10 +1,13 @@
 import DashboardLayout from '@/layouts/dashboard';
 import { Navigate } from 'react-router';
 import CompanyAnalyticsPage from './pages/analytics';
+import CompanyBriefPage from './pages/brief';
 import CompanyCampaignsPage from './pages/campaigns';
+import CompanyCampaignAnalyticsPage from './pages/campaigns/analytics';
 import CompanyContractPage from './pages/campaigns/contract';
 import CompanyPostReviewPage from './pages/campaigns/post-review';
 import CompanyCampaignShowPage from './pages/campaigns/show';
+import CompanyCollaborationsPage from './pages/collaborations';
 import CompanyCreatorsPage from './pages/creators';
 import CompanySettingLayout from './pages/setting';
 import CompanyAudiencePage from './pages/setting/audience';
@@ -32,8 +35,20 @@ export const routes = [
                 element: <CompanyCampaignShowPage />,
             },
             {
+                path: 'campaigns/:id/analytics',
+                element: <CompanyCampaignAnalyticsPage />,
+            },
+            {
                 path: 'campaigns/:campaignId/posts/:postId',
                 element: <CompanyPostReviewPage />,
+            },
+            {
+                path: 'collaboration',
+                element: <CompanyCollaborationsPage />,
+            },
+            {
+                path: 'brief',
+                element: <CompanyBriefPage />,
             },
             {
                 path: 'wallet',

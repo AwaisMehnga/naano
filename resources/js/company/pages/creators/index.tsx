@@ -171,7 +171,7 @@ export default function CompanyCreatorsPage() {
                     </h1>
                     <p className="text-muted-foreground mt-1 max-w-2xl text-sm">
                         Browse vetted LinkedIn creators. Star a profile to
-                        shortlist it. Booking and wallet top-up come next.
+                        shortlist it. Book at the listed price from your wallet.
                     </p>
                 </div>
                 {list && (

@@ -1,9 +1,11 @@
 import { create } from 'zustand';
+import { pageRows, type LaravelPage } from '@/components/data-table';
 import { ApiError, companyApi, http } from '@/lib/api';
 import type {
     CampaignBrief,
     CampaignDetail,
     CampaignList,
+    CampaignListItem,
     CampaignObjective,
     CampaignStatus,
     CampaignType,
@@ -23,7 +25,9 @@ type CampaignsState = {
     error: string | null;
     fetchList: (query?: {
         status?: CampaignStatus | '';
+        type?: CampaignType | '';
         page?: number;
+        per_page?: number;
         q?: string;
     }) => Promise<void>;
     fetchCampaign: (id: number) => Promise<void>;
@@ -36,6 +40,10 @@ type CampaignsState = {
         company_icp_id?: number;
     }) => Promise<CampaignDetail>;
     updateBrief: (id: number, brief: CampaignBrief) => Promise<void>;
+    updateCampaign: (
+        id: number,
+        payload: Record<string, unknown>,
+    ) => Promise<void>;
     transition: (
         id: number,
         action: StatusAction,
@@ -51,6 +59,36 @@ type CampaignsState = {
 
 function messageFrom(caught: unknown, fallback: string): string {
     return caught instanceof ApiError ? caught.message : fallback;
+}
+
+function isCanceled(caught: unknown): boolean {
+    return (
+        typeof caught === 'object' &&
+        caught !== null &&
+        'code' in caught &&
+        (caught as { code?: string }).code === 'ERR_CANCELED'
+    );
+}
+
+function asCampaignList(payload: CampaignList | CampaignListItem[]): CampaignList {
+    const rows = pageRows(payload as LaravelPage<CampaignListItem>);
+
+    if (Array.isArray(payload)) {
+        return {
+            data: rows,
+            current_page: 1,
+            last_page: 1,
+            per_page: rows.length || 25,
+            total: rows.length,
+            from: rows.length > 0 ? 1 : null,
+            to: rows.length > 0 ? rows.length : null,
+        };
+    }
+
+    return {
+        ...payload,
+        data: rows,
+    };
 }
 
 const transitionUrl: Record<StatusAction, (id: number) => string> = {
@@ -79,12 +117,18 @@ export const useCampaigns = create<CampaignsState>((set, get) => ({
             const { data } = await http.get<CampaignList>(
                 companyApi.campaigns({
                     status: query.status || undefined,
+                    type: query.type || undefined,
                     page: query.page,
+                    per_page: query.per_page,
                     q: query.q,
                 }),
             );
-            set({ list: data, loading: false });
+            set({ list: asCampaignList(data), loading: false });
         } catch (caught) {
+            if (isCanceled(caught)) {
+                return;
+            }
+
             set({
                 loading: false,
                 error: messageFrom(caught, 'Could not load campaigns.'),
@@ -134,18 +178,22 @@ export const useCampaigns = create<CampaignsState>((set, get) => ({
     },
 
     async updateBrief(id, brief) {
+        await get().updateCampaign(id, { brief });
+    },
+
+    async updateCampaign(id, payload) {
         set({ saving: true, error: null });
 
         try {
             const { data } = await http.patch<CampaignDetail>(
                 companyApi.campaign(id),
-                { brief },
+                payload,
             );
             set({ campaign: data, saving: false });
         } catch (caught) {
             set({
                 saving: false,
-                error: messageFrom(caught, 'Could not save the brief.'),
+                error: messageFrom(caught, 'Could not save the campaign.'),
             });
             throw caught;
         }

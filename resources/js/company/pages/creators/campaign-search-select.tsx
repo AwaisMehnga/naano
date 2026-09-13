@@ -37,7 +37,15 @@ export default function CampaignSearchSelect({
         const handle = window.setTimeout(() => {
             setLoading(true);
             api<CampaignList>(companyApi.campaigns({ q: q || undefined }))
-                .then((data) => setItems(data.items))
+                .then((data) =>
+                    setItems(
+                        data.data.filter(
+                            (row) =>
+                                row.status !== 'completed' &&
+                                row.status !== 'cancelled',
+                        ),
+                    ),
+                )
                 .catch(() => setItems([]))
                 .finally(() => setLoading(false));
         }, 200);

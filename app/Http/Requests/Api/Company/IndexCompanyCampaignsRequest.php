@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\Company;
 
 use App\Enums\CampaignStatus;
+use App\Enums\CampaignType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -15,7 +16,7 @@ class IndexCompanyCampaignsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        foreach (['q', 'status'] as $key) {
+        foreach (['q', 'status', 'type'] as $key) {
             if ($this->input($key) === '') {
                 $this->merge([$key => null]);
             }
@@ -30,7 +31,9 @@ class IndexCompanyCampaignsRequest extends FormRequest
         return [
             'q' => ['sometimes', 'nullable', 'string', 'max:120'],
             'status' => ['sometimes', 'nullable', Rule::enum(CampaignStatus::class)],
+            'type' => ['sometimes', 'nullable', Rule::enum(CampaignType::class)],
             'page' => ['sometimes', 'integer', 'min:1'],
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],
         ];
     }
 }

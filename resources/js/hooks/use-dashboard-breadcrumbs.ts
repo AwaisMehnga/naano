@@ -17,6 +17,9 @@ const titles: Record<string, string> = {
     account: 'Account',
     posts: 'Post',
     collaborations: 'Contract',
+    collaboration: 'Collaborations',
+    brief: 'Brief',
+    analytics: 'Analytics',
 };
 
 function crumbTitle(part: string, previous?: string): string {

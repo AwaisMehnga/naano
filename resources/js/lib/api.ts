@@ -119,6 +119,7 @@ export const companyApi = {
     ) => withQuery(`/api/company/campaigns/${id}/collaborations`, query),
     campaignInvites: (id: number) => `/api/company/campaigns/${id}/invites`,
     campaignSourcing: (id: number) => `/api/company/campaigns/${id}/sourcing`,
+    campaignBook: (id: number) => `/api/company/campaigns/${id}/book`,
     collaborations: (query: Record<string, string | number | undefined> = {}) =>
         withQuery('/api/company/collaborations', query),
     collaboration: (id: number) => `/api/company/collaborations/${id}`,

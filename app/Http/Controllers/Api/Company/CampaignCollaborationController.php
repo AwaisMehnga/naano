@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Company;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Company\BookCompanyCampaignCreatorRequest;
 use App\Http\Requests\Api\Company\IndexCompanyCollaborationsRequest;
 use App\Http\Requests\Api\Company\InviteCompanyCampaignCreatorRequest;
 use App\Models\Campaign;
@@ -46,6 +47,19 @@ class CampaignCollaborationController extends Controller
             $this->actor($request),
             $campaign,
             (int) $request->validated('creator_profile_id'),
+        ));
+    }
+
+    public function book(BookCompanyCampaignCreatorRequest $request, Campaign $campaign): JsonResponse
+    {
+        $offerId = $request->validated('creator_offer_id');
+
+        return AjaxResponse::success($this->collaborations->bookListed(
+            $this->currentCompany->fromRequest($request),
+            $this->actor($request),
+            $campaign,
+            (int) $request->validated('creator_profile_id'),
+            $offerId === null ? null : (int) $offerId,
         ));
     }
 

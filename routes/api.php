@@ -83,6 +83,7 @@ Route::middleware('auth')->group(function () {
         Route::get('campaigns/{campaign}/collaborations', [CampaignCollaborationController::class, 'index'])->name('campaigns.collaborations.index');
         Route::post('campaigns/{campaign}/invites', [CampaignCollaborationController::class, 'store'])->name('campaigns.invites.store');
         Route::post('campaigns/{campaign}/sourcing', [CampaignCollaborationController::class, 'source'])->name('campaigns.sourcing.store');
+        Route::post('campaigns/{campaign}/book', [CampaignCollaborationController::class, 'book'])->name('campaigns.book');
         Route::get('collaborations', [CompanyCollaborationController::class, 'index'])->name('collaborations.index');
         Route::get('collaborations/{collaboration}', [CompanyCollaborationController::class, 'show'])->name('collaborations.show');
         Route::get('collaborations/{collaboration}/events', [CompanyCollaborationController::class, 'events'])->name('collaborations.events');

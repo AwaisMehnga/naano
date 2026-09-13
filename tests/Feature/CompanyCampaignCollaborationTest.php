@@ -232,3 +232,55 @@ test('guests and creators cannot list campaign collaborations', function () {
         ->getJson(route('api.company.campaigns.collaborations.index', $campaign))
         ->assertForbidden();
 });
+
+test('company collaboration index paginates and filters by pipeline and campaign', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaignA = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'name' => 'Alpha',
+    ]);
+    $campaignB = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'name' => 'Beta',
+    ]);
+
+    Collaboration::factory()->create([
+        'campaign_id' => $campaignA->id,
+        'creator_profile_id' => marketplaceCreator()->id,
+        'status' => CollaborationStatus::Invited,
+    ]);
+    Collaboration::factory()->create([
+        'campaign_id' => $campaignA->id,
+        'creator_profile_id' => marketplaceCreator()->id,
+        'status' => CollaborationStatus::Booked,
+    ]);
+    Collaboration::factory()->create([
+        'campaign_id' => $campaignB->id,
+        'creator_profile_id' => marketplaceCreator()->id,
+        'status' => CollaborationStatus::Applied,
+    ]);
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.collaborations.index', [
+            'pipeline' => 'invitations_sent',
+            'campaign_id' => $campaignA->id,
+        ]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.status', 'invited')
+        ->assertJsonPath('data.counts.all', 2)
+        ->assertJsonPath('data.counts.invitations_sent', 1)
+        ->assertJsonPath('data.counts.active', 1);
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.collaborations.index', [
+            'per_page' => 1,
+            'page' => 2,
+        ]))
+        ->assertOk()
+        ->assertJsonPath('data.per_page', 1)
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.total', 3);
+});

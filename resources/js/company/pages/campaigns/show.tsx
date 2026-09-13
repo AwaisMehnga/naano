@@ -1,36 +1,21 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
+import { AppLink } from '@/components/app-link';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { euros } from '@/company/pages/creators/format';
-import { cn } from '@/lib/utils';
 import CampaignAnalytics from './analytics-shell';
-import CampaignBriefEditor from './brief-editor';
-import CampaignCollaborations from './collaborations';
 import CampaignStatusSelect from './status-select';
 import CampaignTracking from './tracking';
 import { useCampaigns } from './store';
-import {
-    objectiveLabels,
-    typeLabels,
-    type DetailTab,
-} from './types';
-
-const tabs: { id: DetailTab; label: string }[] = [
-    { id: 'collaborations', label: 'Collaborations' },
-    { id: 'brief', label: 'Brief' },
-    { id: 'tracking', label: 'Tracking' },
-    { id: 'analytics', label: 'Analytics' },
-];
+import { objectiveLabels, typeLabels } from './types';
 
 export default function CompanyCampaignShowPage() {
     const { id } = useParams();
     const campaignId = Number(id);
     const navigate = useNavigate();
-    const { campaign, loading, error, fetchCampaign, fetchCollaborations } =
-        useCampaigns();
-    const [tab, setTab] = useState<DetailTab>('collaborations');
+    const { campaign, loading, error, fetchCampaign } = useCampaigns();
 
     useEffect(() => {
         if (!Number.isFinite(campaignId) || campaignId < 1) {
@@ -38,12 +23,11 @@ export default function CompanyCampaignShowPage() {
         }
 
         void fetchCampaign(campaignId);
-        void fetchCollaborations(campaignId, 'all');
-    }, [campaignId, fetchCampaign, fetchCollaborations]);
+    }, [campaignId, fetchCampaign]);
 
     if (!Number.isFinite(campaignId) || campaignId < 1) {
         return (
-            <div className="p-6">
+            <div>
                 <InputError message="This campaign does not exist." />
             </div>
         );
@@ -67,66 +51,59 @@ export default function CompanyCampaignShowPage() {
                             <h1 className="text-2xl font-semibold tracking-tight">
                                 {campaign.name}
                             </h1>
-                            <p className="text-muted-foreground mt-2 text-sm">
+                            <p className="mt-2 text-sm text-muted-foreground">
                                 {typeLabels[campaign.type]} ·{' '}
                                 {objectiveLabels[campaign.objective]}
                                 {campaign.company_icp
                                     ? ` · ${campaign.company_icp.title}`
                                     : ''}
                             </p>
-                            <p className="text-muted-foreground mt-1 text-sm">
+                            <p className="mt-1 text-sm text-muted-foreground">
                                 {dateRange(campaign.start_at, campaign.end_at)}{' '}
                                 · {euros(campaign.budget_cents)}
                             </p>
                         </div>
-                        <CampaignStatusSelect
-                            campaignId={campaignId}
-                            status={campaign.status}
-                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                            <Button type="button" variant="outline" asChild>
+                                <AppLink
+                                    href={`/brief?campaign=${campaignId}`}
+                                >
+                                    Edit brief
+                                </AppLink>
+                            </Button>
+                            <Button type="button" variant="outline" asChild>
+                                <AppLink
+                                    href={`/collaboration?campaign=${campaignId}`}
+                                >
+                                    Collaborations
+                                </AppLink>
+                            </Button>
+                            <Button type="button" variant="outline" asChild>
+                                <AppLink
+                                    href={`/campaigns/${campaignId}/analytics`}
+                                >
+                                    Open analytics
+                                </AppLink>
+                            </Button>
+                            <CampaignStatusSelect
+                                campaignId={campaignId}
+                                status={campaign.status}
+                            />
+                        </div>
                     </div>
                 )}
             </div>
             <InputError message={error ?? undefined} />
             {loading && campaign === null ? (
-                <p className="text-muted-foreground text-sm">Loading…</p>
+                <p className="text-sm text-muted-foreground">Loading…</p>
             ) : campaign ? (
                 <>
-                    <div className="border-border flex gap-6 border-b">
-                        {tabs.map((item) => (
-                            <button
-                                key={item.id}
-                                type="button"
-                                className={cn(
-                                    'border-b-2 pb-3 text-sm',
-                                    tab === item.id
-                                        ? 'border-primary text-foreground font-medium'
-                                        : 'text-muted-foreground border-transparent',
-                                )}
-                                onClick={() => setTab(item.id)}
-                            >
-                                {item.label}
-                            </button>
-                        ))}
-                    </div>
-                    {tab === 'collaborations' && (
-                        <CampaignCollaborations campaignId={campaignId} />
-                    )}
-                    {tab === 'brief' && (
-                        <CampaignBriefEditor
-                            campaignId={campaignId}
-                            brief={campaign.brief}
-                        />
-                    )}
-                    {tab === 'tracking' && (
-                        <CampaignTracking campaignId={campaignId} />
-                    )}
-                    {tab === 'analytics' && (
-                        <CampaignAnalytics
-                            campaignId={campaignId}
-                            leadsCount={campaign.leads_count}
-                            posts={campaign.posts}
-                        />
-                    )}
+                    <CampaignTracking campaignId={campaignId} />
+                    <CampaignAnalytics
+                        campaignId={campaignId}
+                        leadsCount={campaign.leads_count}
+                        posts={campaign.posts}
+                    />
                 </>
             ) : null}
         </div>
