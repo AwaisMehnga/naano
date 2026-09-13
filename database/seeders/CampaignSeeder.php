@@ -18,6 +18,7 @@ use App\Models\Company;
 use App\Models\CreatorProfile;
 use App\Models\Lead;
 use App\Models\Post;
+use App\Models\PostMetric;
 use App\Models\TrackingLink;
 use App\Models\User;
 use App\Models\Wallet;
@@ -64,7 +65,7 @@ class CampaignSeeder extends Seeder
     {
         return User::query()
             ->where('id', $company->user_id)
-            ->where('email', 'test@example.com')
+            ->whereIn('email', [WalkthroughSeeder::COMPANY_EMAIL, 'test@example.com'])
             ->exists();
     }
 
@@ -72,6 +73,7 @@ class CampaignSeeder extends Seeder
     {
         $creators = User::query()
             ->whereIn('email', [
+                WalkthroughSeeder::CREATOR_EMAIL,
                 'somitra@example.com',
                 'phil@example.com',
                 'anastasia@example.com',
@@ -214,6 +216,7 @@ class CampaignSeeder extends Seeder
         }
 
         $rows = [
+            ['email' => WalkthroughSeeder::CREATOR_EMAIL, 'status' => CollaborationStatus::Booked, 'source' => CollaborationSource::Invite],
             ['email' => 'somitra@example.com', 'status' => CollaborationStatus::Invited, 'source' => CollaborationSource::Invite],
             ['email' => 'phil@example.com', 'status' => CollaborationStatus::Applied, 'source' => CollaborationSource::Apply],
             ['email' => 'anastasia@example.com', 'status' => CollaborationStatus::Selected, 'source' => CollaborationSource::Invite],
@@ -254,7 +257,7 @@ class CampaignSeeder extends Seeder
             }
 
             if ($row['status'] === CollaborationStatus::Completed) {
-                Post::query()->create([
+                $published = Post::query()->create([
                     'collaboration_id' => $collaboration->id,
                     'status' => PostStatus::Published,
                     'body' => 'Visibility does not guarantee opportunities. But invisibility guarantees you will never get the call. Put the proof where people can find it.',
@@ -262,6 +265,9 @@ class CampaignSeeder extends Seeder
                     'published_at' => now()->subDays(3),
                     'submitted_at' => now()->subDays(6),
                 ]);
+
+                $this->seedPublishedMetrics($published);
+                $this->seedCapture($campaign, $collaboration, (int) $profile->price_cents);
             }
 
             if ($row['status'] === CollaborationStatus::Selected) {
@@ -293,7 +299,7 @@ class CampaignSeeder extends Seeder
             return;
         }
 
-        foreach (['aisha@example.com', 'somitra@example.com'] as $email) {
+        foreach ([WalkthroughSeeder::CREATOR_EMAIL, 'aisha@example.com', 'somitra@example.com'] as $email) {
             $profile = $creators->get($email);
 
             if ($profile === null) {
@@ -319,30 +325,38 @@ class CampaignSeeder extends Seeder
             return;
         }
 
-        $profile = $creators->get('phil@example.com');
+        foreach ([
+            ['email' => WalkthroughSeeder::CREATOR_EMAIL, 'url' => 'https://www.linkedin.com/posts/maya-demo-hiring', 'body' => 'Hiring managers need fast signals of reliability. Public work is that signal.'],
+            ['email' => 'phil@example.com', 'url' => 'https://www.linkedin.com/posts/phil-demo-hiring', 'body' => 'Hiring managers need fast signals of reliability. Public work is that signal.'],
+        ] as $row) {
+            $profile = $creators->get($row['email']);
 
-        if ($profile === null) {
-            return;
+            if ($profile === null) {
+                continue;
+            }
+
+            $collaboration = Collaboration::query()->create([
+                'campaign_id' => $campaign->id,
+                'creator_profile_id' => $profile->id,
+                'source' => CollaborationSource::Invite,
+                'status' => CollaborationStatus::Completed,
+                'booked_price_cents' => $profile->price_cents,
+                'booked_posts_count' => 1,
+                'accepted_at' => now()->subMonth(),
+                'booked_at' => now()->subMonth(),
+            ]);
+
+            $post = Post::query()->create([
+                'collaboration_id' => $collaboration->id,
+                'status' => PostStatus::Published,
+                'body' => $row['body'],
+                'published_url' => $row['url'],
+                'published_at' => now()->subWeeks(3),
+            ]);
+
+            $this->seedPublishedMetrics($post);
+            $this->seedCapture($campaign, $collaboration, (int) $profile->price_cents);
         }
-
-        $collaboration = Collaboration::query()->create([
-            'campaign_id' => $campaign->id,
-            'creator_profile_id' => $profile->id,
-            'source' => CollaborationSource::Invite,
-            'status' => CollaborationStatus::Completed,
-            'booked_price_cents' => $profile->price_cents,
-            'booked_posts_count' => 1,
-            'accepted_at' => now()->subMonth(),
-            'booked_at' => now()->subMonth(),
-        ]);
-
-        Post::query()->create([
-            'collaboration_id' => $collaboration->id,
-            'status' => PostStatus::Published,
-            'body' => 'Hiring managers need fast signals of reliability. Public work is that signal.',
-            'published_url' => 'https://www.linkedin.com/posts/phil-demo-hiring',
-            'published_at' => now()->subWeeks(3),
-        ]);
     }
 
     private function seedHireTrackingLinks(Company $company, Campaign $campaign): void
@@ -363,6 +377,56 @@ class CampaignSeeder extends Seeder
                 $this->hireLink($company, $collaboration, $post);
             }
         }
+    }
+
+    private function seedPublishedMetrics(Post $post): void
+    {
+        PostMetric::query()->firstOrCreate(
+            ['post_id' => $post->id],
+            [
+                'impressions' => 18400,
+                'likes' => 312,
+                'comments' => 47,
+                'clicks' => 890,
+                'unique_clicks' => 640,
+                'qualified_clicks' => 210,
+                'leads_count' => 18,
+                'captured_at' => now()->subDays(2),
+            ],
+        );
+    }
+
+    private function seedCapture(Campaign $campaign, Collaboration $collaboration, int $amountCents): void
+    {
+        if ($amountCents < 1) {
+            return;
+        }
+
+        $wallet = Wallet::query()->firstOrCreate(
+            ['company_id' => $campaign->company_id],
+            [
+                'available_cents' => 250000,
+                'currency' => 'EUR',
+            ],
+        );
+
+        $alreadyCaptured = $wallet->transactions()
+            ->where('collaboration_id', $collaboration->id)
+            ->where('type', WalletTransactionType::Capture)
+            ->exists();
+
+        if ($alreadyCaptured) {
+            return;
+        }
+
+        $wallet->transactions()->create([
+            'campaign_id' => $campaign->id,
+            'collaboration_id' => $collaboration->id,
+            'type' => WalletTransactionType::Capture,
+            'direction' => WalletTransactionDirection::Debit,
+            'amount_cents' => $amountCents,
+            'status' => WalletTransactionStatus::Posted,
+        ]);
     }
 
     private function hireLink(Company $company, Collaboration $collaboration, Post $post): void

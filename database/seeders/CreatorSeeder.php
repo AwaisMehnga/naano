@@ -30,6 +30,9 @@ class CreatorSeeder extends Seeder
             $user = User::factory()->creator()->onboarded()->create([
                 'name' => $row['name'],
                 'email' => $row['email'],
+                'password' => $row['email'] === WalkthroughSeeder::CREATOR_EMAIL
+                    ? WalkthroughSeeder::PASSWORD
+                    : 'password',
             ]);
 
             $profile = $user->creatorProfile;
@@ -86,6 +89,23 @@ class CreatorSeeder extends Seeder
     private function creators(): array
     {
         return [
+            [
+                'name' => 'Maya Elbaz',
+                'email' => WalkthroughSeeder::CREATOR_EMAIL,
+                'headline' => 'Growth / GTM · SaaS',
+                'bio' => 'Weekly GTM breakdowns for European operators. Founders and demand-gen leads already in the feed.',
+                'linkedin_url' => 'https://www.linkedin.com/in/maya-elbaz',
+                'country' => 'FR',
+                'industries' => ['Growth / GTM', 'SaaS', 'B2B'],
+                'niche_slugs' => ['growth-gtm', 'saas', 'b2b'],
+                'price_cents' => 28000,
+                'followers_count' => 24600,
+                'audience_mix' => [
+                    'job_title' => ['Founders' => 38, 'Marketing' => 34, 'Sales' => 18, 'Other' => 10],
+                    'seniority' => ['Founder' => 42, 'Director' => 31, 'Manager' => 27],
+                    'geo' => ['FR' => 35, 'DE' => 25, 'GB' => 25, 'NL' => 15],
+                ],
+            ],
             [
                 'name' => 'Somitra Sinha',
                 'email' => 'somitra@example.com',

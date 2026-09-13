@@ -77,6 +77,10 @@ Variants: `info` | `success` | `danger`.
 
 Onboarding top errors use `id="form-errors"`.
 
+## `x-ui.favicon`
+
+Head icons via `asset()` plus a filemtime query so Cloudflare/browser caches miss after a change.
+
 ## `x-ui.logo`
 
 `text-lg font-semibold tracking-tight text-foreground` linking to `route('home')`. Text: `config('app.name')`.
