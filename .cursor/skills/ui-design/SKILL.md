@@ -57,12 +57,18 @@ Landing section order (naano.com IA):
 - `/` landing → `x-layouts.marketing`
 - login, register, password, verify, 2FA, confirm → `x-layouts.auth`
 - creator/company onboarding → `x-layouts.onboarding`
-- company/creator SPA → `x-layouts.spa` (do not restyle in Blade marketing work)
+- company/creator SPA → `x-layouts.spa` (IBM Plex; do not restyle SPA from marketing/auth work)
+
+## Dashboards (company and creator SPA)
+
+- Layout: `x-layouts.spa` + `font-dashboard` (IBM Plex Sans). Full-width main. Breadcrumbs in the header from the route.
+- React UI: `resources/js/components/ui`. Dense, `rounded-sm` buttons, no drop shadows, no `dark:`.
+- Colors stay the semantic tokens in `app.css`. Chart series use `chart-1` … `chart-5` or `var(--chart-1)`.
 
 ## Do not
 
 - Restyle dashboard React pages unless the task is explicitly the SPA.
-- Add fonts beyond Instrument Sans and Instrument Serif.
+- Add fonts on marketing/auth/onboarding beyond Instrument Sans and Instrument Serif. Dashboards use IBM Plex Sans only.
 - Add `class="dark"` to marketing, auth, onboarding, or SPA layouts.
 - Call `redirect()->intended()` after login or email verify. Use `HomeRedirect::afterAuth()`.
 - Use ink-filled primary buttons. Primary is blue.

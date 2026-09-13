@@ -146,7 +146,9 @@ export const companyApi = {
     campaignTrackingLinks: (id: number) =>
         `/api/company/campaigns/${id}/tracking-links`,
     trackingLink: (id: number) => `/api/company/tracking-links/${id}`,
-    analyticsOverview: '/api/company/analytics/overview',
+    analyticsOverview: (
+        query: Record<string, string | number | undefined> = {},
+    ) => withQuery('/api/company/analytics/overview', query),
     campaignAnalytics: (id: number) =>
         `/api/company/campaigns/${id}/analytics`,
     campaignAnalyticsCreators: (id: number) =>

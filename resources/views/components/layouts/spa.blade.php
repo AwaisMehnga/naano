@@ -12,11 +12,12 @@
         <title>{{ $title }} - {{ config('app.name') }}</title>
         <link rel="icon" href="/favicon.ico" sizes="any">
         <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        @fonts
+        <link rel="preconnect" href="https://fonts.bunny.net">
+        <link href="https://fonts.bunny.net/css?family=ibm-plex-sans:400,500,600" rel="stylesheet" />
         @viteReactRefresh
         @vite(['resources/css/app.css', $entry])
     </head>
-    <body class="min-h-screen bg-background font-sans text-foreground antialiased">
+    <body class="min-h-screen bg-background font-dashboard text-foreground antialiased">
         @php
             $user = auth()->user();
             $naano = [

@@ -55,7 +55,7 @@ export default function CompanyCampaignsPage() {
     }, [fetchList]);
 
     return (
-        <div className="flex flex-1 flex-col gap-6 p-4 lg:p-6">
+        <div className="flex w-full flex-1 flex-col gap-6">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                     <h1 className="text-2xl font-semibold tracking-tight">

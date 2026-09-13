@@ -29,7 +29,7 @@ Primary is the Agentcard tertiary blue. Ink stays on `--foreground`. Do not fill
 }
 ```
 
-Fonts: Instrument Sans (`font-sans`) for UI and body. Instrument Serif italic (`font-serif italic`) only for the emphasized word in a display headline. Do not add other families.
+Fonts: Instrument Sans (`font-sans`) for marketing, auth, and onboarding. Instrument Serif italic (`font-serif italic`) only for the emphasized word in a display headline. Dashboards use IBM Plex Sans (`font-dashboard`) on `x-layouts.spa` only. Do not load Instrument on the SPA, and do not use IBM Plex on public pages.
 
 `.dark` inverts paper/ink and keeps a lighter blue primary. Do not add `class="dark"` to marketing, auth, onboarding, or SPA layouts.
 

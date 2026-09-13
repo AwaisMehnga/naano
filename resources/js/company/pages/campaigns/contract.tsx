@@ -33,7 +33,7 @@ export default function CompanyContractPage() {
     }, [collaborationId]);
 
     return (
-        <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 p-4 lg:p-6">
+        <div className="flex w-full flex-1 flex-col gap-6">
             <Button
                 type="button"
                 variant="ghost"

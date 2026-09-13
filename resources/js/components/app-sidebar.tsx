@@ -75,7 +75,7 @@ export function AppSidebar({ homeHref = '/' }: { homeHref?: string } = {}) {
     ];
 
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon">
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>

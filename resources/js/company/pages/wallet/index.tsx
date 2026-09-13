@@ -122,7 +122,7 @@ export default function CompanyWalletPage() {
     }
 
     return (
-        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 p-4 lg:p-6">
+        <div className="flex w-full flex-1 flex-col gap-8">
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
                 <p className="text-muted-foreground mt-1 text-sm">

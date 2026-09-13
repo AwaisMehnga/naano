@@ -12,7 +12,7 @@ export default function CompanySettingLayout() {
     const { pathname } = useLocation();
 
     return (
-        <div className="flex flex-1 flex-col gap-8 p-4 lg:flex-row">
+        <div className="flex flex-1 flex-col gap-8 lg:flex-row">
             <aside className="w-full shrink-0 lg:w-56">
                 <p className="mb-3 px-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
                     Settings

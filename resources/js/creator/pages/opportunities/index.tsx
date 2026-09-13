@@ -28,7 +28,7 @@ export default function CreatorOpportunitiesPage() {
     }, []);
 
     return (
-        <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-6 p-4 lg:p-6">
+        <div className="flex w-full flex-1 flex-col gap-6">
             <div>
                 <h1 className="text-2xl font-semibold tracking-tight">
                     Opportunities

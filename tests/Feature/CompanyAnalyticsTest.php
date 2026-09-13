@@ -6,8 +6,10 @@ use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use App\Models\Lead;
 use App\Models\PostMetric;
+use App\Models\TrackingClick;
 use App\Models\User;
 use App\Models\WalletTransaction;
+use Illuminate\Support\Str;
 
 test('companies can read campaign analytics from post metrics and leads', function () {
     [$owner, $collaboration] = bookedDeal();
@@ -142,6 +144,65 @@ test('workspace overview includes spend from posted captures', function () {
         ->getJson(route('api.company.analytics.overview'))
         ->assertOk()
         ->assertJsonPath('data.spend_cents', 24000);
+});
+
+test('workspace overview returns a daily series without loading click rows', function () {
+    $this->travelTo('2026-09-13 12:00:00');
+
+    [$owner, $collaboration] = bookedDeal();
+    $post = $collaboration->posts()->first();
+    $link = $collaboration->trackingLinks()->first();
+
+    TrackingClick::factory()->create([
+        'tracking_link_id' => $link->id,
+        'post_id' => $post->id,
+        'occurred_at' => now()->subDays(2),
+    ]);
+    TrackingClick::factory()->create([
+        'tracking_link_id' => $link->id,
+        'post_id' => $post->id,
+        'occurred_at' => now()->subDays(2)->addHour(),
+        'visitor_key' => (string) Str::uuid(),
+    ]);
+    Lead::factory()->create([
+        'company_id' => $owner->company->id,
+        'campaign_id' => $collaboration->campaign_id,
+        'post_id' => $post->id,
+        'occurred_at' => now()->subDay(),
+        'payload' => ['pipeline_cents' => 50000],
+    ]);
+
+    $response = $this->actingAs($owner)
+        ->getJson(route('api.company.analytics.overview', [
+            'from' => '2026-09-11',
+            'to' => '2026-09-13',
+        ]))
+        ->assertOk()
+        ->assertJsonPath('data.from', '2026-09-11')
+        ->assertJsonPath('data.to', '2026-09-13')
+        ->assertJsonCount(3, 'data.series');
+
+    expect($response->json('data.series.0'))->toMatchArray([
+        'day' => '2026-09-11',
+        'clicks' => 2,
+        'unique_clicks' => 2,
+        'leads' => 0,
+        'spend_cents' => 0,
+    ])->and($response->json('data.series.1.leads'))->toBe(1)
+        ->and($response->json('data.leads_count'))->toBe(1)
+        ->and($response->json('data.pipeline_cents'))->toBe(50000);
+});
+
+test('workspace overview rejects a range longer than 90 days', function () {
+    $user = User::factory()->company()->onboarded()->create();
+
+    $this->actingAs($user)
+        ->getJson(route('api.company.analytics.overview', [
+            'from' => '2026-01-01',
+            'to' => '2026-04-02',
+        ]))
+        ->assertUnprocessable()
+        ->assertJsonPath('data.to.0', 'The range may not exceed 90 days.');
 });
 
 test('companies can download a campaign report json payload', function () {
