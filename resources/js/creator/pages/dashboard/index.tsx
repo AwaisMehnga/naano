@@ -27,10 +27,6 @@ type Profile = {
     niches: Array<{ id: number; name: string }>;
 };
 
-type Audience = {
-    followers_count: number | null;
-};
-
 type Deal = {
     id: number;
     status: string;
@@ -48,52 +44,84 @@ export default function CreatorDashboardPage() {
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
-        Promise.all([
+        let cancelled = false;
+
+        Promise.allSettled([
             http.get<Overview>(creatorApi.analyticsOverview),
             http.get<Profile>(creatorApi.profile),
-            http.get<Audience>(creatorApi.audience),
             http.get<Opportunity[]>(creatorApi.opportunities({ limit: 3 })),
             http.get<Deal[]>(creatorApi.collaborations()),
-        ])
-            .then(
-                ([
-                    { data: nextOverview },
-                    { data: profile },
-                    { data: audience },
-                    { data: opportunities },
-                    { data: collaborations },
-                ]) => {
-                    setOverview(nextOverview);
-                    setCreator({
-                        display_name: profile.display_name,
-                        linkedin_url: profile.linkedin_url,
-                        headline: profile.headline,
-                        photo_url: profile.photo_url,
-                        country: profile.country,
-                        niches: profile.niches,
-                        followers_count:
-                            nextOverview.followers_count ??
-                            audience.followers_count,
-                        jobs_done: collaborations.filter(
-                            (deal) => deal.status === 'completed',
-                        ).length,
-                    });
-                    setRecommended(opportunities);
-                    setDeals(
-                        collaborations.filter((deal) =>
-                            activeStatuses.has(deal.status),
-                        ),
-                    );
-                    setError(null);
-                },
-            )
-            .catch((caught: unknown) => {
+        ]).then(([overviewResult, profileResult, opportunityResult, dealResult]) => {
+            if (cancelled) {
+                return;
+            }
+
+            const overview =
+                overviewResult.status === 'fulfilled'
+                    ? overviewResult.value.data
+                    : null;
+            const profile =
+                profileResult.status === 'fulfilled'
+                    ? profileResult.value.data
+                    : null;
+            const opportunities =
+                opportunityResult.status === 'fulfilled' &&
+                Array.isArray(opportunityResult.value.data)
+                    ? opportunityResult.value.data
+                    : [];
+            const collaborations =
+                dealResult.status === 'fulfilled' &&
+                Array.isArray(dealResult.value.data)
+                    ? dealResult.value.data
+                    : [];
+
+            if (overview) {
+                setOverview(overview);
+            }
+
+            if (profile) {
+                setCreator({
+                    display_name: profile.display_name,
+                    linkedin_url: profile.linkedin_url,
+                    headline: profile.headline,
+                    photo_url: profile.photo_url,
+                    country: profile.country,
+                    niches: profile.niches ?? [],
+                    followers_count: overview?.followers_count ?? null,
+                    jobs_done: collaborations.filter(
+                        (deal) => deal.status === 'completed',
+                    ).length,
+                });
+            }
+
+            setRecommended(opportunities);
+            setDeals(
+                collaborations.filter((deal) => activeStatuses.has(deal.status)),
+            );
+
+            const firstFailure = [
+                overviewResult,
+                profileResult,
+                opportunityResult,
+                dealResult,
+            ].find((result) => result.status === 'rejected');
+
+            if (firstFailure && firstFailure.status === 'rejected') {
                 setError(
-                    caught instanceof ApiError
-                        ? caught.message
+                    firstFailure.reason instanceof ApiError
+                        ? firstFailure.reason.message
                         : 'Could not load your dashboard.',
                 );
-            });
+
+                return;
+            }
+
+            setError(null);
+        });
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     return (

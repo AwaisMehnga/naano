@@ -1,3 +1,7 @@
+export function canManageMoney(): boolean {
+    return window.Naano?.user?.membership_role === 'owner';
+}
+
 export function setCurrentUserAvatar(avatar: string | null): void {
     if (!window.Naano?.user) {
         return;

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { centsFromEuros, euros } from '@/company/pages/creators/format';
+import { canManageMoney } from '@/lib/current-user';
 import { ApiError, companyApi, http } from '@/lib/api';
 
 type Wallet = {
@@ -26,15 +27,11 @@ type WalletTransaction = {
     created_at: string | null;
 };
 
-type Profile = {
-    can_manage_money: boolean;
-};
-
 export default function CompanyWalletPage() {
     const [searchParams] = useSearchParams();
     const [wallet, setWallet] = useState<Wallet | null>(null);
     const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
-    const [canManage, setCanManage] = useState(false);
+    const canManage = canManageMoney();
     const [amount, setAmount] = useState('50');
     const [pendingId, setPendingId] = useState<number | null>(null);
     const [waiting, setWaiting] = useState(
@@ -44,16 +41,14 @@ export default function CompanyWalletPage() {
     const [saving, setSaving] = useState(false);
 
     async function load() {
-        const [{ data: nextWallet }, { data: nextTransactions }, { data: profile }] =
+        const [{ data: nextWallet }, { data: nextTransactions }] =
             await Promise.all([
                 http.get<Wallet>(companyApi.wallet),
                 http.get<WalletTransaction[]>(companyApi.walletTransactions()),
-                http.get<Profile>(companyApi.profile),
             ]);
 
         setWallet(nextWallet);
         setTransactions(nextTransactions);
-        setCanManage(profile.can_manage_money);
     }
 
     useEffect(() => {

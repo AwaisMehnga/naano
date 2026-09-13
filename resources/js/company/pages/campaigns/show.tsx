@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
 import { AppLink } from '@/components/app-link';
@@ -99,15 +99,45 @@ export default function CompanyCampaignShowPage() {
             ) : campaign ? (
                 <>
                     <CampaignTracking campaignId={campaignId} />
-                    <CampaignAnalytics
-                        campaignId={campaignId}
-                        leadsCount={campaign.leads_count}
-                        posts={campaign.posts}
-                    />
+                    <WhenVisible>
+                        <CampaignAnalytics
+                            campaignId={campaignId}
+                            leadsCount={campaign.leads_count}
+                            posts={campaign.posts}
+                        />
+                    </WhenVisible>
                 </>
             ) : null}
         </div>
     );
+}
+
+function WhenVisible({ children }: { children: ReactNode }) {
+    const ref = useRef<HTMLDivElement>(null);
+    const [ready, setReady] = useState(false);
+
+    useEffect(() => {
+        const node = ref.current;
+
+        if (node === null || ready) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(
+            ([entry]) => {
+                if (entry?.isIntersecting) {
+                    setReady(true);
+                }
+            },
+            { rootMargin: '160px' },
+        );
+
+        observer.observe(node);
+
+        return () => observer.disconnect();
+    }, [ready]);
+
+    return <div ref={ref}>{ready ? children : null}</div>;
 }
 
 function dateRange(start: string | null, end: string | null): string {

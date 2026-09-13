@@ -4,6 +4,14 @@ export type DealCompany = {
     logo_url: string | null;
 };
 
+export type DealMetrics = {
+    impressions: number;
+    unique_clicks: number;
+    qualified_clicks: number;
+    leads_count: number;
+    ctr: number | null;
+};
+
 export type Deal = {
     id: number;
     source: string;
@@ -19,4 +27,5 @@ export type Deal = {
         objective: string;
     };
     company: DealCompany;
+    metrics?: DealMetrics;
 };

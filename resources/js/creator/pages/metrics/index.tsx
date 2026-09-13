@@ -45,25 +45,18 @@ export default function CreatorMetricsPage() {
 
         Promise.all([
             http.get<Overview>(creatorApi.analyticsOverview),
-            http.get<Deal[]>(creatorApi.collaborations()),
+            http.get<DealRow[]>(creatorApi.collaborations()),
         ])
-            .then(async ([{ data: overview }, { data: collaborations }]) => {
-                const scored = collaborations.filter((deal) =>
-                    scoredStatuses.has(deal.status),
-                );
-                const rows = await Promise.all(
-                    scored.map(async (deal) => {
-                        const { data: metrics } = await http.get<DealMetrics>(
-                            creatorApi.collaborationMetrics(deal.id),
-                        );
-
-                        return { ...deal, metrics };
-                    }),
-                );
-
+            .then(([{ data: overview }, { data: collaborations }]) => {
                 if (!cancelled) {
                     setData(overview);
-                    setDeals(rows);
+                    setDeals(
+                        collaborations.filter(
+                            (deal): deal is DealRow =>
+                                scoredStatuses.has(deal.status) &&
+                                deal.metrics !== undefined,
+                        ),
+                    );
                     setError(null);
                 }
             })

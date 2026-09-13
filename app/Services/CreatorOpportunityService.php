@@ -25,6 +25,7 @@ class CreatorOpportunityService
         private ContractService $contracts,
         private CollaborationNotifier $notifier,
         private CreatorCampaignMatchService $matches,
+        private CreatorAnalyticsService $analytics,
     ) {}
 
     /**
@@ -138,7 +139,7 @@ class CreatorOpportunityService
 
         $query = Collaboration::query()
             ->where('creator_profile_id', $profile->id)
-            ->with(['campaign.company', 'creatorProfile'])
+            ->with(['campaign.company', 'creatorProfile', 'posts.metrics'])
             ->orderByDesc('id');
 
         $status = $filters['status'] ?? null;
@@ -402,6 +403,7 @@ class CreatorOpportunityService
                 'name' => $company->name,
                 'logo_url' => PublicDisk::url($company->logo_path),
             ],
+            'metrics' => $this->analytics->summary($collaboration),
         ];
     }
 }

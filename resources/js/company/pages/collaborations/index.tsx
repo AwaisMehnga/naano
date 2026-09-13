@@ -25,6 +25,7 @@ import {
 import CreatorProfileDialog from '@/company/pages/creators/creator-profile-dialog';
 import { euros, initials } from '@/company/pages/creators/format';
 import type { CreatorListItem } from '@/company/pages/creators/types';
+import { canManageMoney } from '@/lib/current-user';
 import { ApiError, companyApi, http } from '@/lib/api';
 import {
     isShortlisted,
@@ -68,7 +69,7 @@ export default function CompanyCollaborationsPage() {
     const [page, setPage] = useState<CollaborationList | null>(null);
     const [campaigns, setCampaigns] = useState<CampaignListItem[]>([]);
     const [loading, setLoading] = useState(false);
-    const [canManage, setCanManage] = useState(false);
+    const canManage = canManageMoney();
     const [inviteOpen, setInviteOpen] = useState(false);
     const [threadId, setThreadId] = useState<number | null>(null);
     const [openId, setOpenId] = useState<number | null>(null);
@@ -82,20 +83,16 @@ export default function CompanyCollaborationsPage() {
     const threadRow = (page?.data ?? []).find((row) => row.id === threadId);
 
     useEffect(() => {
-        http.get<{ can_manage_money: boolean }>(companyApi.profile)
-            .then(({ data }) => setCanManage(data.can_manage_money))
-            .catch(() => undefined);
-
         http.get<CampaignList>(companyApi.campaigns({ per_page: 50 }))
             .then(({ data }) => setCampaigns(data.data))
             .catch(() => setCampaigns([]));
     }, []);
 
     useEffect(() => {
-        if (hasCampaign) {
+        if (hasCampaign && campaign?.id !== campaignId) {
             void fetchCampaign(campaignId);
         }
-    }, [campaignId, fetchCampaign, hasCampaign]);
+    }, [campaign?.id, campaignId, fetchCampaign, hasCampaign]);
 
     useEffect(() => {
         const next = query.filters.campaign;
@@ -161,10 +158,6 @@ export default function CompanyCollaborationsPage() {
 
     async function reload() {
         await load();
-
-        if (hasCampaign) {
-            await fetchCampaign(campaignId);
-        }
     }
 
     async function bookRow(row: CollaborationRow) {

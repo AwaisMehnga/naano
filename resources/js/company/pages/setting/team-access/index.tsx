@@ -28,6 +28,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { canManageMoney } from '@/lib/current-user';
 import { api, ApiError, companyApi } from '@/lib/api';
 
 type Member = {
@@ -39,25 +40,16 @@ type Member = {
     status: 'joined' | 'pending';
 };
 
-type Profile = {
-    can_manage_money: boolean;
-};
-
 export default function CompanyTeamAccessPage() {
     const [members, setMembers] = useState<Member[]>([]);
-    const [canManage, setCanManage] = useState(false);
+    const canManage = canManageMoney();
     const [email, setEmail] = useState('');
     const [role, setRole] = useState<'owner' | 'member'>('member');
     const [open, setOpen] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
     async function load() {
-        const [memberRows, profile] = await Promise.all([
-            api<Member[]>(companyApi.members),
-            api<Profile>(companyApi.profile),
-        ]);
-        setMembers(memberRows);
-        setCanManage(profile.can_manage_money);
+        setMembers(await api<Member[]>(companyApi.members));
     }
 
     useEffect(() => {

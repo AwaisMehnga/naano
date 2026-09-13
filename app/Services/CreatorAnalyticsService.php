@@ -51,6 +51,16 @@ class CreatorAnalyticsService
     /**
      * @return array<string, mixed>
      */
+    public function summary(Collaboration $collaboration): array
+    {
+        $collaboration->loadMissing('posts.metrics');
+
+        return $this->metrics->rollup($collaboration->posts->map->metrics->filter());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
     public function collaboration(User $user, Collaboration $collaboration): array
     {
         $this->ensureOwned($user, $collaboration);

@@ -32,6 +32,12 @@ test('creators can read deal and post metrics for their own posts', function () 
         ->assertJsonPath('data.earnings_cents', 0);
 
     $this->actingAs($creatorUser)
+        ->getJson(route('api.creator.collaborations.index'))
+        ->assertOk()
+        ->assertJsonPath('data.0.metrics.impressions', 500)
+        ->assertJsonPath('data.0.metrics.unique_clicks', 10);
+
+    $this->actingAs($creatorUser)
         ->getJson(route('api.creator.collaborations.metrics.show', $collaboration))
         ->assertOk()
         ->assertJsonPath('data.impressions', 500)

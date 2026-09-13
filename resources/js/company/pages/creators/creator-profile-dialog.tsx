@@ -33,6 +33,7 @@ import type {
     CreatorListItem,
     CreatorProfileCard,
 } from '@/company/pages/creators/types';
+import { canManageMoney } from '@/lib/current-user';
 import { api, ApiError, companyApi, http } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -61,7 +62,7 @@ export default function CreatorProfileDialog({
     const [postDate, setPostDate] = useState('');
     const [approveFirst, setApproveFirst] = useState(true);
     const [offerEuros, setOfferEuros] = useState('');
-    const [canManage, setCanManage] = useState(false);
+    const canManage = canManageMoney();
     const [availableCents, setAvailableCents] = useState<number | null>(null);
     const [saving, setSaving] = useState(false);
 
@@ -82,10 +83,6 @@ export default function CreatorProfileDialog({
 
             return;
         }
-
-        http.get<{ can_manage_money: boolean }>(companyApi.profile)
-            .then(({ data }) => setCanManage(data.can_manage_money))
-            .catch(() => undefined);
 
         http.get<{ available_cents: number }>(companyApi.wallet)
             .then(({ data }) => setAvailableCents(data.available_cents))

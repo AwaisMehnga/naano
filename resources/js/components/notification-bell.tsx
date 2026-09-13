@@ -47,22 +47,15 @@ export function NotificationBell() {
         return () => window.removeEventListener('naano:user', sync);
     }, []);
 
-    useEffect(() => {
-        function refresh(): void {
-            http.get<Inbox>(sharedApi.notifications)
-                .then(({ data }) => {
-                    setRows(data.notifications);
-                    setCount(data.unread_count);
-                    setUnreadNotificationsCount(data.unread_count);
-                })
-                .catch(() => undefined);
-        }
-
-        refresh();
-        const timer = window.setInterval(refresh, 30000);
-
-        return () => window.clearInterval(timer);
-    }, []);
+    function refresh(): void {
+        http.get<Inbox>(sharedApi.notifications)
+            .then(({ data }) => {
+                setRows(data.notifications);
+                setCount(data.unread_count);
+                setUnreadNotificationsCount(data.unread_count);
+            })
+            .catch(() => undefined);
+    }
 
     async function open(row: NotificationRow): Promise<void> {
         if (row.read_at === null) {
@@ -94,7 +87,7 @@ export function NotificationBell() {
     const latest = rows.slice(0, 8);
 
     return (
-        <DropdownMenu>
+        <DropdownMenu onOpenChange={(open) => open && refresh()}>
             <DropdownMenuTrigger asChild>
                 <Button
                     type="button"
