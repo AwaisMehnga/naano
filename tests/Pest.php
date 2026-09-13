@@ -9,6 +9,7 @@ use App\Models\Campaign;
 use App\Models\Collaboration;
 use App\Models\Company;
 use App\Models\CompanyMember;
+use App\Models\CreatorMatchScore;
 use App\Models\CreatorProfile;
 use App\Models\User;
 use App\Models\Wallet;
@@ -65,6 +66,22 @@ function fakeCampaignFit(int $fitScore = 82, int $audienceRelevance = 74): void
             'audience_relevance' => $audienceRelevance,
             'reasons' => ['Audience overlap in SaaS'],
         ],
+    ]);
+}
+
+function creatorMatchScore(
+    Campaign $campaign,
+    CreatorProfile $creator,
+    int $fitScore = 82,
+    int $audienceRelevance = 74,
+): CreatorMatchScore {
+    return CreatorMatchScore::factory()->create([
+        'campaign_id' => $campaign->id,
+        'creator_profile_id' => $creator->id,
+        'fit_score' => $fitScore,
+        'audience_relevance' => $audienceRelevance,
+        'reasons' => ['Audience overlap in SaaS'],
+        'computed_at' => now(),
     ]);
 }
 

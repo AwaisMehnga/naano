@@ -7,6 +7,7 @@ use App\Models\Campaign;
 use App\Models\CreatorMatchScore;
 use App\Models\CreatorProfile;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Laravel\Ai\Enums\Lab;
 use Laravel\Ai\Responses\StructuredAgentResponse;
@@ -36,6 +37,39 @@ class CreatorCampaignMatchService
         } catch (Throwable) {
             return null;
         }
+    }
+
+    /**
+     * @param  Collection<int, Campaign>  $campaigns
+     * @return Collection<int, CreatorMatchScore>
+     */
+    public function cachedByCampaign(CreatorProfile $profile, Collection $campaigns): Collection
+    {
+        if ($campaigns->isEmpty()) {
+            return collect();
+        }
+
+        return CreatorMatchScore::query()
+            ->where('creator_profile_id', $profile->id)
+            ->whereIn('campaign_id', $campaigns->modelKeys())
+            ->get()
+            ->keyBy('campaign_id');
+    }
+
+    public function forListing(
+        CreatorProfile $profile,
+        Campaign $campaign,
+        ?CreatorMatchScore $cached,
+    ): ?CreatorMatchScore {
+        if (! $this->passesHardFilter($profile, $campaign)) {
+            return null;
+        }
+
+        if ($cached instanceof CreatorMatchScore && ! $this->isStale($profile, $campaign, $cached)) {
+            return $this->aboveThreshold($cached);
+        }
+
+        return $this->provisional($profile, $campaign);
     }
 
     private function aboveThreshold(CreatorMatchScore $score): ?CreatorMatchScore
@@ -91,10 +125,18 @@ class CreatorCampaignMatchService
             ->where('creator_profile_id', $profile->id)
             ->first();
 
-        if (! $score instanceof CreatorMatchScore) {
+        if (! $score instanceof CreatorMatchScore || $this->isStale($profile, $campaign, $score)) {
             return null;
         }
 
+        return $score;
+    }
+
+    private function isStale(
+        CreatorProfile $profile,
+        Campaign $campaign,
+        CreatorMatchScore $score,
+    ): bool {
         $freshAfter = collect([
             $profile->updated_at,
             $campaign->updated_at,
@@ -102,11 +144,19 @@ class CreatorCampaignMatchService
             $profile->niches->max(fn ($niche) => $niche->pivot->updated_at),
         ])->filter()->max();
 
-        if ($freshAfter instanceof Carbon && $score->computed_at?->lt($freshAfter)) {
-            return null;
-        }
+        return $freshAfter instanceof Carbon && $score->computed_at?->lt($freshAfter);
+    }
 
-        return $score;
+    private function provisional(CreatorProfile $profile, Campaign $campaign): CreatorMatchScore
+    {
+        return new CreatorMatchScore([
+            'campaign_id' => $campaign->id,
+            'creator_profile_id' => $profile->id,
+            'fit_score' => 50,
+            'audience_relevance' => null,
+            'reasons' => [],
+            'computed_at' => now(),
+        ]);
     }
 
     private function compute(CreatorProfile $profile, Campaign $campaign): CreatorMatchScore

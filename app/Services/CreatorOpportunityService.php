@@ -58,9 +58,18 @@ class CreatorOpportunityService
             });
         }
 
-        $items = $query->get()
-            ->map(function (Campaign $campaign) use ($profile): ?array {
-                $score = $this->matches->score($profile, $campaign);
+        $profile->loadMissing(['niches', 'audienceProfiles']);
+
+        $campaigns = $query->get();
+        $scores = $this->matches->cachedByCampaign($profile, $campaigns);
+
+        $items = $campaigns
+            ->map(function (Campaign $campaign) use ($profile, $scores): ?array {
+                $score = $this->matches->forListing(
+                    $profile,
+                    $campaign,
+                    $scores->get($campaign->id),
+                );
 
                 if (! $score instanceof CreatorMatchScore) {
                     return null;

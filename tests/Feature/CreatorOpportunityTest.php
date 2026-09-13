@@ -26,6 +26,7 @@ test('vetted creators can list and apply to a related active campaign', function
         'end_at' => $deadline,
     ]);
     $creator = marketplaceCreator();
+    creatorMatchScore($campaign, $creator);
 
     $this->actingAs($creator->user)
         ->getJson(route('api.creator.opportunities.index'))
@@ -125,7 +126,7 @@ test('campaigns with a mismatched icp are hidden', function () {
 });
 
 test('a region mismatch still lists the campaign', function () {
-    fakeCampaignFit(40, 35);
+    CampaignFitAgent::fake()->preventStrayPrompts();
 
     $owner = User::factory()->company()->onboarded()->create();
     $icp = CompanyIcp::factory()->create([
@@ -140,6 +141,7 @@ test('a region mismatch still lists the campaign', function () {
         'name' => 'US brief',
     ]);
     $creator = marketplaceCreator(['country' => 'FR']);
+    creatorMatchScore($campaign, $creator, 40, 35);
 
     $this->actingAs($creator->user)
         ->getJson(route('api.creator.opportunities.index'))
@@ -149,15 +151,16 @@ test('a region mismatch still lists the campaign', function () {
 });
 
 test('low fit scores are omitted from opportunities', function () {
-    fakeCampaignFit(29, 18);
+    CampaignFitAgent::fake()->preventStrayPrompts();
 
     $owner = User::factory()->company()->onboarded()->create();
-    Campaign::factory()->create([
+    $campaign = Campaign::factory()->create([
         'company_id' => $owner->company->id,
         'created_by_user_id' => $owner->id,
         'status' => CampaignStatus::Active,
     ]);
     $creator = marketplaceCreator();
+    creatorMatchScore($campaign, $creator, 29, 18);
 
     $this->actingAs($creator->user)
         ->getJson(route('api.creator.opportunities.index'))
@@ -166,13 +169,7 @@ test('low fit scores are omitted from opportunities', function () {
 });
 
 test('creators can search related opportunities by name', function () {
-    CampaignFitAgent::fake([
-        [
-            'fit_score' => 80,
-            'audience_relevance' => 70,
-            'reasons' => ['SaaS buyers'],
-        ],
-    ]);
+    CampaignFitAgent::fake()->preventStrayPrompts();
 
     $owner = User::factory()->company()->onboarded()->create();
     $owner->company->update(['name' => 'Northwind']);
@@ -198,7 +195,7 @@ test('creators can search related opportunities by name', function () {
 });
 
 test('matching niche icps are scored and returned', function () {
-    fakeCampaignFit(91, 88);
+    CampaignFitAgent::fake()->preventStrayPrompts();
 
     $owner = User::factory()->company()->onboarded()->create();
     $icp = CompanyIcp::factory()->create([
@@ -217,6 +214,7 @@ test('matching niche icps are scored and returned', function () {
     $creator->niches()->attach(
         Niche::factory()->create(['name' => 'SaaS', 'slug' => 'saas'])->id,
     );
+    creatorMatchScore($campaign, $creator, 91, 88);
 
     $this->actingAs($creator->user)
         ->getJson(route('api.creator.opportunities.index'))
@@ -226,6 +224,29 @@ test('matching niche icps are scored and returned', function () {
         ->assertJsonPath('data.0.location.regions.0', 'FR');
 
     expect(CreatorMatchScore::query()->where('campaign_id', $campaign->id)->exists())->toBeTrue();
+});
+
+test('listing opportunities does not call the fit agent and honours limit', function () {
+    CampaignFitAgent::fake()->preventStrayPrompts();
+
+    $owner = User::factory()->company()->onboarded()->create();
+    $creator = marketplaceCreator();
+
+    foreach (range(1, 5) as $index) {
+        $campaign = Campaign::factory()->create([
+            'company_id' => $owner->company->id,
+            'created_by_user_id' => $owner->id,
+            'status' => CampaignStatus::Active,
+            'name' => 'Brief '.$index,
+        ]);
+        creatorMatchScore($campaign, $creator, 40 + $index, 40);
+    }
+
+    $this->actingAs($creator->user)
+        ->getJson(route('api.creator.opportunities.index', ['limit' => 3]))
+        ->assertOk()
+        ->assertJsonCount(3, 'data')
+        ->assertJsonPath('data.0.match_score', 45);
 });
 
 test('accepting an invite selects the creator without booking', function () {
