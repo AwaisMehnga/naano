@@ -9,7 +9,10 @@ use App\Models\User;
 
 class CreatorAnalyticsService
 {
-    public function __construct(private PostMetricIngestService $metrics) {}
+    public function __construct(
+        private PostMetricIngestService $metrics,
+        private CreatorWalletService $wallets,
+    ) {}
 
     /**
      * @return array<string, mixed>
@@ -21,9 +24,11 @@ class CreatorAnalyticsService
             PostMetric::query()->whereIn('post_id', $postIds)->get(),
         );
 
+        $profile = $user->creatorProfile;
+
         return [
             ...$rollup,
-            'earnings_cents' => 0,
+            'earnings_cents' => $profile === null ? 0 : $this->wallets->capturedCents($profile),
         ];
     }
 

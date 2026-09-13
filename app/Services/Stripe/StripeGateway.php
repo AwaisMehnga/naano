@@ -4,6 +4,7 @@ namespace App\Services\Stripe;
 
 use App\Exceptions\InvalidStripeSignatureException;
 use App\Models\Company;
+use App\Models\CreatorProfile;
 
 interface StripeGateway
 {
@@ -20,6 +21,22 @@ interface StripeGateway
         array $metadata,
         string $idempotencyKey,
     ): StripeCheckoutSession;
+
+    public function createConnectAccount(CreatorProfile $profile, string $email): string;
+
+    public function createAccountLink(string $accountId, string $refreshUrl, string $returnUrl): string;
+
+    public function createLoginLink(string $accountId): string;
+
+    /**
+     * @param  array<string, string>  $metadata
+     */
+    public function createTransfer(
+        string $destination,
+        int $amountCents,
+        array $metadata,
+        string $idempotencyKey,
+    ): string;
 
     /**
      * @throws InvalidStripeSignatureException

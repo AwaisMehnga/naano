@@ -4,16 +4,24 @@ namespace App\Services\Stripe;
 
 use App\Exceptions\InvalidStripeSignatureException;
 use App\Models\Company;
+use App\Models\CreatorProfile;
 use JsonException;
 
 class FakeStripeGateway implements StripeGateway
 {
     public int $checkouts = 0;
 
+    public int $transfers = 0;
+
     /**
      * @var list<StripeCheckoutSession>
      */
     public array $sessions = [];
+
+    /**
+     * @var list<string>
+     */
+    public array $transferIds = [];
 
     public function ensureCustomer(Company $company): string
     {
@@ -42,6 +50,37 @@ class FakeStripeGateway implements StripeGateway
         $this->sessions[] = $session;
 
         return $session;
+    }
+
+    public function createConnectAccount(CreatorProfile $profile, string $email): string
+    {
+        return 'acct_fake_'.$profile->id;
+    }
+
+    public function createAccountLink(string $accountId, string $refreshUrl, string $returnUrl): string
+    {
+        return 'https://connect.stripe.test/setup/'.$accountId;
+    }
+
+    public function createLoginLink(string $accountId): string
+    {
+        return 'https://connect.stripe.test/login/'.$accountId;
+    }
+
+    /**
+     * @param  array<string, string>  $metadata
+     */
+    public function createTransfer(
+        string $destination,
+        int $amountCents,
+        array $metadata,
+        string $idempotencyKey,
+    ): string {
+        $this->transfers++;
+        $id = 'tr_fake_'.$this->transfers.'_'.$idempotencyKey;
+        $this->transferIds[] = $id;
+
+        return $id;
     }
 
     public function parseWebhook(string $payload, string $signatureHeader): StripeWebhookEvent

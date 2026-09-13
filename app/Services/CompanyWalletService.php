@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CollaborationStatus;
 use App\Enums\WalletTransactionDirection;
 use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
@@ -294,6 +295,69 @@ class CompanyWalletService
                 'amount_cents' => $hold->amount_cents,
                 'status' => WalletTransactionStatus::Posted,
             ]);
+        });
+    }
+
+    public function captureHold(Company $company, Collaboration $collaboration): void
+    {
+        DB::transaction(function () use ($company, $collaboration): void {
+            $wallet = Wallet::query()
+                ->where('company_id', $company->id)
+                ->lockForUpdate()
+                ->first();
+
+            if (! $wallet instanceof Wallet) {
+                throw ValidationException::withMessages([
+                    'status' => 'This booking has no hold to capture.',
+                ]);
+            }
+
+            $hasCapture = $wallet->transactions()
+                ->where('collaboration_id', $collaboration->id)
+                ->where('type', WalletTransactionType::Capture)
+                ->where('status', WalletTransactionStatus::Posted)
+                ->exists();
+
+            if ($hasCapture) {
+                return;
+            }
+
+            $alreadyReleased = $wallet->transactions()
+                ->where('collaboration_id', $collaboration->id)
+                ->where('type', WalletTransactionType::Release)
+                ->where('status', WalletTransactionStatus::Posted)
+                ->exists();
+
+            if ($alreadyReleased) {
+                throw ValidationException::withMessages([
+                    'status' => 'This booking has already been released.',
+                ]);
+            }
+
+            $hold = $wallet->transactions()
+                ->where('collaboration_id', $collaboration->id)
+                ->where('type', WalletTransactionType::Hold)
+                ->where('status', WalletTransactionStatus::Posted)
+                ->orderByDesc('id')
+                ->first();
+
+            if (! $hold instanceof WalletTransaction) {
+                throw ValidationException::withMessages([
+                    'status' => 'This booking has no hold to capture.',
+                ]);
+            }
+
+            $wallet->transactions()->create([
+                'campaign_id' => $collaboration->campaign_id,
+                'collaboration_id' => $collaboration->id,
+                'type' => WalletTransactionType::Capture,
+                'direction' => WalletTransactionDirection::Debit,
+                'amount_cents' => $hold->amount_cents,
+                'status' => WalletTransactionStatus::Posted,
+            ]);
+
+            $collaboration->status = CollaborationStatus::Completed;
+            $collaboration->save();
         });
     }
 

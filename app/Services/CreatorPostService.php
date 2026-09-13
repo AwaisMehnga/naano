@@ -13,7 +13,10 @@ use Illuminate\Validation\ValidationException;
 
 class CreatorPostService
 {
-    public function __construct(private TrackingLinkService $tracking) {}
+    public function __construct(
+        private TrackingLinkService $tracking,
+        private CompanyWalletService $wallets,
+    ) {}
 
     /**
      * @return list<array<string, mixed>>
@@ -151,6 +154,13 @@ class CreatorPostService
         $post->linkedin_post_id = $this->linkedinPostId($publishedUrl, $linkedinPostId);
         $post->published_at = now();
         $post->save();
+
+        $collaboration = $post->collaboration()->with(['campaign.company', 'posts'])->firstOrFail();
+
+        if ($collaboration->posts->isNotEmpty()
+            && $collaboration->posts->every(fn (Post $row): bool => $row->status === PostStatus::Published)) {
+            $this->wallets->captureHold($collaboration->campaign->company, $collaboration);
+        }
 
         return $this->payload($post->fresh());
     }

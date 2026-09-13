@@ -14,7 +14,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property int $id
  * @property int $creator_profile_id
- * @property int $collaboration_id
+ * @property int|null $collaboration_id
  * @property int $amount_cents
  * @property PayoutStatus $status
  * @property string|null $stripe_transfer_id

@@ -187,6 +187,11 @@ export const creatorApi = {
     collaborationMetrics: (id: number) =>
         `/api/creator/collaborations/${id}/metrics`,
     postMetrics: (id: number) => `/api/creator/posts/${id}/metrics`,
+    wallet: '/api/creator/wallet',
+    walletWithdrawals: '/api/creator/wallet/withdrawals',
+    connect: '/api/creator/connect',
+    connectOnboarding: '/api/creator/connect/onboarding',
+    connectDashboard: '/api/creator/connect/dashboard',
 };
 
 export const sharedApi = {

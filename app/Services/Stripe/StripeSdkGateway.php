@@ -4,6 +4,7 @@ namespace App\Services\Stripe;
 
 use App\Exceptions\InvalidStripeSignatureException;
 use App\Models\Company;
+use App\Models\CreatorProfile;
 use RuntimeException;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient;
@@ -68,6 +69,81 @@ class StripeSdkGateway implements StripeGateway
         }
 
         return new StripeCheckoutSession($session->id, $url, $customerId);
+    }
+
+    public function createConnectAccount(CreatorProfile $profile, string $email): string
+    {
+        $account = $this->client()->accounts->create([
+            'type' => 'express',
+            'country' => $profile->country ?: 'FR',
+            'email' => $email,
+            'capabilities' => [
+                'transfers' => ['requested' => true],
+            ],
+            'metadata' => [
+                'creator_profile_id' => (string) $profile->id,
+            ],
+        ], [
+            'idempotency_key' => 'connect-acct-'.$profile->id,
+        ]);
+
+        return $account->id;
+    }
+
+    public function createAccountLink(string $accountId, string $refreshUrl, string $returnUrl): string
+    {
+        $link = $this->client()->accountLinks->create([
+            'account' => $accountId,
+            'refresh_url' => $refreshUrl,
+            'return_url' => $returnUrl,
+            'type' => 'account_onboarding',
+        ], [
+            'idempotency_key' => 'connect-link-'.$accountId,
+        ]);
+
+        $url = $link->url;
+
+        if ($url === '') {
+            throw new RuntimeException('Stripe did not return an Account Link URL.');
+        }
+
+        return $url;
+    }
+
+    public function createLoginLink(string $accountId): string
+    {
+        $link = $this->client()->accounts->createLoginLink($accountId, [], [
+            'idempotency_key' => 'connect-login-'.$accountId,
+        ]);
+
+        $url = $link->url;
+
+        if ($url === '') {
+            throw new RuntimeException('Stripe did not return a login link.');
+        }
+
+        return $url;
+    }
+
+    /**
+     * @param  array<string, string>  $metadata
+     */
+    public function createTransfer(
+        string $destination,
+        int $amountCents,
+        array $metadata,
+        string $idempotencyKey,
+    ): string {
+        $transfer = $this->client()->transfers->create([
+            'amount' => $amountCents,
+            'currency' => config('services.stripe.currency'),
+            'destination' => $destination,
+            'metadata' => $metadata,
+        ], [
+            'idempotency_key' => $idempotencyKey,
+        ]);
+
+        return $transfer->id;
     }
 
     public function parseWebhook(string $payload, string $signatureHeader): StripeWebhookEvent

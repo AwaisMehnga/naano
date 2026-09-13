@@ -3,6 +3,8 @@
 use App\Enums\CollaborationSource;
 use App\Enums\CollaborationStatus;
 use App\Enums\PostStatus;
+use App\Enums\WalletTransactionStatus;
+use App\Enums\WalletTransactionType;
 use App\Models\Campaign;
 use App\Models\Collaboration;
 use App\Models\User;
@@ -118,7 +120,15 @@ test('creators can schedule and publish an approved post', function () {
         ->assertJsonPath('data.status', 'published')
         ->assertJsonPath('data.linkedin_post_id', '1234567890');
 
-    expect($owner->company->wallet->fresh()->available_cents)->toBe(26000);
+    expect($owner->company->wallet->fresh()->available_cents)->toBe(26000)
+        ->and($collaboration->fresh()->status)->toBe(CollaborationStatus::Completed);
+
+    $this->assertDatabaseHas('wallet_transactions', [
+        'collaboration_id' => $collaboration->id,
+        'type' => WalletTransactionType::Capture->value,
+        'status' => WalletTransactionStatus::Posted->value,
+        'amount_cents' => 24000,
+    ]);
 });
 
 test('creators cannot see another creator post', function () {

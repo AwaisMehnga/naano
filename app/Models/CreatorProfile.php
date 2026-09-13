@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $bio
  * @property CreatorVettingStatus $vetting_status
  * @property string|null $stripe_connect_id
+ * @property bool $payouts_enabled
  * @property string|null $country
  * @property list<string>|null $industries
  * @property int|null $price_cents
@@ -38,6 +39,7 @@ use Illuminate\Support\Carbon;
     'bio',
     'vetting_status',
     'stripe_connect_id',
+    'payouts_enabled',
     'country',
     'industries',
     'price_cents',
@@ -58,6 +60,7 @@ class CreatorProfile extends Model
             'industries' => 'array',
             'bundles' => 'array',
             'vetting_status' => CreatorVettingStatus::class,
+            'payouts_enabled' => 'boolean',
             'onboarded_at' => 'datetime',
         ];
     }

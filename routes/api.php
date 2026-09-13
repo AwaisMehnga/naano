@@ -25,9 +25,12 @@ use App\Http\Controllers\Api\Creator\AudienceController as CreatorAudienceContro
 use App\Http\Controllers\Api\Creator\BillingController;
 use App\Http\Controllers\Api\Creator\CollaborationController as CreatorCollaborationController;
 use App\Http\Controllers\Api\Creator\CollaborationMetricController;
+use App\Http\Controllers\Api\Creator\ConnectController;
 use App\Http\Controllers\Api\Creator\CreatorAccountController;
+use App\Http\Controllers\Api\Creator\CreatorWalletController;
 use App\Http\Controllers\Api\Creator\NicheController as CreatorNicheController;
 use App\Http\Controllers\Api\Creator\OpportunityController;
+use App\Http\Controllers\Api\Creator\PayoutController;
 use App\Http\Controllers\Api\Creator\PostController as CreatorPostController;
 use App\Http\Controllers\Api\Creator\PostMetricController as CreatorPostMetricController;
 use App\Http\Controllers\Api\Creator\ProfileController as CreatorProfileController;
@@ -105,6 +108,14 @@ Route::middleware('auth')->group(function () {
         Route::apiSingleton('audience', CreatorAudienceController::class, ['creatable' => true])->only(['show', 'store']);
         Route::apiSingleton('billing', BillingController::class)->only(['show']);
         Route::delete('account', [CreatorAccountController::class, 'destroy'])->name('account.destroy');
+        Route::get('wallet', [CreatorWalletController::class, 'show'])->name('wallet.show');
+        Route::get('wallet/transactions', [CreatorWalletController::class, 'transactions'])->name('wallet.transactions');
+        Route::post('wallet/withdrawals', [CreatorWalletController::class, 'storeWithdrawal'])->name('wallet.withdrawals.store');
+        Route::get('connect', [ConnectController::class, 'show'])->name('connect.show');
+        Route::post('connect/onboarding', [ConnectController::class, 'onboarding'])->name('connect.onboarding');
+        Route::post('connect/dashboard', [ConnectController::class, 'dashboard'])->name('connect.dashboard');
+        Route::get('payouts', [PayoutController::class, 'index'])->name('payouts.index');
+        Route::get('payouts/{payout}', [PayoutController::class, 'show'])->name('payouts.show');
         Route::get('opportunities', [OpportunityController::class, 'index'])->name('opportunities.index');
         Route::get('opportunities/{campaign}', [OpportunityController::class, 'show'])->name('opportunities.show');
         Route::post('opportunities/{campaign}/apply', [OpportunityController::class, 'apply'])->name('opportunities.apply');
