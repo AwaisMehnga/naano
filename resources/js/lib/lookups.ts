@@ -18,6 +18,7 @@ export const countries: { value: string; label: string }[] = [
     { value: 'NL', label: 'Netherlands' },
     { value: 'NO', label: 'Norway' },
     { value: 'PL', label: 'Poland' },
+    { value: 'PK', label: 'Pakistan' },
     { value: 'PT', label: 'Portugal' },
     { value: 'SE', label: 'Sweden' },
     { value: 'SG', label: 'Singapore' },

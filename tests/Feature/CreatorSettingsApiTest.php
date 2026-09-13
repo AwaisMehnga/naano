@@ -2,6 +2,8 @@
 
 use App\Models\CreatorAudienceProfile;
 use App\Models\User;
+use App\Services\Stripe\FakeStripeGateway;
+use App\Services\Stripe\StripeGateway;
 
 test('creators can read audience and refresh a snapshot', function () {
     $user = User::factory()->creator()->onboarded()->create();
@@ -35,6 +37,38 @@ test('creators can delete their account with the current password', function () 
 
     $this->assertGuest();
     expect(User::query()->where('id', $user->id)->exists())->toBeFalse();
+});
+
+test('connect onboarding rejects a missing country', function () {
+    $user = User::factory()->creator()->onboarded()->create();
+    $user->creatorProfile->update(['country' => null]);
+
+    $this->actingAs($user)
+        ->postJson(route('api.creator.connect.onboarding'))
+        ->assertUnprocessable()
+        ->assertJsonPath('data.country.0', 'Add your country on your profile before setting up payouts.');
+});
+
+test('connect onboarding recreates the account when the profile country changed', function () {
+    $user = User::factory()->creator()->onboarded()->create();
+    $user->creatorProfile->update([
+        'country' => 'DE',
+        'stripe_connect_id' => 'acct_old',
+        'payouts_enabled' => true,
+    ]);
+
+    $fake = new FakeStripeGateway;
+    $fake->accountCountries['acct_old'] = 'FR';
+    $this->app->instance(StripeGateway::class, $fake);
+
+    $this->actingAs($user)
+        ->postJson(route('api.creator.connect.onboarding'))
+        ->assertOk();
+
+    $profile = $user->creatorProfile->fresh();
+
+    expect($profile->stripe_connect_id)->toBe('acct_fake_'.$profile->id)
+        ->and($profile->payouts_enabled)->toBeFalse();
 });
 
 test('connect onboarding returns a setup url', function () {

@@ -23,6 +23,11 @@ class FakeStripeGateway implements StripeGateway
      */
     public array $transferIds = [];
 
+    /**
+     * @var array<string, string>
+     */
+    public array $accountCountries = [];
+
     public function ensureCustomer(Company $company): string
     {
         if (is_string($company->stripe_customer_id) && $company->stripe_customer_id !== '') {
@@ -54,7 +59,18 @@ class FakeStripeGateway implements StripeGateway
 
     public function createConnectAccount(CreatorProfile $profile, string $email): string
     {
-        return 'acct_fake_'.$profile->id;
+        $id = 'acct_fake_'.$profile->id;
+
+        if (is_string($profile->country) && $profile->country !== '' && $profile->country !== 'OTHER') {
+            $this->accountCountries[$id] = strtoupper($profile->country);
+        }
+
+        return $id;
+    }
+
+    public function connectAccountCountry(string $accountId): ?string
+    {
+        return $this->accountCountries[$accountId] ?? null;
     }
 
     public function createAccountLink(string $accountId, string $refreshUrl, string $returnUrl): string

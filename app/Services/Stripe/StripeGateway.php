@@ -24,6 +24,8 @@ interface StripeGateway
 
     public function createConnectAccount(CreatorProfile $profile, string $email): string;
 
+    public function connectAccountCountry(string $accountId): ?string;
+
     public function createAccountLink(string $accountId, string $refreshUrl, string $returnUrl): string;
 
     public function createLoginLink(string $accountId): string;

@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\TrackingClick;
+use App\Models\TrackingEvent;
 
 beforeEach(function () {
     $this->disableCookieEncryption();
@@ -40,6 +41,30 @@ test('a hop does not qualify the visit', function () {
     $this->get(route('tracking.redirect', $link->slug))->assertRedirect();
 
     expect($post->metrics()->first()->qualified_clicks)->toBe(0);
+});
+
+test('qualify events without a cookie count once for the same visitor key', function () {
+    [, $collaboration] = bookedDeal();
+    $link = $collaboration->trackingLinks()->first();
+    $post = $collaboration->posts()->first();
+    $visitor = fake()->uuid();
+
+    $this->withHeaders(['Origin' => 'https://example.com'])
+        ->postJson(route('api.tracking.events', $link->slug), [
+            'type' => 'qualify',
+            'visitor_key' => $visitor,
+        ])
+        ->assertOk();
+
+    $this->withHeaders(['Origin' => 'https://example.com'])
+        ->postJson(route('api.tracking.events', $link->slug), [
+            'type' => 'qualify',
+            'visitor_key' => $visitor,
+        ])
+        ->assertOk();
+
+    expect($post->metrics()->first()->fresh()->qualified_clicks)->toBe(1);
+    expect(TrackingEvent::query()->where('tracking_link_id', $link->id)->where('type', 'qualify')->count())->toBe(1);
 });
 
 test('a qualify event counts once per visitor', function () {
@@ -106,8 +131,36 @@ test('pixel events from the wrong origin are forbidden', function () {
         ->assertForbidden();
 });
 
+test('pixel event preflight echoes the page origin for credentialed requests', function () {
+    [, $collaboration] = bookedDeal();
+    $link = $collaboration->trackingLinks()->first();
+
+    $this->withHeaders([
+        'Origin' => 'https://example.com',
+        'Access-Control-Request-Method' => 'POST',
+        'Access-Control-Request-Headers' => 'content-type,accept',
+    ])->options(route('api.tracking.events', $link->slug))
+        ->assertNoContent()
+        ->assertHeader('Access-Control-Allow-Origin', 'https://example.com')
+        ->assertHeader('Access-Control-Allow-Credentials', 'true');
+});
+
+test('pixel events from a local preview origin are recorded', function () {
+    [, $collaboration] = bookedDeal();
+    $link = $collaboration->trackingLinks()->first();
+
+    $this->withHeaders(['Origin' => 'http://127.0.0.1:5500'])
+        ->postJson(route('api.tracking.events', $link->slug), ['type' => 'qualify'])
+        ->assertOk()
+        ->assertHeader('Access-Control-Allow-Origin', 'http://127.0.0.1:5500')
+        ->assertHeader('Access-Control-Allow-Credentials', 'true');
+});
+
 test('the pixel script is public', function () {
     $this->get(route('tracking.pixel'))
         ->assertOk()
-        ->assertHeader('content-type', 'application/javascript; charset=UTF-8');
+        ->assertHeader('content-type', 'application/javascript; charset=UTF-8')
+        ->assertSee('localStorage.getItem("naano_vid")', false)
+        ->assertSee('visitor_key', false)
+        ->assertSee('window.__naanoPixel', false);
 });

@@ -68,6 +68,7 @@ return [
         'NL' => 'Netherlands',
         'NO' => 'Norway',
         'PL' => 'Poland',
+        'PK' => 'Pakistan',
         'PT' => 'Portugal',
         'SE' => 'Sweden',
         'SG' => 'Singapore',

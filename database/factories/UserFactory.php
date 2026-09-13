@@ -66,7 +66,9 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user): void {
             $user->assignRole('creator');
-            $user->creatorProfile()->create([]);
+            $user->creatorProfile()->create([
+                'country' => 'FR',
+            ]);
         });
     }
 

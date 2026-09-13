@@ -20,6 +20,10 @@ class TrackingPixelService
 
         return <<<JS
 (function () {
+  if (window.__naanoPixel) {
+    return;
+  }
+  window.__naanoPixel = true;
   var script = document.currentScript;
   if (!script) {
     return;
@@ -30,7 +34,28 @@ class TrackingPixelService
     return;
   }
   var endpoint = {$this->jsString($origin)} + "/api/t/" + encodeURIComponent(slug) + "/events";
+  function visitorKey() {
+    try {
+      var key = window.localStorage.getItem("naano_vid");
+      if (key) {
+        return key;
+      }
+      if (!crypto.randomUUID) {
+        return "";
+      }
+      key = crypto.randomUUID();
+      window.localStorage.setItem("naano_vid", key);
+      return key;
+    } catch (e) {
+      return "";
+    }
+  }
+  var storedVisitor = visitorKey();
   function send(type, payload) {
+    var body = { type: type, payload: payload || {} };
+    if (storedVisitor) {
+      body.visitor_key = storedVisitor;
+    }
     fetch(endpoint, {
       method: "POST",
       credentials: "include",
@@ -38,7 +63,7 @@ class TrackingPixelService
         "Content-Type": "application/json",
         "Accept": "application/json"
       },
-      body: JSON.stringify({ type: type, payload: payload || {} })
+      body: JSON.stringify(body)
     }).catch(function () {});
   }
   window.setTimeout(function () {
@@ -161,9 +186,15 @@ JS;
         $originHost = $this->host($origin);
         $destinationHost = $this->host($link->destination_url);
 
-        if ($originHost === null || $destinationHost === null || $originHost !== $destinationHost) {
+        if ($originHost === null || $destinationHost === null) {
             abort(403);
         }
+
+        if ($originHost === $destinationHost || $this->isLocalPreviewHost($originHost)) {
+            return;
+        }
+
+        abort(403);
     }
 
     private function host(string $url): ?string
@@ -175,6 +206,11 @@ JS;
         }
 
         return strtolower((string) preg_replace('/^www\./', '', $host));
+    }
+
+    private function isLocalPreviewHost(string $host): bool
+    {
+        return ! app()->isProduction() && in_array($host, ['localhost', '127.0.0.1'], true);
     }
 
     /**

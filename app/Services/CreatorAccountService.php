@@ -49,6 +49,25 @@ class CreatorAccountService
     public function startOnboarding(User $user): array
     {
         $profile = $this->profiles->profile($user);
+        $country = $profile->country;
+
+        if (! is_string($country) || $country === '' || $country === 'OTHER') {
+            throw ValidationException::withMessages([
+                'country' => 'Add your country on your profile before setting up payouts.',
+            ]);
+        }
+
+        $country = strtoupper($country);
+
+        if (is_string($profile->stripe_connect_id) && $profile->stripe_connect_id !== '') {
+            $connectedCountry = $this->stripe->connectAccountCountry($profile->stripe_connect_id);
+
+            if (is_string($connectedCountry) && $connectedCountry !== $country) {
+                $profile->stripe_connect_id = null;
+                $profile->payouts_enabled = false;
+                $profile->save();
+            }
+        }
 
         if (! is_string($profile->stripe_connect_id) || $profile->stripe_connect_id === '') {
             $profile->stripe_connect_id = $this->stripe->createConnectAccount($profile, $user->email);

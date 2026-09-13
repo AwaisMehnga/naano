@@ -5,6 +5,7 @@ namespace App\Services\Stripe;
 use App\Exceptions\InvalidStripeSignatureException;
 use App\Models\Company;
 use App\Models\CreatorProfile;
+use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\SignatureVerificationException;
@@ -20,13 +21,13 @@ class StripeSdkGateway implements StripeGateway
             return $company->stripe_customer_id;
         }
 
-        $customer = $this->client()->customers->create([
+        $customer = $this->request(fn (): object => $this->client()->customers->create([
             'name' => $company->name,
             'email' => $company->billing_email,
             'metadata' => [
                 'company_id' => (string) $company->id,
             ],
-        ]);
+        ]));
 
         return $customer->id;
     }
@@ -39,7 +40,7 @@ class StripeSdkGateway implements StripeGateway
         array $metadata,
         string $idempotencyKey,
     ): StripeCheckoutSession {
-        $session = $this->client()->checkout->sessions->create([
+        $session = $this->request(fn (): object => $this->client()->checkout->sessions->create([
             'customer' => $customerId,
             'mode' => 'payment',
             'currency' => config('services.stripe.currency'),
@@ -61,7 +62,7 @@ class StripeSdkGateway implements StripeGateway
             ]],
         ], [
             'idempotency_key' => $idempotencyKey,
-        ]);
+        ]));
 
         $url = $session->url;
 
@@ -75,30 +76,38 @@ class StripeSdkGateway implements StripeGateway
     public function createConnectAccount(CreatorProfile $profile, string $email): string
     {
         try {
-            return $this->createV2RecipientAccount($profile, $email);
+            return $this->createExpressAccount($profile, $email);
         } catch (ApiErrorException $exception) {
-            if (! $this->isAccountsV2Unavailable($exception)) {
-                throw $exception;
+            if (! $this->shouldUseAccountsV2($exception)) {
+                throw $this->userFacing($exception);
             }
 
-            return $this->createExpressAccount($profile, $email);
+            try {
+                return $this->createV2RecipientAccount($profile, $email);
+            } catch (ApiErrorException $v2) {
+                throw $this->userFacing($v2);
+            }
         }
     }
 
     public function createAccountLink(string $accountId, string $refreshUrl, string $returnUrl): string
     {
         try {
-            return $this->createV2AccountLink($accountId, $refreshUrl, $returnUrl);
-        } catch (ApiErrorException) {
             return $this->createV1AccountLink($accountId, $refreshUrl, $returnUrl);
+        } catch (ApiErrorException $exception) {
+            try {
+                return $this->createV2AccountLink($accountId, $refreshUrl, $returnUrl);
+            } catch (ApiErrorException $fallback) {
+                throw $this->userFacing($fallback);
+            }
         }
     }
 
     public function createLoginLink(string $accountId): string
     {
-        $link = $this->client()->accounts->createLoginLink($accountId, [], [
+        $link = $this->request(fn (): object => $this->client()->accounts->createLoginLink($accountId, [], [
             'idempotency_key' => 'connect-login-'.$accountId,
-        ]);
+        ]));
 
         $url = $link->url;
 
@@ -118,14 +127,14 @@ class StripeSdkGateway implements StripeGateway
         array $metadata,
         string $idempotencyKey,
     ): string {
-        $transfer = $this->client()->transfers->create([
+        $transfer = $this->request(fn (): object => $this->client()->transfers->create([
             'amount' => $amountCents,
             'currency' => config('services.stripe.currency'),
             'destination' => $destination,
             'metadata' => $metadata,
         ], [
             'idempotency_key' => $idempotencyKey,
-        ]);
+        ]));
 
         return $transfer->id;
     }
@@ -152,13 +161,28 @@ class StripeSdkGateway implements StripeGateway
 
     private function createV2RecipientAccount(CreatorProfile $profile, string $email): string
     {
-        $account = $this->client()->v2->core->accounts->create([
+        $account = $this->request(fn (): object => $this->client()->v2->core->accounts->create([
             'contact_email' => $email,
             'display_name' => $profile->display_name ?: $email,
+            'dashboard' => 'express',
             'identity' => [
-                'country' => $profile->country ?: 'FR',
+                'country' => $this->payoutCountry($profile),
+                'entity_type' => 'individual',
+            ],
+            'defaults' => [
+                'responsibilities' => [
+                    'fees_collector' => 'application',
+                    'losses_collector' => 'application',
+                ],
             ],
             'configuration' => [
+                'merchant' => [
+                    'capabilities' => [
+                        'card_payments' => [
+                            'requested' => true,
+                        ],
+                    ],
+                ],
                 'recipient' => [
                     'capabilities' => [
                         'stripe_balance' => [
@@ -173,17 +197,17 @@ class StripeSdkGateway implements StripeGateway
                 'creator_profile_id' => (string) $profile->id,
             ],
         ], [
-            'idempotency_key' => 'connect-acct-v2-'.$profile->id,
-        ]);
+            'idempotency_key' => 'connect-acct-v2-dash-1-'.$profile->id.'-'.$this->payoutCountry($profile),
+        ]));
 
         return $account->id;
     }
 
     private function createExpressAccount(CreatorProfile $profile, string $email): string
     {
-        $account = $this->client()->accounts->create([
+        $account = $this->request(fn (): object => $this->client()->accounts->create([
             'type' => 'express',
-            'country' => $profile->country ?: 'FR',
+            'country' => $this->payoutCountry($profile),
             'email' => $email,
             'capabilities' => [
                 'transfers' => [
@@ -193,19 +217,22 @@ class StripeSdkGateway implements StripeGateway
             'business_profile' => [
                 'product_description' => 'LinkedIn creator collaborations',
             ],
+            'tos_acceptance' => [
+                'service_agreement' => 'recipient',
+            ],
             'metadata' => [
                 'creator_profile_id' => (string) $profile->id,
             ],
         ], [
-            'idempotency_key' => 'connect-acct-v1-'.$profile->id,
-        ]);
+            'idempotency_key' => 'connect-acct-v1-recip-1-'.$profile->id.'-'.$this->payoutCountry($profile),
+        ]));
 
         return $account->id;
     }
 
     private function createV2AccountLink(string $accountId, string $refreshUrl, string $returnUrl): string
     {
-        $link = $this->client()->v2->core->accountLinks->create([
+        $link = $this->request(fn (): object => $this->client()->v2->core->accountLinks->create([
             'account' => $accountId,
             'use_case' => [
                 'type' => 'account_onboarding',
@@ -215,19 +242,19 @@ class StripeSdkGateway implements StripeGateway
                     'return_url' => $returnUrl,
                 ],
             ],
-        ]);
+        ]));
 
         return $this->accountLinkUrl($link->url);
     }
 
     private function createV1AccountLink(string $accountId, string $refreshUrl, string $returnUrl): string
     {
-        $link = $this->client()->accountLinks->create([
+        $link = $this->request(fn (): object => $this->client()->accountLinks->create([
             'account' => $accountId,
             'refresh_url' => $refreshUrl,
             'return_url' => $returnUrl,
             'type' => 'account_onboarding',
-        ]);
+        ]));
 
         return $this->accountLinkUrl($link->url);
     }
@@ -241,9 +268,70 @@ class StripeSdkGateway implements StripeGateway
         return $url;
     }
 
-    private function isAccountsV2Unavailable(ApiErrorException $exception): bool
+    public function connectAccountCountry(string $accountId): ?string
     {
-        return str_contains($exception->getMessage(), 'Accounts v2 is not enabled');
+        try {
+            $account = $this->request(fn (): object => $this->client()->accounts->retrieve($accountId));
+            $country = $account->country ?? null;
+
+            if (is_string($country) && $country !== '') {
+                return strtoupper($country);
+            }
+        } catch (ApiErrorException) {
+            // Try Accounts v2 next.
+        }
+
+        try {
+            $account = $this->request(fn (): object => $this->client()->v2->core->accounts->retrieve($accountId));
+            $country = data_get($account, 'identity.country');
+
+            if (is_string($country) && $country !== '') {
+                return strtoupper($country);
+            }
+        } catch (ApiErrorException) {
+            return null;
+        }
+
+        return null;
+    }
+
+    private function payoutCountry(CreatorProfile $profile): string
+    {
+        $country = $profile->country;
+
+        if (! is_string($country) || $country === '' || $country === 'OTHER') {
+            throw ValidationException::withMessages([
+                'country' => 'Add your country on your profile before setting up payouts.',
+            ]);
+        }
+
+        return strtoupper($country);
+    }
+
+    private function shouldUseAccountsV2(ApiErrorException $exception): bool
+    {
+        $message = $exception->getMessage();
+
+        return str_contains($message, 'Accounts v2')
+            || str_contains($message, 'v2/core/accounts');
+    }
+
+    /**
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    private function request(callable $callback): mixed
+    {
+        return StripeNotice::ignore($callback);
+    }
+
+    private function userFacing(ApiErrorException $exception): ValidationException
+    {
+        return ValidationException::withMessages([
+            'stripe' => [StripeUserMessage::from($exception->getMessage())],
+        ]);
     }
 
     private function client(): StripeClient
