@@ -6,7 +6,7 @@ Use these Blade components. Do not paste their class strings into pages.
 
 ```php
 @props([
-    'variant' => 'primary', // primary|secondary|ghost|link
+    'variant' => 'primary', // primary|secondary|inverted|ghost|link
     'size' => 'md',         // md|lg
     'href' => null,
     'type' => 'submit',
@@ -17,6 +17,7 @@ If `$href` is set, render `<a>`. Else `<button type="{{ $type }}">`. Merge `$att
 
 - Primary: `inline-flex items-center justify-center rounded-sm bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50`
 - Secondary: `bg-card text-foreground border border-border` (white paper fill, ink text)
+- Inverted: `bg-primary-foreground text-primary` (paper fill, blue text — on `bg-primary` bands)
 - Ghost: `bg-transparent text-foreground hover:bg-muted`
 - Link: `bg-transparent text-primary underline-offset-4 hover:underline px-0`
 - Size `lg`: `px-5 py-3`
@@ -26,6 +27,23 @@ If `$href` is set, render `<a>`. Else `<button type="{{ $type }}">`. Merge `$att
 ## `x-ui.kicker`
 
 Uppercase tracking label: `text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground`
+
+`tone="on-primary"`: `text-primary-foreground/65` for kickers on a `bg-primary` band.
+
+`tone="on-inverse"`: `text-background/65` for kickers on a `bg-foreground` band.
+
+## `x-ui.accordion-item`
+
+```php
+@props([
+    'question',
+    'name' => null,
+    'open' => false,
+    'tone' => null, // on-primary|on-inverse
+])
+```
+
+Native `<details>` row. Shared `name` keeps one item open. Slot is the answer.
 
 ## `x-ui.em`
 
@@ -45,7 +63,7 @@ Slot is the control. Label: `text-sm font-medium`. Hint: `text-sm text-muted-for
 
 ## `x-ui.card`
 
-Default: `block rounded-lg border border-border bg-card p-6`
+Default: `block rounded-lg border border-border bg-card p-6 text-card-foreground`
 
 `flush` (bool): drop padding for split lists. `href` (string|null): render as a block link. No drop shadow.
 

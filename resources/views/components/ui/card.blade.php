@@ -5,8 +5,8 @@
 
 @php
     $classes = $flush
-        ? 'block overflow-hidden rounded-lg border border-border bg-card'
-        : 'block rounded-lg border border-border bg-card p-6';
+        ? 'block overflow-hidden rounded-lg border border-border bg-card text-card-foreground'
+        : 'block rounded-lg border border-border bg-card p-6 text-card-foreground';
 @endphp
 
 @if ($href)
