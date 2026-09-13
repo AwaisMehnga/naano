@@ -20,10 +20,11 @@ jobs:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.VPS_HOST }}
+          host: ${{ secrets.YOUR_CONTABO_SERVER_IP }}
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           command_timeout: 30m
+
           script: |
             /var/www/naano/deploy.sh
