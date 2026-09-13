@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Collaboration;
+use App\Models\CompanyMember;
 use App\Models\Message;
 use App\Models\Post;
 use App\Models\User;
@@ -11,6 +12,8 @@ use App\Notifications\CollaborationApplied;
 use App\Notifications\CollaborationInvited;
 use App\Notifications\CollaborationMessageReceived;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Notification as NotificationFacade;
 
 class CollaborationNotifier
 {
@@ -129,16 +132,54 @@ class CollaborationNotifier
 
     public function messageReceived(Collaboration $collaboration, User $actor, Message $message): void
     {
-        $this->withContext($collaboration);
-        $make = fn (): CollaborationMessageReceived => new CollaborationMessageReceived($collaboration, $message);
+        $collaboration->loadMissing([
+            'campaign:id,company_id,name',
+            'creatorProfile:id,user_id',
+        ]);
 
         if ($this->isCreator($actor, $collaboration)) {
-            $this->notifyCompany($collaboration, $actor, $make);
+            NotificationFacade::send(
+                $this->companyRecipients($collaboration, $actor),
+                new CollaborationMessageReceived(
+                    $collaboration,
+                    $message,
+                    '/campaigns/'.$collaboration->campaign_id,
+                ),
+            );
 
             return;
         }
 
-        $this->notifyCreator($collaboration, $actor, $make());
+        $creator = User::query()
+            ->with('notificationPreference')
+            ->find($collaboration->creatorProfile->user_id);
+
+        if (! $creator instanceof User || $creator->id === $actor->id) {
+            return;
+        }
+
+        $creator->notify(new CollaborationMessageReceived(
+            $collaboration,
+            $message,
+            '/deals/'.$collaboration->id,
+        ));
+    }
+
+    /**
+     * @return Collection<int, User>
+     */
+    private function companyRecipients(Collaboration $collaboration, User $actor): Collection
+    {
+        return User::query()
+            ->whereIn(
+                'id',
+                CompanyMember::query()
+                    ->where('company_id', $collaboration->campaign->company_id)
+                    ->select('user_id'),
+            )
+            ->whereKeyNot($actor->id)
+            ->with('notificationPreference')
+            ->get();
     }
 
     public function campaignUpdated(Collaboration $collaboration, User $actor, string $title, string $body): void

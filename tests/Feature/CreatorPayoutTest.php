@@ -193,6 +193,36 @@ test('a withdrawable creator can request a transfer and the webhook marks it in 
     expect($payout->fresh()->status)->toBe(PayoutStatus::InTransit);
 });
 
+test('v2 account updated enables Connect payouts', function () {
+    $user = User::factory()->creator()->onboarded()->create();
+    $user->creatorProfile->update(['stripe_connect_id' => 'acct_evt_v2']);
+
+    $this->postJson(route('api.stripe.webhook'), [
+        'id' => 'evt_account_v2',
+        'type' => 'v2.core.account.updated',
+        'data' => [
+            'object' => [
+                'id' => 'acct_evt_v2',
+                'configuration' => [
+                    'recipient' => [
+                        'capabilities' => [
+                            'stripe_balance' => [
+                                'payouts' => [
+                                    'status' => 'active',
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
+    ], [
+        'Stripe-Signature' => 'test',
+    ])->assertOk();
+
+    expect($user->creatorProfile->fresh()->payouts_enabled)->toBeTrue();
+});
+
 test('account updated enables Connect payouts', function () {
     $user = User::factory()->creator()->onboarded()->create();
     $user->creatorProfile->update(['stripe_connect_id' => 'acct_evt_1']);

@@ -21,6 +21,7 @@ class CreatorMatchScoreFactory extends Factory
             'campaign_id' => Campaign::factory(),
             'creator_profile_id' => CreatorProfile::factory(),
             'fit_score' => fake()->numberBetween(0, 100),
+            'audience_relevance' => fake()->numberBetween(0, 100),
             'reasons' => ['Audience overlap in SaaS'],
             'computed_at' => now(),
         ];

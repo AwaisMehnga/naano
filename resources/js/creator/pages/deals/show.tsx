@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLink } from '@/components/app-link';
-import CollaborationThread from '@/components/collaboration-thread';
+import CollaborationChatSheet from '@/components/collaboration-chat-sheet';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -64,6 +64,36 @@ export default function CreatorDealShowPage() {
     const [scheduledAt, setScheduledAt] = useState<Record<number, string>>({});
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
+    const [threadOpen, setThreadOpen] = useState(false);
+
+    async function act(action: 'accept' | 'decline') {
+        setBusy(true);
+        setError(null);
+
+        try {
+            await http.post(
+                action === 'accept'
+                    ? creatorApi.collaborationAccept(dealId)
+                    : creatorApi.collaborationDecline(dealId),
+            );
+            toast.success(
+                action === 'accept'
+                    ? 'Invite accepted'
+                    : deal?.status === 'applied'
+                        ? 'Application withdrawn'
+                        : 'Invite declined',
+            );
+            await load();
+        } catch (caught) {
+            setError(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not update this deal.',
+            );
+        } finally {
+            setBusy(false);
+        }
+    }
 
     async function load() {
         const [{ data: nextDeal }, { data: nextPosts }, { data: nextMetrics }] =
@@ -243,16 +273,56 @@ export default function CreatorDealShowPage() {
             <InputError message={error ?? undefined} />
             {deal && (
                 <>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
-                            {deal.campaign.name}
-                        </h1>
-                        <p className="text-muted-foreground mt-1 text-sm">
-                            {deal.company.name} · {deal.status}
-                            {deal.booked_price_cents
-                                ? ` · ${euros(deal.booked_price_cents)}`
-                                : ''}
-                        </p>
+                    <div className="flex flex-wrap items-end justify-between gap-3">
+                        <div>
+                            <h1 className="text-2xl font-semibold tracking-tight">
+                                {deal.campaign.name}
+                            </h1>
+                            <p className="text-muted-foreground mt-1 text-sm">
+                                {deal.company.name} · {deal.status}
+                                {deal.booked_price_cents
+                                    ? ` · ${euros(deal.booked_price_cents)}`
+                                    : ''}
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {deal.status === 'invited' && (
+                                <>
+                                    <Button
+                                        type="button"
+                                        disabled={busy}
+                                        onClick={() => void act('accept')}
+                                    >
+                                        Accept
+                                    </Button>
+                                    <Button
+                                        type="button"
+                                        variant="ghost"
+                                        disabled={busy}
+                                        onClick={() => void act('decline')}
+                                    >
+                                        Decline
+                                    </Button>
+                                </>
+                            )}
+                            {deal.status === 'applied' && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    disabled={busy}
+                                    onClick={() => void act('decline')}
+                                >
+                                    Withdraw
+                                </Button>
+                            )}
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setThreadOpen(true)}
+                            >
+                                Message
+                            </Button>
+                        </div>
                     </div>
                     {deal.status === 'booked' && (
                         <Button type="button" variant="outline" asChild>
@@ -490,14 +560,14 @@ export default function CreatorDealShowPage() {
                             </article>
                         ))
                     )}
-                    <section className="border-border bg-card grid gap-3 rounded-2xl border p-5">
-                        <h2 className="font-medium">Messages</h2>
-                        <CollaborationThread
-                            collaborationId={deal.id}
-                            side="creator"
-                            canSend={deal.status !== 'cancelled'}
-                        />
-                    </section>
+                    <CollaborationChatSheet
+                        open={threadOpen}
+                        onOpenChange={setThreadOpen}
+                        collaborationId={deal.id}
+                        title={deal.company.name ?? 'Messages'}
+                        side="creator"
+                        canSend={deal.status !== 'cancelled'}
+                    />
                 </>
             )}
         </div>

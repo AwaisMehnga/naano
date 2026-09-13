@@ -35,7 +35,7 @@ class StripeWebhookService
         match ($event->type) {
             'checkout.session.completed' => $this->completeCheckout($event),
             'payment_intent.payment_failed' => $this->failPayment($event),
-            'account.updated' => $this->updateConnectAccount($event),
+            'account.updated', 'v2.core.account.updated' => $this->updateConnectAccount($event),
             'transfer.created' => $this->markPayoutInTransit($event),
             'transfer.reversed', 'payout.failed' => $this->failPayout($event),
             'payout.paid' => $this->markPayoutPaid($event),
@@ -70,7 +70,7 @@ class StripeWebhookService
 
     private function updateConnectAccount(StripeWebhookEvent $event): void
     {
-        $accountId = $event->object['id'] ?? null;
+        $accountId = $event->object['id'] ?? data_get($event->object, 'related_object.id');
 
         if (! is_string($accountId) || $accountId === '') {
             return;
@@ -82,8 +82,23 @@ class StripeWebhookService
             return;
         }
 
-        $profile->payouts_enabled = (bool) ($event->object['payouts_enabled'] ?? false);
+        $profile->payouts_enabled = $this->connectPayoutsEnabled($event->object);
         $profile->save();
+    }
+
+    /**
+     * @param  array<string, mixed>  $object
+     */
+    private function connectPayoutsEnabled(array $object): bool
+    {
+        if (array_key_exists('payouts_enabled', $object)) {
+            return (bool) $object['payouts_enabled'];
+        }
+
+        $status = data_get($object, 'configuration.recipient.capabilities.stripe_balance.payouts.status')
+            ?? data_get($object, 'configuration.recipient.capabilities.stripe_balance.stripe_transfers.status');
+
+        return $status === 'active';
     }
 
     private function markPayoutInTransit(StripeWebhookEvent $event): void

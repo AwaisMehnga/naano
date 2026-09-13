@@ -103,11 +103,18 @@ class CollaborationMessageService
             'body' => $body,
         ]);
 
-        $message->load('author');
+        dispatch(fn () => $this->notifier->messageReceived($collaboration, $actor, $message))->afterResponse();
 
-        $this->notifier->messageReceived($collaboration, $actor, $message);
-
-        return $this->payload($message);
+        return [
+            'id' => $message->id,
+            'author' => [
+                'id' => $actor->id,
+                'name' => $actor->name,
+            ],
+            'body' => $message->body,
+            'read_at' => null,
+            'created_at' => $message->created_at?->toIso8601String(),
+        ];
     }
 
     /**
@@ -127,9 +134,13 @@ class CollaborationMessageService
 
     private function conversation(Collaboration $collaboration): Conversation
     {
-        return Conversation::query()->firstOrCreate([
-            'collaboration_id' => $collaboration->id,
-        ]);
+        $existing = $collaboration->conversation;
+
+        if ($existing instanceof Conversation) {
+            return $existing;
+        }
+
+        return $collaboration->conversation()->firstOrCreate([]);
     }
 
     /**

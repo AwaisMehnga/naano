@@ -126,14 +126,14 @@ function StrategyPane({
                     onChange={(context) => onChange({ ...draft, context })}
                 />
             </DocBlock>
-            <DocBlock kicker="Produit" hint="The thing creators are actually talking about.">
+            <DocBlock kicker="Product" hint="The thing creators are actually talking about.">
                 <DocText
                     value={draft.product}
                     placeholder="A single paragraph. Concrete, not a slogan."
                     onChange={(product) => onChange({ ...draft, product })}
                 />
             </DocBlock>
-            <DocBlock kicker="Différenciateurs" hint="Enter adds a line. Empty backspace removes it.">
+            <DocBlock kicker="Differentiators" hint="Enter adds a line. Empty backspace removes it.">
                 <LineList
                     values={draft.differentiators}
                     placeholder="What only this product can show"
@@ -142,7 +142,7 @@ function StrategyPane({
                     }
                 />
             </DocBlock>
-            <DocBlock kicker="Cible" hint="Industry, role, geography — one sentence is enough.">
+            <DocBlock kicker="Target" hint="Industry, role, geography — one sentence is enough.">
                 <DocText
                     value={draft.target}
                     placeholder="Who should feel spoken to."
@@ -164,7 +164,7 @@ function StrategyPane({
                     onChange={(trigger) => onChange({ ...draft, trigger })}
                 />
             </DocBlock>
-            <DocBlock kicker="Message clé" hint="The line every post should be able to land on.">
+            <DocBlock kicker="Key message" hint="The line every post should be able to land on.">
                 <DocText
                     value={draft.key_message}
                     placeholder="See the work before you take the call."
@@ -276,7 +276,7 @@ function EditorialPane({
                         <div key={index} className="grid gap-3">
                             <DocText
                                 value={reference.quote}
-                                placeholder="« Most developer portfolios show projects. Almost none show how someone actually thinks. »"
+                                placeholder="Most developer portfolios show projects. Almost none show how someone actually thinks."
                                 className="min-h-20 text-lg italic leading-relaxed"
                                 onChange={(quote) => {
                                     const references = [...draft.references];

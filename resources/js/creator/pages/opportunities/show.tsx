@@ -3,19 +3,17 @@ import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { initials } from '@/company/pages/creators/format';
+import {
+    deadlineLabel,
+    locationLabel,
+    scoreLabel,
+} from '@/creator/pages/opportunities/format';
+import type { OpportunityDetail } from '@/creator/pages/opportunities/types';
 import { ApiError, creatorApi, http } from '@/lib/api';
-
-type OpportunityDetail = {
-    id: number;
-    name: string;
-    type: string;
-    objective: string;
-    brief: { context?: string } | null;
-    goal: string | null;
-    guidelines: string | null;
-    company: { name: string | null };
-};
 
 export default function CreatorOpportunityShowPage() {
     const { id } = useParams();
@@ -72,21 +70,71 @@ export default function CreatorOpportunityShowPage() {
             <InputError message={error ?? undefined} />
             {item && (
                 <>
-                    <div>
-                        <h1 className="text-2xl font-semibold tracking-tight">
-                            {item.name}
-                        </h1>
-                        <p className="text-muted-foreground mt-2 text-sm">
-                            {item.company.name} · {item.type} · {item.objective}
-                        </p>
+                    <div className="flex flex-wrap items-start gap-4">
+                        <Avatar className="size-14 rounded-lg">
+                            {item.company.logo_url && (
+                                <AvatarImage
+                                    src={item.company.logo_url}
+                                    alt=""
+                                />
+                            )}
+                            <AvatarFallback className="rounded-lg">
+                                {initials(item.company.name)}
+                            </AvatarFallback>
+                        </Avatar>
+                        <div className="min-w-0 flex-1">
+                            <p className="text-muted-foreground text-sm">
+                                {item.company.name}
+                            </p>
+                            <h1 className="text-2xl font-semibold tracking-tight">
+                                {item.name}
+                            </h1>
+                            <p className="text-muted-foreground mt-2 text-sm">
+                                {locationLabel(item.location)} · Deadline{' '}
+                                {deadlineLabel(item.deadline)}
+                            </p>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            <Badge variant="secondary">
+                                Match {scoreLabel(item.match_score)}
+                            </Badge>
+                            <Badge variant="outline">
+                                Audience {scoreLabel(item.audience_relevance)}
+                            </Badge>
+                        </div>
                     </div>
-                    <p className="text-sm leading-7 whitespace-pre-wrap">
-                        {item.brief?.context ?? item.goal ?? 'No brief yet.'}
-                    </p>
-                    {item.guidelines && (
-                        <p className="text-muted-foreground text-sm whitespace-pre-wrap">
-                            {item.guidelines}
+                    {item.reasons.length > 0 && (
+                        <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
+                            {item.reasons.map((reason) => (
+                                <li key={reason}>{reason}</li>
+                            ))}
+                        </ul>
+                    )}
+                    <section className="space-y-2">
+                        <h2 className="text-sm font-medium">Brief</h2>
+                        <p className="text-sm leading-7 whitespace-pre-wrap">
+                            {item.brief?.context ?? item.goal ?? 'No brief yet.'}
                         </p>
+                    </section>
+                    {item.key_messages && item.key_messages.length > 0 && (
+                        <section className="space-y-2">
+                            <h2 className="text-sm font-medium">
+                                Key messages
+                            </h2>
+                            <ul className="list-disc space-y-1 pl-5 text-sm">
+                                {item.key_messages.map((message) => (
+                                    <li key={message}>{message}</li>
+                                ))}
+                            </ul>
+                        </section>
+                    )}
+                    {item.guidelines && (
+                        <section className="space-y-2">
+                            <h2 className="text-sm font-medium">Guidelines</h2>
+                            <p className="text-muted-foreground text-sm whitespace-pre-wrap">
+                                {item.guidelines}
+                            </p>
+                        </section>
                     )}
                     <Button
                         type="button"

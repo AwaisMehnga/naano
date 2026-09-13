@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router';
 import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLink } from '@/components/app-link';
-import CollaborationThread from '@/components/collaboration-thread';
+import CollaborationChatSheet from '@/components/collaboration-chat-sheet';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import {
     DataTable,
@@ -11,12 +11,6 @@ import {
 } from '@/components/data-table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import InviteCreatorDialog from '@/company/pages/campaigns/invite-dialog';
 import { useCampaigns } from '@/company/pages/campaigns/store';
 import {
@@ -28,8 +22,15 @@ import {
     type CollaborationRow,
     type PipelineTab,
 } from '@/company/pages/campaigns/types';
+import CreatorProfileDialog from '@/company/pages/creators/creator-profile-dialog';
 import { euros, initials } from '@/company/pages/creators/format';
+import type { CreatorListItem } from '@/company/pages/creators/types';
 import { ApiError, companyApi, http } from '@/lib/api';
+import {
+    isShortlisted,
+    readShortlist,
+    toggleShortlist,
+} from '@/lib/creator-shortlist';
 import { cn } from '@/lib/utils';
 
 const pipelines: PipelineTab[] = [
@@ -70,6 +71,10 @@ export default function CompanyCollaborationsPage() {
     const [canManage, setCanManage] = useState(false);
     const [inviteOpen, setInviteOpen] = useState(false);
     const [threadId, setThreadId] = useState<number | null>(null);
+    const [openId, setOpenId] = useState<number | null>(null);
+    const [shortlist, setShortlist] = useState<CreatorListItem[]>(() =>
+        readShortlist(),
+    );
     const [pendingCancel, setPendingCancel] = useState<CollaborationRow | null>(
         null,
     );
@@ -290,7 +295,14 @@ export default function CompanyCollaborationsPage() {
                         key: 'creator',
                         header: 'Creator',
                         cell: (row) => (
-                            <div className="flex min-w-0 items-center gap-3">
+                            <button
+                                type="button"
+                                className="flex min-w-0 items-center gap-3 text-left"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    setOpenId(row.creator.id);
+                                }}
+                            >
                                 <Avatar className="size-9">
                                     {row.creator.photo_url && (
                                         <AvatarImage
@@ -310,7 +322,7 @@ export default function CompanyCollaborationsPage() {
                                         {row.source} · {row.status}
                                     </p>
                                 </div>
-                            </div>
+                            </button>
                         ),
                     },
                     {
@@ -333,7 +345,10 @@ export default function CompanyCollaborationsPage() {
                             const id = row.campaign?.id ?? campaignId;
 
                             return (
-                                <div className="flex flex-wrap justify-end gap-2">
+                                <div
+                                    className="flex flex-wrap justify-end gap-2"
+                                    onClick={(event) => event.stopPropagation()}
+                                >
                                     <Button
                                         type="button"
                                         size="sm"
@@ -433,7 +448,13 @@ export default function CompanyCollaborationsPage() {
                                         key={creator.collaboration_id}
                                         className="rounded-lg border border-border bg-card p-4"
                                     >
-                                        <div className="flex items-center gap-3">
+                                        <button
+                                            type="button"
+                                            className="flex w-full items-center gap-3 text-left"
+                                            onClick={() =>
+                                                setOpenId(creator.id)
+                                            }
+                                        >
                                             <Avatar className="size-12">
                                                 {creator.photo_url && (
                                                     <AvatarImage
@@ -455,7 +476,7 @@ export default function CompanyCollaborationsPage() {
                                                     {creator.headline}
                                                 </p>
                                             </div>
-                                        </div>
+                                        </button>
                                         <p className="mt-4 text-sm">
                                             From {euros(creator.from_price_cents)}
                                         </p>
@@ -479,29 +500,27 @@ export default function CompanyCollaborationsPage() {
                         }}
                     />
                 )}
-            <Dialog
+            <CollaborationChatSheet
                 open={threadId !== null}
                 onOpenChange={(open) => {
                     if (!open) {
                         setThreadId(null);
                     }
                 }}
-            >
-                <DialogContent className="sm:max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>
-                            {threadRow?.creator.display_name ?? 'Messages'}
-                        </DialogTitle>
-                    </DialogHeader>
-                    {threadId !== null && (
-                        <CollaborationThread
-                            collaborationId={threadId}
-                            side="company"
-                            canSend={threadRow?.status !== 'cancelled'}
-                        />
-                    )}
-                </DialogContent>
-            </Dialog>
+                collaborationId={threadId}
+                title={threadRow?.creator.display_name ?? 'Messages'}
+                side="company"
+                canSend={threadRow?.status !== 'cancelled'}
+            />
+            <CreatorProfileDialog
+                creatorId={openId}
+                starred={openId !== null && isShortlisted(shortlist, openId)}
+                intent="book"
+                onClose={() => setOpenId(null)}
+                onStar={(creator) =>
+                    setShortlist((current) => toggleShortlist(current, creator))
+                }
+            />
             <ConfirmDialog
                 open={pendingCancel !== null}
                 onOpenChange={(open) => {

@@ -1,0 +1,10 @@
+---
+description: Do not run browser automation unless the user asks
+alwaysApply: true
+---
+
+# Browser actions
+
+Do not open, navigate, click, screenshot, or otherwise drive the browser unless the user explicitly asks in that message.
+
+UI work is done when the code is in place. Wait for the user to ask before exercising the app in a browser.

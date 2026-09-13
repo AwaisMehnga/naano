@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\PostStatus;
 use App\Models\Collaboration;
 use App\Models\Post;
 use App\Models\PostMetric;
@@ -26,9 +27,24 @@ class CreatorAnalyticsService
 
         $profile = $user->creatorProfile;
 
+        if ($profile === null) {
+            abort(404);
+        }
+
+        $followers = $profile->audienceProfiles()
+            ->orderByDesc('captured_at')
+            ->orderByDesc('id')
+            ->value('followers_count');
+
         return [
             ...$rollup,
-            'earnings_cents' => $profile === null ? 0 : $this->wallets->capturedCents($profile),
+            'engagement' => (int) $rollup['likes'] + (int) $rollup['comments'],
+            'public_posts_count' => Post::query()
+                ->whereIn('id', $postIds)
+                ->where('status', PostStatus::Published)
+                ->count(),
+            'followers_count' => $followers === null ? null : (int) $followers,
+            'earnings_cents' => $this->wallets->capturedCents($profile),
         ];
     }
 

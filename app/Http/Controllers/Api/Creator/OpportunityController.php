@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Creator;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\Creator\IndexCreatorOpportunitiesRequest;
 use App\Models\Campaign;
 use App\Models\User;
 use App\Services\CreatorOpportunityService;
@@ -14,9 +15,12 @@ class OpportunityController extends Controller
 {
     public function __construct(private CreatorOpportunityService $opportunities) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(IndexCreatorOpportunitiesRequest $request): JsonResponse
     {
-        return AjaxResponse::success($this->opportunities->opportunities($this->actor($request)));
+        return AjaxResponse::success($this->opportunities->opportunities(
+            $this->actor($request),
+            $request->validated(),
+        ));
     }
 
     public function show(Request $request, Campaign $campaign): JsonResponse

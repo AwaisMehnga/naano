@@ -1,5 +1,6 @@
 <?php
 
+use App\Ai\Agents\CampaignFitAgent;
 use App\Enums\CollaborationSource;
 use App\Enums\CollaborationStatus;
 use App\Enums\CompanyMemberRole;
@@ -55,6 +56,17 @@ expect()->extend('toBeOne', function () {
 | global functions to help you to reduce the number of lines of code in your test files.
 |
 */
+
+function fakeCampaignFit(int $fitScore = 82, int $audienceRelevance = 74): void
+{
+    CampaignFitAgent::fake([
+        [
+            'fit_score' => $fitScore,
+            'audience_relevance' => $audienceRelevance,
+            'reasons' => ['Audience overlap in SaaS'],
+        ],
+    ]);
+}
 
 function marketplaceCreator(array $overrides = []): CreatorProfile
 {

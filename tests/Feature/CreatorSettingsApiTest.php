@@ -37,6 +37,17 @@ test('creators can delete their account with the current password', function () 
     expect(User::query()->where('id', $user->id)->exists())->toBeFalse();
 });
 
+test('connect onboarding returns a setup url', function () {
+    $user = User::factory()->creator()->onboarded()->create();
+
+    $this->actingAs($user)
+        ->postJson(route('api.creator.connect.onboarding'))
+        ->assertOk()
+        ->assertJsonPath('data.url', 'https://connect.stripe.test/setup/acct_fake_'.$user->creatorProfile->id);
+
+    expect($user->creatorProfile->fresh()->stripe_connect_id)->toBe('acct_fake_'.$user->creatorProfile->id);
+});
+
 test('account delete rejects a wrong password', function () {
     $user = User::factory()->creator()->onboarded()->create();
 

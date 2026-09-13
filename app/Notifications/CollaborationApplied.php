@@ -6,10 +6,7 @@ use App\Models\Collaboration;
 
 class CollaborationApplied extends MarketplaceNotification
 {
-    public function __construct(public Collaboration $collaboration)
-    {
-        parent::__construct();
-    }
+    public function __construct(public Collaboration $collaboration) {}
 
     protected function emailPreferenceKey(): string
     {
@@ -30,7 +27,7 @@ class CollaborationApplied extends MarketplaceNotification
             'campaign_name' => $name,
             'title' => 'New application',
             'body' => "{$creator} applied to {$name}.",
-            'href' => '/campaigns/'.$this->collaboration->campaign_id,
+            'href' => '/collaboration?campaign='.$this->collaboration->campaign_id,
         ];
     }
 }

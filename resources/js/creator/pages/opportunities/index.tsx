@@ -1,31 +1,40 @@
-import { useEffect, useState } from 'react';
-import { AppLink } from '@/components/app-link';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Search } from 'lucide-react';
 import InputError from '@/components/input-error';
+import { Input } from '@/components/ui/input';
+import OpportunityCard from '@/creator/pages/opportunities/opportunity-card';
+import type { Opportunity } from '@/creator/pages/opportunities/types';
 import { ApiError, creatorApi, http } from '@/lib/api';
-
-type Opportunity = {
-    id: number;
-    name: string;
-    type: string;
-    objective: string;
-    company: { id: number; name: string | null };
-};
 
 export default function CreatorOpportunitiesPage() {
     const [items, setItems] = useState<Opportunity[]>([]);
+    const [query, setQuery] = useState('');
+    const [applied, setApplied] = useState('');
     const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        http.get<Opportunity[]>(creatorApi.opportunities)
-            .then(({ data }) => setItems(data))
+        setLoading(true);
+
+        http.get<Opportunity[]>(creatorApi.opportunities({ q: applied || undefined }))
+            .then(({ data }) => {
+                setItems(data);
+                setError(null);
+            })
             .catch((caught: unknown) => {
                 setError(
                     caught instanceof ApiError
                         ? caught.message
                         : 'Could not load opportunities.',
                 );
-            });
-    }, []);
+            })
+            .finally(() => setLoading(false));
+    }, [applied]);
+
+    function search(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setApplied(query.trim());
+    }
 
     return (
         <div className="flex w-full flex-1 flex-col gap-6">
@@ -34,28 +43,29 @@ export default function CreatorOpportunitiesPage() {
                     Opportunities
                 </h1>
                 <p className="text-muted-foreground mt-1 text-sm">
-                    Active campaigns you can apply to.
+                    Campaigns that match your niches, country, and audience.
                 </p>
             </div>
+            <form onSubmit={search} className="relative max-w-xl">
+                <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                <Input
+                    value={query}
+                    onChange={(event) => setQuery(event.target.value)}
+                    placeholder="Search campaigns or companies"
+                    className="h-10 pl-9"
+                />
+            </form>
             <InputError message={error ?? undefined} />
-            {items.length === 0 ? (
+            {loading ? (
+                <p className="text-muted-foreground text-sm">Loading…</p>
+            ) : items.length === 0 ? (
                 <p className="text-muted-foreground text-sm">
-                    No open campaigns right now.
+                    No related campaigns right now.
                 </p>
             ) : (
-                <div className="grid gap-2">
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {items.map((item) => (
-                        <AppLink
-                            key={item.id}
-                            href={`/opportunities/${item.id}`}
-                            className="border-border hover:bg-muted/40 rounded-xl border px-4 py-3"
-                        >
-                            <p className="font-medium">{item.name}</p>
-                            <p className="text-muted-foreground text-sm">
-                                {item.company.name} · {item.type} ·{' '}
-                                {item.objective}
-                            </p>
-                        </AppLink>
+                        <OpportunityCard key={item.id} opportunity={item} />
                     ))}
                 </div>
             )}

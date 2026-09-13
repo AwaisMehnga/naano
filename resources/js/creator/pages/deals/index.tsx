@@ -1,58 +1,69 @@
-import { useEffect, useState } from 'react';
-import { AppLink } from '@/components/app-link';
+import { useEffect, useState, type FormEvent } from 'react';
+import { Search } from 'lucide-react';
+import CollaborationChatSheet from '@/components/collaboration-chat-sheet';
 import InputError from '@/components/input-error';
-import { Button } from '@/components/ui/button';
-import { euros } from '@/company/pages/creators/format';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import DealCard from '@/creator/pages/deals/deal-card';
+import type { Deal } from '@/creator/pages/deals/types';
 import { ApiError, creatorApi, http } from '@/lib/api';
 
-type Deal = {
-    id: number;
-    status: string;
-    source: string;
-    booked_price_cents: number | null;
-    campaign: { id: number; name: string };
-    company: { name: string | null };
-};
+const statuses = [
+    'invited',
+    'applied',
+    'selected',
+    'booked',
+    'completed',
+    'declined',
+    'cancelled',
+] as const;
+
+const sources = ['invite', 'apply', 'sourced'] as const;
 
 export default function CreatorDealsPage() {
     const [items, setItems] = useState<Deal[]>([]);
+    const [query, setQuery] = useState('');
+    const [applied, setApplied] = useState('');
+    const [status, setStatus] = useState('all');
+    const [source, setSource] = useState('all');
     const [error, setError] = useState<string | null>(null);
-    const [busy, setBusy] = useState<number | null>(null);
-
-    async function load() {
-        const { data } = await http.get<Deal[]>(creatorApi.collaborations());
-        setItems(data);
-    }
+    const [loading, setLoading] = useState(true);
+    const [threadId, setThreadId] = useState<number | null>(null);
+    const threadRow = items.find((item) => item.id === threadId);
 
     useEffect(() => {
-        load().catch((caught: unknown) => {
-            setError(
-                caught instanceof ApiError
-                    ? caught.message
-                    : 'Could not load deals.',
-            );
-        });
-    }, []);
+        setLoading(true);
 
-    async function act(id: number, action: 'accept' | 'decline') {
-        setBusy(id);
+        http.get<Deal[]>(
+            creatorApi.collaborations({
+                q: applied || undefined,
+                status: status === 'all' ? undefined : status,
+                source: source === 'all' ? undefined : source,
+            }),
+        )
+            .then(({ data }) => {
+                setItems(data);
+                setError(null);
+            })
+            .catch((caught: unknown) => {
+                setError(
+                    caught instanceof ApiError
+                        ? caught.message
+                        : 'Could not load deals.',
+                );
+            })
+            .finally(() => setLoading(false));
+    }, [applied, status, source]);
 
-        try {
-            await http.post(
-                action === 'accept'
-                    ? creatorApi.collaborationAccept(id)
-                    : creatorApi.collaborationDecline(id),
-            );
-            await load();
-        } catch (caught) {
-            setError(
-                caught instanceof ApiError
-                    ? caught.message
-                    : 'Could not update this deal.',
-            );
-        } finally {
-            setBusy(null);
-        }
+    function search(event: FormEvent<HTMLFormElement>) {
+        event.preventDefault();
+        setApplied(query.trim());
     }
 
     return (
@@ -63,96 +74,75 @@ export default function CreatorDealsPage() {
                     Invites, applications, and booked collaborations.
                 </p>
             </div>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <form onSubmit={search} className="relative min-w-0 flex-1">
+                    <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+                    <Input
+                        value={query}
+                        onChange={(event) => setQuery(event.target.value)}
+                        placeholder="Search campaigns or companies"
+                        className="h-10 pl-9"
+                    />
+                </form>
+                <Select value={status} onValueChange={setStatus}>
+                    <SelectTrigger className="h-10 w-full sm:w-40" size="default">
+                        <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All statuses</SelectItem>
+                        {statuses.map((value) => (
+                            <SelectItem key={value} value={value}>
+                                {label(value)}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+                <Select value={source} onValueChange={setSource}>
+                    <SelectTrigger className="h-10 w-full sm:w-40" size="default">
+                        <SelectValue placeholder="Source" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All sources</SelectItem>
+                        {sources.map((value) => (
+                            <SelectItem key={value} value={value}>
+                                {label(value)}
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
             <InputError message={error ?? undefined} />
-            {items.length === 0 ? (
+            {loading ? (
+                <p className="text-muted-foreground text-sm">Loading…</p>
+            ) : items.length === 0 ? (
                 <p className="text-muted-foreground text-sm">No deals yet.</p>
             ) : (
-                <div className="grid gap-2">
+                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                     {items.map((item) => (
-                        <div
+                        <DealCard
                             key={item.id}
-                            className="border-border flex flex-wrap items-center justify-between gap-3 rounded-xl border px-4 py-3"
-                        >
-                            <div>
-                                <p className="font-medium">
-                                    {item.campaign.name}
-                                </p>
-                                <p className="text-muted-foreground text-sm">
-                                    {item.company.name} · {item.source} ·{' '}
-                                    {item.status}
-                                    {item.booked_price_cents
-                                        ? ` · ${euros(item.booked_price_cents)}`
-                                        : ''}
-                                </p>
-                            </div>
-                            <div className="flex gap-2">
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    asChild
-                                >
-                                    <AppLink href={`/deals/${item.id}`}>
-                                        Open
-                                    </AppLink>
-                                </Button>
-                                {item.status === 'invited' && (
-                                    <>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            disabled={busy === item.id}
-                                            onClick={() =>
-                                                void act(item.id, 'accept')
-                                            }
-                                        >
-                                            Accept
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            size="sm"
-                                            variant="ghost"
-                                            disabled={busy === item.id}
-                                            onClick={() =>
-                                                void act(item.id, 'decline')
-                                            }
-                                        >
-                                            Decline
-                                        </Button>
-                                    </>
-                                )}
-                                {item.status === 'applied' && (
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="ghost"
-                                        disabled={busy === item.id}
-                                        onClick={() =>
-                                            void act(item.id, 'decline')
-                                        }
-                                    >
-                                        Withdraw
-                                    </Button>
-                                )}
-                                {item.status === 'booked' && (
-                                    <Button
-                                        type="button"
-                                        size="sm"
-                                        variant="outline"
-                                        asChild
-                                    >
-                                        <AppLink
-                                            href={`/collaborations/${item.id}/contract`}
-                                        >
-                                            Contract
-                                        </AppLink>
-                                    </Button>
-                                )}
-                            </div>
-                        </div>
+                            deal={item}
+                            onMessage={(deal) => setThreadId(deal.id)}
+                        />
                     ))}
                 </div>
             )}
+            <CollaborationChatSheet
+                open={threadId !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setThreadId(null);
+                    }
+                }}
+                collaborationId={threadId}
+                title={threadRow?.company.name ?? 'Messages'}
+                side="creator"
+                canSend={threadRow?.status !== 'cancelled'}
+            />
         </div>
     );
+}
+
+function label(value: string): string {
+    return value.replaceAll('_', ' ').replace(/^\w/, (letter) => letter.toUpperCase());
 }

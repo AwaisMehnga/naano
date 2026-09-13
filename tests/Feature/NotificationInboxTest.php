@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Notifications\CollaborationApplied;
 use App\Notifications\CollaborationInvited;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Queue;
 
 test('inviting a creator writes a database notification for that creator', function () {
     $owner = User::factory()->company()->onboarded()->create();
@@ -50,6 +51,8 @@ test('inviting a creator writes a database notification for that creator', funct
 });
 
 test('applying notifies company members and not the creator', function () {
+    Queue::fake();
+
     [$owner, $company, $member] = companyWithMember();
     $campaign = Campaign::factory()->create([
         'company_id' => $company->id,
@@ -58,6 +61,7 @@ test('applying notifies company members and not the creator', function () {
         'name' => 'Open brief',
     ]);
     $creator = marketplaceCreator();
+    fakeCampaignFit();
 
     $this->actingAs($creator->user)
         ->postJson(route('api.creator.opportunities.apply', $campaign))
@@ -67,7 +71,8 @@ test('applying notifies company members and not the creator', function () {
         ->getJson(route('api.notifications.index'))
         ->assertOk()
         ->assertJsonPath('data.unread_count', 1)
-        ->assertJsonPath('data.notifications.0.type', 'application');
+        ->assertJsonPath('data.notifications.0.type', 'application')
+        ->assertJsonPath('data.notifications.0.data.href', '/collaboration?campaign='.$campaign->id);
 
     $this->actingAs($member)
         ->getJson(route('api.notifications.index'))

@@ -2,12 +2,9 @@
 
 namespace App\Http\Requests\Api\Creator;
 
-use App\Enums\CollaborationSource;
-use App\Enums\CollaborationStatus;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class IndexCreatorCollaborationsRequest extends FormRequest
+class IndexCreatorOpportunitiesRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,7 +13,7 @@ class IndexCreatorCollaborationsRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        foreach (['status', 'q', 'source'] as $key) {
+        foreach (['q', 'limit'] as $key) {
             if ($this->input($key) === '') {
                 $this->merge([$key => null]);
             }
@@ -29,9 +26,8 @@ class IndexCreatorCollaborationsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'nullable', Rule::enum(CollaborationStatus::class)],
             'q' => ['sometimes', 'nullable', 'string', 'max:120'],
-            'source' => ['sometimes', 'nullable', Rule::enum(CollaborationSource::class)],
+            'limit' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:50'],
         ];
     }
 }

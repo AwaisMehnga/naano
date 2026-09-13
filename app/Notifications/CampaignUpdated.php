@@ -11,9 +11,7 @@ class CampaignUpdated extends MarketplaceNotification
         public Collaboration $collaboration,
         public string $title,
         public string $body,
-    ) {
-        parent::__construct();
-    }
+    ) {}
 
     protected function emailPreferenceKey(): string
     {

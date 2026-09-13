@@ -6,6 +6,7 @@ use App\Exceptions\InvalidStripeSignatureException;
 use App\Models\Company;
 use App\Models\CreatorProfile;
 use RuntimeException;
+use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\SignatureVerificationException;
 use Stripe\StripeClient;
 use Stripe\Webhook;
@@ -73,41 +74,24 @@ class StripeSdkGateway implements StripeGateway
 
     public function createConnectAccount(CreatorProfile $profile, string $email): string
     {
-        $account = $this->client()->accounts->create([
-            'type' => 'express',
-            'country' => $profile->country ?: 'FR',
-            'email' => $email,
-            'capabilities' => [
-                'transfers' => ['requested' => true],
-            ],
-            'metadata' => [
-                'creator_profile_id' => (string) $profile->id,
-            ],
-        ], [
-            'idempotency_key' => 'connect-acct-'.$profile->id,
-        ]);
+        try {
+            return $this->createV2RecipientAccount($profile, $email);
+        } catch (ApiErrorException $exception) {
+            if (! $this->isAccountsV2Unavailable($exception)) {
+                throw $exception;
+            }
 
-        return $account->id;
+            return $this->createExpressAccount($profile, $email);
+        }
     }
 
     public function createAccountLink(string $accountId, string $refreshUrl, string $returnUrl): string
     {
-        $link = $this->client()->accountLinks->create([
-            'account' => $accountId,
-            'refresh_url' => $refreshUrl,
-            'return_url' => $returnUrl,
-            'type' => 'account_onboarding',
-        ], [
-            'idempotency_key' => 'connect-link-'.$accountId,
-        ]);
-
-        $url = $link->url;
-
-        if ($url === '') {
-            throw new RuntimeException('Stripe did not return an Account Link URL.');
+        try {
+            return $this->createV2AccountLink($accountId, $refreshUrl, $returnUrl);
+        } catch (ApiErrorException) {
+            return $this->createV1AccountLink($accountId, $refreshUrl, $returnUrl);
         }
-
-        return $url;
     }
 
     public function createLoginLink(string $accountId): string
@@ -164,6 +148,102 @@ class StripeSdkGateway implements StripeGateway
         $object = $event->data->object->toArray();
 
         return new StripeWebhookEvent($event->id, $event->type, $object);
+    }
+
+    private function createV2RecipientAccount(CreatorProfile $profile, string $email): string
+    {
+        $account = $this->client()->v2->core->accounts->create([
+            'contact_email' => $email,
+            'display_name' => $profile->display_name ?: $email,
+            'identity' => [
+                'country' => $profile->country ?: 'FR',
+            ],
+            'configuration' => [
+                'recipient' => [
+                    'capabilities' => [
+                        'stripe_balance' => [
+                            'stripe_transfers' => [
+                                'requested' => true,
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+            'metadata' => [
+                'creator_profile_id' => (string) $profile->id,
+            ],
+        ], [
+            'idempotency_key' => 'connect-acct-v2-'.$profile->id,
+        ]);
+
+        return $account->id;
+    }
+
+    private function createExpressAccount(CreatorProfile $profile, string $email): string
+    {
+        $account = $this->client()->accounts->create([
+            'type' => 'express',
+            'country' => $profile->country ?: 'FR',
+            'email' => $email,
+            'capabilities' => [
+                'transfers' => [
+                    'requested' => true,
+                ],
+            ],
+            'business_profile' => [
+                'product_description' => 'LinkedIn creator collaborations',
+            ],
+            'metadata' => [
+                'creator_profile_id' => (string) $profile->id,
+            ],
+        ], [
+            'idempotency_key' => 'connect-acct-v1-'.$profile->id,
+        ]);
+
+        return $account->id;
+    }
+
+    private function createV2AccountLink(string $accountId, string $refreshUrl, string $returnUrl): string
+    {
+        $link = $this->client()->v2->core->accountLinks->create([
+            'account' => $accountId,
+            'use_case' => [
+                'type' => 'account_onboarding',
+                'account_onboarding' => [
+                    'configurations' => ['recipient'],
+                    'refresh_url' => $refreshUrl,
+                    'return_url' => $returnUrl,
+                ],
+            ],
+        ]);
+
+        return $this->accountLinkUrl($link->url);
+    }
+
+    private function createV1AccountLink(string $accountId, string $refreshUrl, string $returnUrl): string
+    {
+        $link = $this->client()->accountLinks->create([
+            'account' => $accountId,
+            'refresh_url' => $refreshUrl,
+            'return_url' => $returnUrl,
+            'type' => 'account_onboarding',
+        ]);
+
+        return $this->accountLinkUrl($link->url);
+    }
+
+    private function accountLinkUrl(mixed $url): string
+    {
+        if (! is_string($url) || $url === '') {
+            throw new RuntimeException('Stripe did not return an Account Link URL.');
+        }
+
+        return $url;
+    }
+
+    private function isAccountsV2Unavailable(ApiErrorException $exception): bool
+    {
+        return str_contains($exception->getMessage(), 'Accounts v2 is not enabled');
     }
 
     private function client(): StripeClient

@@ -3,20 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\User;
-use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 
-abstract class MarketplaceNotification extends Notification implements ShouldQueue
+abstract class MarketplaceNotification extends Notification
 {
-    use Queueable;
-
-    public function __construct()
-    {
-        $this->afterCommit();
-    }
-
     abstract protected function emailPreferenceKey(): string;
 
     /**

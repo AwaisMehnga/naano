@@ -172,7 +172,8 @@ export const creatorApi = {
     audience: '/api/creator/audience',
     billing: '/api/creator/billing',
     account: '/api/creator/account',
-    opportunities: '/api/creator/opportunities',
+    opportunities: (query: Record<string, string | number | undefined> = {}) =>
+        withQuery('/api/creator/opportunities', query),
     opportunity: (id: number) => `/api/creator/opportunities/${id}`,
     opportunityApply: (id: number) => `/api/creator/opportunities/${id}/apply`,
     collaborations: (query: Record<string, string | number | undefined> = {}) =>

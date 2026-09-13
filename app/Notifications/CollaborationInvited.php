@@ -6,10 +6,7 @@ use App\Models\Collaboration;
 
 class CollaborationInvited extends MarketplaceNotification
 {
-    public function __construct(public Collaboration $collaboration)
-    {
-        parent::__construct();
-    }
+    public function __construct(public Collaboration $collaboration) {}
 
     protected function emailPreferenceKey(): string
     {

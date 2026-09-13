@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property int $campaign_id
  * @property int $creator_profile_id
  * @property int $fit_score
+ * @property int|null $audience_relevance
  * @property list<string>|null $reasons
  * @property Carbon $computed_at
  */
@@ -22,6 +23,7 @@ use Illuminate\Support\Carbon;
     'campaign_id',
     'creator_profile_id',
     'fit_score',
+    'audience_relevance',
     'reasons',
     'computed_at',
 ])]

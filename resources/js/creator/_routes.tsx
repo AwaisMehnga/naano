@@ -1,6 +1,6 @@
 import DashboardLayout from '@/layouts/dashboard';
-import SpaHome from '@/pages/spa-home';
 import { Navigate } from 'react-router';
+import CreatorDashboardPage from './pages/dashboard';
 import CreatorDealsPage from './pages/deals';
 import CreatorContractPage from './pages/deals/contract';
 import CreatorDealShowPage from './pages/deals/show';
@@ -22,7 +22,7 @@ export const routes = [
         children: [
             {
                 index: true,
-                element: <SpaHome title="Creator" />,
+                element: <CreatorDashboardPage />,
             },
             {
                 path: 'opportunities',

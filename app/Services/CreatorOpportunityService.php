@@ -10,6 +10,7 @@ use App\Enums\CreatorVettingStatus;
 use App\Models\Campaign;
 use App\Models\Collaboration;
 use App\Models\Contract;
+use App\Models\CreatorMatchScore;
 use App\Models\CreatorProfile;
 use App\Models\Post;
 use App\Models\User;
@@ -23,12 +24,14 @@ class CreatorOpportunityService
         private CompanyCollaborationService $collaborations,
         private ContractService $contracts,
         private CollaborationNotifier $notifier,
+        private CreatorCampaignMatchService $matches,
     ) {}
 
     /**
+     * @param  array<string, mixed>  $filters
      * @return list<array<string, mixed>>
      */
-    public function opportunities(User $user): array
+    public function opportunities(User $user, array $filters = []): array
     {
         $profile = $this->profile($user);
 
@@ -36,17 +39,45 @@ class CreatorOpportunityService
             return [];
         }
 
-        return Campaign::query()
+        $query = Campaign::query()
             ->where('status', CampaignStatus::Active)
             ->whereDoesntHave(
                 'collaborations',
-                fn ($query) => $query->where('creator_profile_id', $profile->id),
+                fn ($builder) => $builder->where('creator_profile_id', $profile->id),
             )
-            ->with('company')
-            ->orderByDesc('id')
-            ->get()
-            ->map(fn (Campaign $campaign): array => $this->opportunityPayload($campaign))
-            ->all();
+            ->with(['company', 'companyIcp'])
+            ->orderByDesc('id');
+
+        $q = trim((string) ($filters['q'] ?? ''));
+
+        if ($q !== '') {
+            $query->where(function ($builder) use ($q): void {
+                $builder->where('name', 'like', '%'.$q.'%')
+                    ->orWhereHas('company', fn ($company) => $company->where('name', 'like', '%'.$q.'%'));
+            });
+        }
+
+        $items = $query->get()
+            ->map(function (Campaign $campaign) use ($profile): ?array {
+                $score = $this->matches->score($profile, $campaign);
+
+                if (! $score instanceof CreatorMatchScore) {
+                    return null;
+                }
+
+                return $this->opportunityPayload($campaign, $score);
+            })
+            ->filter()
+            ->sortByDesc('match_score')
+            ->values();
+
+        $limit = isset($filters['limit']) ? (int) $filters['limit'] : 0;
+
+        if ($limit > 0) {
+            $items = $items->take($limit)->values();
+        }
+
+        return $items->all();
     }
 
     /**
@@ -55,12 +86,12 @@ class CreatorOpportunityService
     public function showOpportunity(User $user, Campaign $campaign): array
     {
         $profile = $this->profile($user);
-        $this->ensureEligible($profile, $campaign);
+        $score = $this->ensureEligible($profile, $campaign);
 
-        $campaign->load('company');
+        $campaign->load(['company', 'companyIcp']);
 
         return [
-            ...$this->opportunityPayload($campaign),
+            ...$this->opportunityPayload($campaign, $score),
             'brief' => $campaign->brief,
             'goal' => $campaign->goal,
             'key_messages' => $campaign->key_messages,
@@ -114,6 +145,26 @@ class CreatorOpportunityService
 
         if (is_string($status) && $status !== '') {
             $query->where('status', $status);
+        }
+
+        $source = $filters['source'] ?? null;
+
+        if (is_string($source) && $source !== '') {
+            $query->where('source', $source);
+        }
+
+        $q = trim((string) ($filters['q'] ?? ''));
+
+        if ($q !== '') {
+            $query->where(function ($builder) use ($q): void {
+                $builder->whereHas(
+                    'campaign',
+                    fn ($campaign) => $campaign->where('name', 'like', '%'.$q.'%'),
+                )->orWhereHas(
+                    'campaign.company',
+                    fn ($company) => $company->where('name', 'like', '%'.$q.'%'),
+                );
+            });
         }
 
         return $query->get()
@@ -259,7 +310,7 @@ class CreatorOpportunityService
             && $profile->onboarded_at !== null;
     }
 
-    private function ensureEligible(CreatorProfile $profile, Campaign $campaign): void
+    private function ensureEligible(CreatorProfile $profile, Campaign $campaign): CreatorMatchScore
     {
         if (! $this->isListed($profile) || $campaign->status !== CampaignStatus::Active) {
             abort(404);
@@ -272,6 +323,15 @@ class CreatorOpportunityService
         if ($exists) {
             abort(404);
         }
+
+        $campaign->loadMissing(['company', 'companyIcp']);
+        $score = $this->matches->score($profile, $campaign);
+
+        if (! $score instanceof CreatorMatchScore) {
+            abort(404);
+        }
+
+        return $score;
     }
 
     private function ensureOwned(User $user, Collaboration $collaboration): void
@@ -286,9 +346,10 @@ class CreatorOpportunityService
     /**
      * @return array<string, mixed>
      */
-    private function opportunityPayload(Campaign $campaign): array
+    private function opportunityPayload(Campaign $campaign, CreatorMatchScore $score): array
     {
         $company = $campaign->company;
+        $icp = $campaign->companyIcp;
 
         return [
             'id' => $campaign->id,
@@ -298,6 +359,14 @@ class CreatorOpportunityService
             'status' => $campaign->status->value,
             'start_at' => $campaign->start_at?->toIso8601String(),
             'end_at' => $campaign->end_at?->toIso8601String(),
+            'deadline' => $campaign->end_at?->toIso8601String(),
+            'match_score' => $score->fit_score,
+            'audience_relevance' => $score->audience_relevance,
+            'reasons' => $score->reasons ?? [],
+            'location' => [
+                'country' => $company->country,
+                'regions' => $icp?->regions ?? [],
+            ],
             'company' => [
                 'id' => $company->id,
                 'name' => $company->name,

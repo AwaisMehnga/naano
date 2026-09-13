@@ -224,10 +224,10 @@ declined / cancelled / completed
 
 | Method | Path                                                  | What it does                                                                                                               |
 | ------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/creator/opportunities`                          | Active campaigns this creator can apply to (vetted + matching niches; exclude existing collab)                             |
-| GET    | `/api/creator/opportunities/{campaign}`               | Campaign brief the creator is allowed to see                                                                               |
-| POST   | `/api/creator/opportunities/{campaign}/apply`         | `source=apply`, `status=applied`                                                                                           |
-| GET    | `/api/creator/collaborations`                         | Deal inbox. Query: `status`                                                                                                |
+| GET    | `/api/creator/opportunities`                          | Related active campaigns. Query: `q`, `limit`. Hard-filters by ICP niches/tags, AI `fit_score` ≥ 30, exclude existing collab. Payload includes company, location, match_score, audience_relevance, deadline |
+| GET    | `/api/creator/opportunities/{campaign}`               | Campaign brief the creator is allowed to see (same score fields)                                                                                                                          |
+| POST   | `/api/creator/opportunities/{campaign}/apply`         | `source=apply`, `status=applied` — company sees it under Collaborations `invitations_received`                                                                                            |
+| GET    | `/api/creator/collaborations`                         | Deal inbox. Query: `status`, `q`, `source`                                                                                 |
 | GET    | `/api/creator/collaborations/{collaboration}`         | Deal + brief + posts                                                                                                       |
 | POST   | `/api/creator/collaborations/{collaboration}/accept`  | Invite → `selected` or `booked` (if company already selected; booking still company-side if wallet required)               |
 | POST   | `/api/creator/collaborations/{collaboration}/decline` | → `declined`                                                                                                               |
@@ -312,7 +312,7 @@ Same facts on both sides; company gets rollups (campaign, creator, post, pipelin
 
 | Method | Path                                                  | What it does                                  |
 | ------ | ----------------------------------------------------- | --------------------------------------------- |
-| GET    | `/api/creator/analytics/overview`                     | Own impressions, clicks, engagement, earnings |
+| GET    | `/api/creator/analytics/overview`                     | Own impressions (reach), engagement, public posts, followers, clicks, earnings |
 | GET    | `/api/creator/collaborations/{collaboration}/metrics` | Deal-level rollup of posts                    |
 | GET    | `/api/creator/posts/{post}/metrics`                   | Same snapshot the company sees                |
 
