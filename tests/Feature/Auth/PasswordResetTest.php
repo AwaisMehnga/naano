@@ -22,7 +22,18 @@ test('reset password link can be requested', function () {
 
     $this->post(route('password.email'), ['email' => $user->email]);
 
-    Notification::assertSentTo($user, ResetPassword::class);
+    Notification::assertSentToTimes($user, ResetPassword::class, 1);
+});
+
+test('reset password link is emailed once when requested twice', function () {
+    Notification::fake();
+
+    $user = User::factory()->create();
+
+    $this->post(route('password.email'), ['email' => $user->email]);
+    $this->post(route('password.email'), ['email' => $user->email]);
+
+    Notification::assertSentToTimes($user, ResetPassword::class, 1);
 });
 
 test('reset password screen can be rendered', function () {

@@ -2,6 +2,7 @@
 
 use App\Models\User;
 use App\Notifications\EmailVerificationCode;
+use App\Support\PasswordPolicy;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Fortify\Features;
 use Spatie\Permission\Models\Role;
@@ -98,6 +99,98 @@ test('company registration assigns the company role even when roles were not see
     expect($user)->not->toBeNull()
         ->and($user->hasRole('company'))->toBeTrue()
         ->and($user->company)->not->toBeNull();
+});
+
+test('registration screen shows the password rules', function () {
+    $this->get(route('register.creator'))
+        ->assertOk()
+        ->assertSee(PasswordPolicy::hint(), false);
+
+    $this->get(route('register.company'))
+        ->assertOk()
+        ->assertSee(PasswordPolicy::hint(), false);
+});
+
+test('registration rejects a weak password without creating an account', function () {
+    $this->from(route('register.creator'))
+        ->post(route('register.store'), [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'email' => 'ada@example.com',
+            'password' => 'short',
+            'password_confirmation' => 'short',
+            'role' => 'creator',
+            'hear_about' => 'linkedin',
+        ])
+        ->assertRedirect(route('register.creator'))
+        ->assertSessionHasErrors('password');
+
+    $this->assertGuest();
+    $this->assertDatabaseMissing('users', ['email' => 'ada@example.com']);
+});
+
+test('unverified registration can be retried with a valid password', function (string $role, string $email) {
+    Notification::fake();
+
+    $user = User::factory()->unverified()->{$role}()->create([
+        'email' => $email,
+        'name' => 'Old Name',
+    ]);
+
+    $this->from($role === 'creator' ? route('register.creator') : route('register.company'))
+        ->post(route('register.store'), [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'email' => $email,
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => $role,
+            'hear_about' => 'linkedin',
+        ])
+        ->assertRedirect(route('verification.notice', absolute: false));
+
+    $this->assertAuthenticatedAs($user->fresh());
+    $this->assertDatabaseCount('users', 1);
+
+    $user = $user->fresh();
+
+    expect($user->name)->toBe('Ada Lovelace')
+        ->and($user->hasRole($role))->toBeTrue();
+
+    if ($role === 'creator') {
+        expect($user->creatorProfile)->not->toBeNull();
+    } else {
+        expect($user->company)->not->toBeNull();
+    }
+
+    Notification::assertSentToTimes($user, EmailVerificationCode::class, 1);
+})->with([
+    'creator' => ['creator', 'ada@example.com'],
+    'company' => ['company', 'ada@brand.com'],
+]);
+
+test('verified emails cannot register again', function () {
+    User::factory()->creator()->create([
+        'email' => 'ada@example.com',
+    ]);
+
+    $this->from(route('register.creator'))
+        ->post(route('register.store'), [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'email' => 'ada@example.com',
+            'password' => 'password',
+            'password_confirmation' => 'password',
+            'role' => 'creator',
+            'hear_about' => 'linkedin',
+        ])
+        ->assertRedirect(route('register.creator'))
+        ->assertSessionHasErrors([
+            'email' => 'This email is already registered. Sign in or reset your password.',
+        ]);
+
+    $this->assertGuest();
+    $this->assertDatabaseCount('users', 1);
 });
 
 test('registration requires a role', function () {

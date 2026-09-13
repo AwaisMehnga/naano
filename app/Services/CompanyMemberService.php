@@ -8,6 +8,7 @@ use App\Models\CompanyInvite;
 use App\Models\CompanyMember;
 use App\Models\User;
 use App\Notifications\CompanyMemberInvite;
+use App\Support\AuthMail;
 use App\Support\CompanyAccess;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -185,9 +186,11 @@ class CompanyMemberService
             $invite->save();
         }
 
-        Notification::route('mail', $email)->notify(
-            new CompanyMemberInvite($company, $actor, $role, $email),
-        );
+        AuthMail::once('invite:'.$company->id.':'.$email, 15, function () use ($company, $actor, $role, $email): void {
+            Notification::route('mail', $email)->notify(
+                new CompanyMemberInvite($company, $actor, $role, $email),
+            );
+        });
 
         return $this->invitePayload($invite);
     }

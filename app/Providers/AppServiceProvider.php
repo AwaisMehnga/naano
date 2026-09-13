@@ -4,11 +4,13 @@ namespace App\Providers;
 
 use App\Services\Stripe\StripeGateway;
 use App\Services\Stripe\StripeSdkGateway;
+use App\Support\PasswordPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
+use Laravel\Telescope\TelescopeServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,9 +23,9 @@ class AppServiceProvider extends ServiceProvider
 
         if (
             $this->app->environment('local') &&
-            class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)
+            class_exists(TelescopeServiceProvider::class)
         ) {
-            $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
+            $this->app->register(TelescopeServiceProvider::class);
             $this->app->register(\App\Providers\TelescopeServiceProvider::class);
         }
     }
@@ -47,14 +49,9 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
+        Password::defaults(fn (): ?Password => app()->environment('testing')
+            ? null
+            : PasswordPolicy::rule(),
         );
     }
 }

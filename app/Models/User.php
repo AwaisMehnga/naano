@@ -3,7 +3,9 @@
 namespace App\Models;
 
 use App\Services\EmailCodeService;
+use App\Support\AuthMail;
 use Database\Factories\UserFactory;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -139,5 +141,12 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     public function sendEmailVerificationNotification(): void
     {
         app(EmailCodeService::class)->send($this);
+    }
+
+    public function sendPasswordResetNotification(#[\SensitiveParameter] mixed $token): void
+    {
+        AuthMail::once('reset:'.$this->id, 60, function () use ($token): void {
+            $this->notify(new ResetPassword($token));
+        });
     }
 }

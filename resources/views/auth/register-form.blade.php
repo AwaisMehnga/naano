@@ -62,7 +62,7 @@
             />
         </x-ui.field>
 
-        <x-ui.field label="Password" name="password">
+        <x-ui.field label="Password" name="password" hint="{{ \App\Support\PasswordPolicy::hint() }}">
             <x-ui.input
                 id="password"
                 type="password"

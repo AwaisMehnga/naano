@@ -71,5 +71,21 @@
                 </div>
             </div>
         </div>
+        <script>
+            document.querySelectorAll('form[method="post"], form[method="POST"]').forEach((form) => {
+                form.addEventListener('submit', (event) => {
+                    if (form.dataset.busy === '1') {
+                        event.preventDefault();
+
+                        return;
+                    }
+
+                    form.dataset.busy = '1';
+                    form.querySelectorAll('button[type="submit"], button:not([type])').forEach((button) => {
+                        button.disabled = true;
+                    });
+                });
+            });
+        </script>
     </body>
 </html>
