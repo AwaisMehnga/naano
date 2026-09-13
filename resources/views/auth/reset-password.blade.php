@@ -1,15 +1,19 @@
-<x-layouts.guest
+<x-layouts.auth
     title="Reset password"
-    heading="Reset password"
-    description="Please enter your new password below"
+    kicker="Account"
+    description="Choose a new password for this email."
 >
-    <form method="POST" action="{{ route('password.update') }}" class="grid gap-6">
+    <x-slot:heading>
+        Choose a
+        <x-ui.em>new password.</x-ui.em>
+    </x-slot:heading>
+
+    <form method="POST" action="{{ route('password.update') }}" class="flex flex-col gap-5">
         @csrf
         <input type="hidden" name="token" value="{{ $token }}">
 
-        <div class="grid gap-2">
-            <label for="email" class="text-sm font-medium">Email</label>
-            <input
+        <x-ui.field label="Email" name="email">
+            <x-ui.input
                 id="email"
                 type="email"
                 name="email"
@@ -17,52 +21,40 @@
                 required
                 readonly
                 autocomplete="email"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('email')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </div>
+            />
+        </x-ui.field>
 
-        <div class="grid gap-2">
-            <label for="password" class="text-sm font-medium">Password</label>
-            <input
+        <x-ui.field label="Password" name="password">
+            <x-ui.input
                 id="password"
                 type="password"
                 name="password"
                 required
                 autofocus
                 autocomplete="new-password"
-                placeholder="Password"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('password')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </div>
+            />
+        </x-ui.field>
 
-        <div class="grid gap-2">
-            <label for="password_confirmation" class="text-sm font-medium">Confirm password</label>
-            <input
+        <x-ui.field label="Confirm password" name="password_confirmation">
+            <x-ui.input
                 id="password_confirmation"
                 type="password"
                 name="password_confirmation"
                 required
                 autocomplete="new-password"
-                placeholder="Confirm password"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('password_confirmation')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </div>
+            />
+        </x-ui.field>
 
-        <button
-            type="submit"
-            data-test="reset-password-button"
-            class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
+        <x-ui.button data-test="reset-password-button">
             Reset password
-        </button>
+        </x-ui.button>
     </form>
-</x-layouts.guest>
+
+    <x-slot:panel>
+        <x-ui.kicker>Almost back</x-ui.kicker>
+        <p class="mt-6 text-4xl font-normal tracking-tight">
+            Then sign in and open your
+            <x-ui.em>workspace.</x-ui.em>
+        </p>
+    </x-slot:panel>
+</x-layouts.auth>

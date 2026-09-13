@@ -37,6 +37,9 @@ class EmailCodeController extends Controller
             ]);
         }
 
-        return redirect()->intended(HomeRedirect::path($user).'?verified=1');
+        $target = HomeRedirect::afterAuth($request);
+        $separator = str_contains($target, '?') ? '&' : '?';
+
+        return redirect($target.$separator.'verified=1');
     }
 }

@@ -11,7 +11,15 @@ We only need to use the semantic classes. Not need to define new color classes w
 
 `resources/css/app.css` is the only file that may define colors. Change `:root` tokens there to restyle the site.
 
-Dashboards (company and creator SPAs) are **light mode only**. Do not add `class="dark"` to the SPA layout. Do not add appearance scripts that flip dashboards to dark.
+Agentcard mapping in `:root` (do not paste these hex values into Blade or TSX):
+
+- Ink / foreground: `#171818`
+- Muted text: `#7c7c7c`
+- Primary / accent / links / CTAs: `#1520b8`
+- Paper / background: `#f4f3ee`
+- Hairline / border: `#c9c9c9`
+
+Dashboards (company and creator SPAs) are **light mode only**. Do not add `class="dark"` to the SPA layout. Do not add appearance scripts that flip dashboards to dark. Do not add `class="dark"` to marketing, auth, or onboarding layouts.
 
 ## Allowed color classes
 

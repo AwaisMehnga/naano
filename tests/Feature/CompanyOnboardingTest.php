@@ -67,6 +67,7 @@ test('company can confirm the brief and open the workspace', function () {
 
 test('company cannot confirm a brief before adding a website', function () {
     $user = User::factory()->company()->create();
+    $user->company->update(['website' => null]);
 
     $this->actingAs($user)
         ->post(route('onboarding.company.brief'), [

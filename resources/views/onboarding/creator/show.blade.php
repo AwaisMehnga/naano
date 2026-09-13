@@ -1,10 +1,11 @@
 @php
-    $steps = [
-        'linkedin' => '2 / 4',
-        'industries' => '3 / 4',
-        'offer' => '4 / 4',
-        'professional' => 'Optional',
-    ];
+    $stepIndex = match ($step) {
+        'linkedin' => 1,
+        'industries' => 2,
+        'offer' => 3,
+        default => 4,
+    };
+    $steps = ['LinkedIn', 'Industries', 'Price', 'Workspace'];
     $headings = [
         'linkedin' => 'Add your LinkedIn',
         'industries' => 'Your industries',
@@ -13,19 +14,18 @@
     ];
 @endphp
 
-<x-layouts.guest
+<x-layouts.onboarding
     title="Creator setup"
     heading="{{ $headings[$step] }}"
-    description="{{ $steps[$step] }}"
-    ajax
-    wide
+    :step="$stepIndex"
+    :steps="$steps"
 >
-    <p id="form-errors" class="mb-4 hidden text-sm text-destructive"></p>
+    <x-ui.alert variant="danger" id="form-errors" class="mb-4 hidden"></x-ui.alert>
 
     @include('onboarding.creator.steps.'.$step)
 
     <x-slot:panel>
-        <div class="rounded-xl border border-border bg-card p-6">
+        <x-ui.card>
             <p class="text-xs uppercase tracking-wide text-muted-foreground">Marketplace card</p>
             <p class="mt-4 text-lg font-medium">{{ $user->name }}</p>
             <p class="mt-1 text-sm text-muted-foreground">{{ $profile->headline ?: 'Your headline' }}</p>
@@ -39,6 +39,6 @@
                     <p class="font-medium">{{ $profile->price_cents ? '€'.number_format($profile->price_cents / 100, 0) : '—' }}</p>
                 </div>
             </div>
-        </div>
+        </x-ui.card>
     </x-slot:panel>
-</x-layouts.guest>
+</x-layouts.onboarding>

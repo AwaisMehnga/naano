@@ -15,10 +15,11 @@ class VerifyEmailResponse implements VerifyEmailResponseContract
      */
     public function toResponse($request): Response
     {
-        $path = HomeRedirect::path($request->user());
+        $target = HomeRedirect::afterAuth($request);
+        $separator = str_contains($target, '?') ? '&' : '?';
 
         return $request->wantsJson()
             ? new JsonResponse('', 204)
-            : redirect()->intended($path.'?verified=1');
+            : redirect($target.$separator.'verified=1');
     }
 }

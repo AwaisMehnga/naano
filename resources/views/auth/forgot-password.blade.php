@@ -1,18 +1,22 @@
-<x-layouts.guest
+<x-layouts.auth
     title="Forgot password"
-    heading="Forgot password"
-    description="Enter your email to receive a password reset link"
+    kicker="Account"
+    description="We’ll email you a link to choose a new one."
 >
+    <x-slot:heading>
+        Forgot your
+        <x-ui.em>password?</x-ui.em>
+    </x-slot:heading>
+
     @if ($status)
-        <p class="mb-4 text-center text-sm font-medium text-primary">{{ $status }}</p>
+        <x-ui.alert variant="success" class="mb-6">{{ $status }}</x-ui.alert>
     @endif
 
-    <form method="POST" action="{{ route('password.email') }}" class="grid gap-6">
+    <form method="POST" action="{{ route('password.email') }}" class="flex flex-col gap-5">
         @csrf
 
-        <div class="grid gap-2">
-            <label for="email" class="text-sm font-medium">Email address</label>
-            <input
+        <x-ui.field label="Email address" name="email">
+            <x-ui.input
                 id="email"
                 type="email"
                 name="email"
@@ -21,24 +25,27 @@
                 autofocus
                 autocomplete="email"
                 placeholder="email@example.com"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('email')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </div>
+            />
+        </x-ui.field>
 
-        <button
-            type="submit"
-            data-test="email-password-reset-link-button"
-            class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
-            Email password reset link
-        </button>
+        <x-ui.button data-test="email-password-reset-link-button">
+            Email reset link
+        </x-ui.button>
     </form>
 
-    <p class="mt-6 text-center text-sm text-muted-foreground">
-        Or, return to
-        <a href="{{ route('login') }}" class="text-primary underline-offset-4 hover:underline">log in</a>
+    <p class="mt-8 text-sm text-muted-foreground">
+        Remembered it?
+        <x-ui.button href="{{ route('login') }}" variant="link">Sign in</x-ui.button>
     </p>
-</x-layouts.guest>
+
+    <x-slot:panel>
+        <x-ui.kicker>Reset</x-ui.kicker>
+        <p class="mt-6 text-4xl font-normal tracking-tight">
+            One email.
+            <x-ui.em>A new password.</x-ui.em>
+        </p>
+        <p class="mt-6 text-lg leading-relaxed text-muted-foreground">
+            The link expires. If nothing arrives, check spam or request another.
+        </p>
+    </x-slot:panel>
+</x-layouts.auth>

@@ -1,9 +1,37 @@
 const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
 
-function showErrors(message) {
+function showErrors(message, errors) {
     const box = document.getElementById('form-errors');
 
+    document.querySelectorAll('[data-error-for]').forEach((el) => {
+        if (!(el instanceof HTMLElement)) {
+            return;
+        }
+
+        el.textContent = '';
+        el.classList.add('hidden');
+    });
+
+    if (errors && typeof errors === 'object') {
+        Object.entries(errors).forEach(([key, value]) => {
+            const field = document.querySelector(`[data-error-for="${key}"]`);
+            const text = Array.isArray(value) ? String(value[0] ?? '') : String(value ?? '');
+
+            if (field instanceof HTMLElement && text !== '') {
+                field.textContent = text;
+                field.classList.remove('hidden');
+            }
+        });
+    }
+
     if (!box) {
+        return;
+    }
+
+    if (!message) {
+        box.textContent = '';
+        box.classList.add('hidden');
+
         return;
     }
 
@@ -25,6 +53,48 @@ function firstValidationMessage(data) {
     return data?.message ?? 'Check the form and try again.';
 }
 
+function validationErrors(data) {
+    const errors = data?.data ?? data?.errors;
+
+    if (errors && typeof errors === 'object') {
+        return errors;
+    }
+
+    return null;
+}
+
+function resetAnalyze(status) {
+    if (!(status instanceof HTMLElement)) {
+        return;
+    }
+
+    status.classList.add('hidden');
+    status.querySelectorAll('[data-check]').forEach((line) => {
+        line.classList.add('hidden');
+        line.classList.remove('text-foreground');
+        line.classList.add('text-muted-foreground');
+    });
+}
+
+function startAnalyze(status) {
+    if (!(status instanceof HTMLElement)) {
+        return;
+    }
+
+    resetAnalyze(status);
+    status.classList.remove('hidden');
+
+    const lines = [...status.querySelectorAll('[data-check]')];
+
+    lines.forEach((line, index) => {
+        window.setTimeout(() => {
+            line.classList.remove('hidden');
+            line.classList.remove('text-muted-foreground');
+            line.classList.add('text-foreground');
+        }, index * 400);
+    });
+}
+
 document.addEventListener('submit', async (event) => {
     const form = event.target;
 
@@ -37,13 +107,15 @@ document.addEventListener('submit', async (event) => {
     const submit = form.querySelector('[type="submit"]');
     const analyze = form.hasAttribute('data-analyze');
     const status = form.querySelector('[data-analyze-status]');
+    const originalLabel = submit instanceof HTMLButtonElement ? submit.textContent : '';
 
     if (submit instanceof HTMLButtonElement) {
         submit.disabled = true;
+        submit.textContent = 'Working…';
     }
 
-    if (analyze && status instanceof HTMLElement) {
-        status.classList.remove('hidden');
+    if (analyze) {
+        startAnalyze(status);
     }
 
     try {
@@ -60,10 +132,12 @@ document.addEventListener('submit', async (event) => {
         const data = await response.json();
 
         if (!response.ok || data.status !== 'success') {
-            showErrors(firstValidationMessage(data));
+            showErrors(firstValidationMessage(data), validationErrors(data));
+            resetAnalyze(status);
 
             if (submit instanceof HTMLButtonElement) {
                 submit.disabled = false;
+                submit.textContent = originalLabel;
             }
 
             return;
@@ -74,9 +148,11 @@ document.addEventListener('submit', async (event) => {
         }
     } catch {
         showErrors('Something went wrong. Try again.');
+        resetAnalyze(status);
 
         if (submit instanceof HTMLButtonElement) {
             submit.disabled = false;
+            submit.textContent = originalLabel;
         }
     }
 });

@@ -10,6 +10,7 @@ export default defineConfig({
             input: [
                 'resources/css/app.css',
                 'resources/js/onboarding.js',
+                'resources/js/landing.js',
                 'resources/js/company/app.tsx',
                 'resources/js/creator/app.tsx',
             ],
@@ -17,6 +18,10 @@ export default defineConfig({
             fonts: [
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],
+                }),
+                bunny('Instrument Serif', {
+                    weights: [400],
+                    styles: ['normal', 'italic'],
                 }),
             ],
         }),

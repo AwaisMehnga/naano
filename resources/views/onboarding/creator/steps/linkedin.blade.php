@@ -1,25 +1,19 @@
 <form data-ajax method="POST" action="{{ route('onboarding.creator.linkedin') }}" enctype="multipart/form-data" class="flex flex-col gap-5">
     @csrf
 
-    <div class="grid gap-2">
-        <label for="linkedin_url" class="text-sm font-medium">Public LinkedIn URL</label>
-        <input
+    <x-ui.field label="Public LinkedIn URL" name="linkedin_url">
+        <x-ui.input
             id="linkedin_url"
             type="url"
             name="linkedin_url"
             value="{{ old('linkedin_url', $profile->linkedin_url) }}"
             required
             placeholder="https://www.linkedin.com/in/you"
-            class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-        >
-        @error('linkedin_url')
-            <p class="text-sm text-destructive">{{ $message }}</p>
-        @enderror
-    </div>
+        />
+    </x-ui.field>
 
-    <div class="grid gap-2">
-        <label for="headline" class="text-sm font-medium">Headline</label>
-        <input
+    <x-ui.field label="Headline" name="headline">
+        <x-ui.input
             id="headline"
             type="text"
             name="headline"
@@ -27,46 +21,28 @@
             required
             maxlength="255"
             placeholder="What you do, for whom"
-            class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-        >
-        @error('headline')
-            <p class="text-sm text-destructive">{{ $message }}</p>
-        @enderror
-    </div>
+        />
+    </x-ui.field>
 
-    <div class="grid gap-2">
-        <label for="country" class="text-sm font-medium">Country</label>
-        <select
-            id="country"
-            name="country"
-            required
-            class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-        >
+    <x-ui.field label="Country" name="country">
+        <x-ui.select id="country" name="country" required>
             <option value="">Select</option>
             @foreach ($countries as $code => $name)
                 <option value="{{ $code }}" @selected(old('country', $profile->country) === $code)>{{ $name }}</option>
             @endforeach
-        </select>
-        @error('country')
-            <p class="text-sm text-destructive">{{ $message }}</p>
-        @enderror
-    </div>
+        </x-ui.select>
+    </x-ui.field>
 
-    <div class="grid gap-2">
-        <label for="photo" class="text-sm font-medium">Photo <span class="font-normal text-muted-foreground">(optional)</span></label>
-        <input
+    <x-ui.field label="Photo" name="photo" hint="Optional">
+        <x-ui.input
             id="photo"
             type="file"
             name="photo"
             accept="image/jpeg,image/png,image/webp"
-            class="w-full text-sm"
-        >
-        @error('photo')
-            <p class="text-sm text-destructive">{{ $message }}</p>
-        @enderror
-    </div>
+        />
+    </x-ui.field>
 
-    <button type="submit" class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90">
+    <x-ui.button>
         Continue
-    </button>
+    </x-ui.button>
 </form>

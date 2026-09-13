@@ -1,18 +1,22 @@
-<x-layouts.guest
+<x-layouts.auth
     title="Sign in"
-    heading="Welcome back"
-    description="Sign in to your account"
+    kicker="Account"
+    description="Campaigns, creators, and payouts in one place."
 >
+    <x-slot:heading>
+        Welcome
+        <x-ui.em>back.</x-ui.em>
+    </x-slot:heading>
+
     @if ($status)
-        <p class="mb-4 text-sm font-medium text-primary">{{ $status }}</p>
+        <x-ui.alert variant="success" class="mb-6">{{ $status }}</x-ui.alert>
     @endif
 
     <form method="POST" action="{{ route('login.store') }}" class="flex flex-col gap-5">
         @csrf
 
-        <div class="grid gap-2">
-            <label for="email" class="text-sm font-medium">Email</label>
-            <input
+        <x-ui.field label="Email" name="email">
+            <x-ui.input
                 id="email"
                 type="email"
                 name="email"
@@ -20,56 +24,50 @@
                 required
                 autofocus
                 autocomplete="email"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('email')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </div>
+            />
+        </x-ui.field>
 
-        <div class="grid gap-2">
+        <x-ui.field name="password">
             <div class="flex items-center">
                 <label for="password" class="text-sm font-medium">Password</label>
                 @if ($canResetPassword)
-                    <a href="{{ route('password.request') }}" class="ml-auto text-sm text-primary underline-offset-4 hover:underline">
+                    <x-ui.button href="{{ route('password.request') }}" variant="link" class="ml-auto">
                         Forgot password?
-                    </a>
+                    </x-ui.button>
                 @endif
             </div>
-            <input
+            <x-ui.input
                 id="password"
                 type="password"
                 name="password"
                 required
                 autocomplete="current-password"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('password')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </div>
+            />
+        </x-ui.field>
 
         <label class="flex items-center gap-2 text-sm">
-            <input type="checkbox" name="remember" class="rounded border-input">
+            <input type="checkbox" name="remember" class="rounded-sm border-input">
             Remember me
         </label>
 
-        <button
-            type="submit"
-            data-test="login-button"
-            class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
+        <x-ui.button data-test="login-button">
             Sign in
-        </button>
+        </x-ui.button>
     </form>
 
-    <p class="mt-6 text-center text-sm text-muted-foreground">
+    <p class="mt-8 text-sm text-muted-foreground">
         Don't have an account?
-        <a href="{{ route('register') }}" class="text-primary underline-offset-4 hover:underline">Sign up</a>
+        <x-ui.button href="{{ route('register') }}" variant="link">Sign up</x-ui.button>
     </p>
 
     <x-slot:panel>
-        <p class="text-lg font-medium">Welcome back.</p>
-        <p class="mt-2 text-sm text-muted-foreground">Campaigns, creators, and payouts in one place.</p>
+        <x-ui.kicker>Workspace</x-ui.kicker>
+        <p class="mt-6 text-4xl font-normal tracking-tight">
+            Pick up the brief.
+            <x-ui.em>Book the post.</x-ui.em>
+        </p>
+        <p class="mt-6 text-lg leading-relaxed text-muted-foreground">
+            Your company or creator workspace is where the work actually finishes.
+        </p>
     </x-slot:panel>
-</x-layouts.guest>
+</x-layouts.auth>

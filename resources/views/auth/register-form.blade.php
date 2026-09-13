@@ -2,13 +2,23 @@
     $isCreator = $role === 'creator';
 @endphp
 
-<x-layouts.guest
+<x-layouts.auth
     title="Join {{ config('app.name') }}"
-    heading="{{ $isCreator ? 'Join as a creator' : 'Join as a company' }}"
+    kicker="{{ $isCreator ? 'Creators' : 'Companies' }}"
     description="{{ $isCreator ? 'Get paid to post for B2B brands you use.' : 'Run LinkedIn creator campaigns that drive pipeline.' }}"
 >
-    <p class="mb-6 text-sm">
-        <a href="{{ route('register') }}" class="text-muted-foreground underline-offset-4 hover:underline">Back</a>
+    <x-slot:heading>
+        @if ($isCreator)
+            Join as a
+            <x-ui.em>creator.</x-ui.em>
+        @else
+            Join as a
+            <x-ui.em>company.</x-ui.em>
+        @endif
+    </x-slot:heading>
+
+    <p class="mb-8">
+        <x-ui.button href="{{ route('register') }}" variant="link">Back</x-ui.button>
     </p>
 
     <form method="POST" action="{{ route('register.store') }}" class="flex flex-col gap-5">
@@ -16,9 +26,8 @@
         <input type="hidden" name="role" value="{{ $role }}">
 
         <div class="grid gap-4 sm:grid-cols-2">
-            <div class="grid gap-2">
-                <label for="first_name" class="text-sm font-medium">First name</label>
-                <input
+            <x-ui.field label="First name" name="first_name">
+                <x-ui.input
                     id="first_name"
                     type="text"
                     name="first_name"
@@ -26,33 +35,23 @@
                     required
                     autofocus
                     autocomplete="given-name"
-                    class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-                >
-                @error('first_name')
-                    <p class="text-sm text-destructive">{{ $message }}</p>
-                @enderror
-            </div>
+                />
+            </x-ui.field>
 
-            <div class="grid gap-2">
-                <label for="last_name" class="text-sm font-medium">Last name</label>
-                <input
+            <x-ui.field label="Last name" name="last_name">
+                <x-ui.input
                     id="last_name"
                     type="text"
                     name="last_name"
                     value="{{ old('last_name') }}"
                     required
                     autocomplete="family-name"
-                    class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-                >
-                @error('last_name')
-                    <p class="text-sm text-destructive">{{ $message }}</p>
-                @enderror
-            </div>
+                />
+            </x-ui.field>
         </div>
 
-        <div class="grid gap-2">
-            <label for="email" class="text-sm font-medium">{{ $isCreator ? 'Email' : 'Business email' }}</label>
-            <input
+        <x-ui.field label="{{ $isCreator ? 'Email' : 'Business email' }}" name="email">
+            <x-ui.input
                 id="email"
                 type="email"
                 name="email"
@@ -60,83 +59,61 @@
                 required
                 autocomplete="email"
                 placeholder="{{ $isCreator ? 'you@email.com' : 'you@company.com' }}"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('email')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </div>
+            />
+        </x-ui.field>
 
-        <div class="grid gap-2">
-            <label for="password" class="text-sm font-medium">Password</label>
-            <input
+        <x-ui.field label="Password" name="password">
+            <x-ui.input
                 id="password"
                 type="password"
                 name="password"
                 required
                 autocomplete="new-password"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('password')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </div>
+            />
+        </x-ui.field>
 
-        <div class="grid gap-2">
-            <label for="password_confirmation" class="text-sm font-medium">Confirm password</label>
-            <input
+        <x-ui.field label="Confirm password" name="password_confirmation">
+            <x-ui.input
                 id="password_confirmation"
                 type="password"
                 name="password_confirmation"
                 required
                 autocomplete="new-password"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-        </div>
+            />
+        </x-ui.field>
 
-        <fieldset class="grid gap-2">
-            <legend class="text-sm font-medium">How did you hear about us?</legend>
-            <div class="grid gap-2">
+        <x-ui.field label="How did you hear about us?" name="hear_about">
+            <x-ui.select id="hear_about" name="hear_about" required>
+                <option value="">Select</option>
                 @foreach (config('onboarding.hear_about') as $value => $label)
-                    <label class="flex items-center gap-2 text-sm">
-                        <input
-                            type="radio"
-                            name="hear_about"
-                            value="{{ $value }}"
-                            @checked(old('hear_about') === $value)
-                            required
-                            class="border-input"
-                        >
-                        {{ $label }}
-                    </label>
+                    <option value="{{ $value }}" @selected(old('hear_about') === $value)>{{ $label }}</option>
                 @endforeach
-            </div>
-            @error('hear_about')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
-        </fieldset>
+            </x-ui.select>
+        </x-ui.field>
 
-        <button
-            type="submit"
-            data-test="register-user-button"
-            class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
-            Continue
-        </button>
+        <x-ui.button data-test="register-user-button">
+            Create account
+        </x-ui.button>
     </form>
 
-    <p class="mt-6 text-center text-sm text-muted-foreground">
+    <p class="mt-8 text-sm text-muted-foreground">
         Already have an account?
-        <a href="{{ route('login') }}" class="text-primary underline-offset-4 hover:underline">Sign in</a>
+        <x-ui.button href="{{ route('login') }}" variant="link">Sign in</x-ui.button>
     </p>
 
     <x-slot:panel>
         @if ($isCreator)
-            <p class="text-lg font-medium">Your marketplace card</p>
-            <p class="mt-2 text-sm text-muted-foreground">Name, rate, and industries. Brands book from that.</p>
+            <x-ui.kicker>Marketplace card</x-ui.kicker>
+            <p class="mt-6 text-4xl font-normal tracking-tight">
+                Name, rate, and industries.
+                <x-ui.em>Brands book from that.</x-ui.em>
+            </p>
         @else
-            <p class="text-lg font-medium">Creators. Brands. Results.</p>
-            <p class="mt-2 text-sm text-muted-foreground">A brief, a match, a booked post.</p>
+            <x-ui.kicker>Company workspace</x-ui.kicker>
+            <p class="mt-6 text-4xl font-normal tracking-tight">
+                A brief, a match,
+                <x-ui.em>a booked post.</x-ui.em>
+            </p>
         @endif
     </x-slot:panel>
-</x-layouts.guest>
+</x-layouts.auth>

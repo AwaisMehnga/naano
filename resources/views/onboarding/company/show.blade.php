@@ -1,11 +1,9 @@
 @php
+    $stepIndex = $step === 'brief' ? 2 : 1;
+    $steps = ['Website', 'Brief'];
     $headings = [
-        'website' => 'Your website',
+        'website' => 'Add your website',
         'brief' => 'Value prop & ICP',
-    ];
-    $descriptions = [
-        'website' => 'We’ll read the site and draft a brief.',
-        'brief' => 'Edit once. Creators get this brief.',
     ];
     $icps = old('icps', $company->icps ?? [
         ['title' => '', 'description' => ''],
@@ -14,19 +12,18 @@
     ]);
 @endphp
 
-<x-layouts.guest
+<x-layouts.onboarding
     title="Company setup"
     heading="{{ $headings[$step] }}"
-    description="{{ $descriptions[$step] }}"
-    ajax
-    wide
+    :step="$stepIndex"
+    :steps="$steps"
 >
-    <p id="form-errors" class="mb-4 hidden text-sm text-destructive"></p>
+    <x-ui.alert variant="danger" id="form-errors" class="mb-4 hidden"></x-ui.alert>
 
     @include('onboarding.company.steps.'.$step, ['icps' => $icps])
 
     <x-slot:panel>
-        <div class="rounded-xl border border-border bg-card p-6">
+        <x-ui.card>
             <p class="text-xs uppercase tracking-wide text-muted-foreground">Starter brief</p>
             <p class="mt-4 text-sm">{{ \Illuminate\Support\Str::limit($company->value_proposition, 140) ?: 'Product and audience appear here.' }}</p>
             <ul class="mt-4 space-y-2 text-sm">
@@ -36,6 +33,6 @@
                     <li class="text-muted-foreground">3 ICPs after analyze</li>
                 @endforelse
             </ul>
-        </div>
+        </x-ui.card>
     </x-slot:panel>
-</x-layouts.guest>
+</x-layouts.onboarding>

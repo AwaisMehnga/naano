@@ -2,59 +2,63 @@
     $recovery = request()->boolean('recovery');
 @endphp
 
-<x-layouts.guest
+<x-layouts.auth
     title="Two-factor authentication"
-    heading="{{ $recovery ? 'Recovery code' : 'Authentication code' }}"
+    kicker="Account"
     description="{{ $recovery
-        ? 'Please confirm access to your account by entering one of your emergency recovery codes.'
-        : 'Enter the authentication code provided by your authenticator application.' }}"
+        ? 'Enter one of your emergency recovery codes.'
+        : 'Enter the code from your authenticator app.' }}"
 >
-    <form method="POST" action="{{ route('two-factor.login.store') }}" class="grid gap-4">
+    <x-slot:heading>
+        @if ($recovery)
+            Recovery
+            <x-ui.em>code.</x-ui.em>
+        @else
+            Authentication
+            <x-ui.em>code.</x-ui.em>
+        @endif
+    </x-slot:heading>
+
+    <form method="POST" action="{{ route('two-factor.login.store') }}" class="flex flex-col gap-5">
         @csrf
 
         @if ($recovery)
-            <input
-                type="text"
-                name="recovery_code"
-                required
-                autofocus
-                placeholder="Enter recovery code"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('recovery_code')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
+            <x-ui.field name="recovery_code">
+                <x-ui.input
+                    type="text"
+                    name="recovery_code"
+                    required
+                    autofocus
+                    placeholder="Enter recovery code"
+                />
+            </x-ui.field>
         @else
-            <input
-                type="text"
-                name="code"
-                required
-                autofocus
-                inputmode="numeric"
-                autocomplete="one-time-code"
-                placeholder="Authentication code"
-                class="w-full rounded-md border border-input bg-card px-3 py-2 text-center text-sm tracking-widest shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-            >
-            @error('code')
-                <p class="text-sm text-destructive">{{ $message }}</p>
-            @enderror
+            <x-ui.field name="code">
+                <x-ui.input
+                    type="text"
+                    name="code"
+                    required
+                    autofocus
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    placeholder="Authentication code"
+                    class="text-center tracking-widest"
+                />
+            </x-ui.field>
         @endif
 
-        <button
-            type="submit"
-            class="inline-flex w-full items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
+        <x-ui.button>
             Continue
-        </button>
+        </x-ui.button>
     </form>
 
-    <p class="mt-4 text-center text-sm text-muted-foreground">
-        or you can
-        <a
+    <p class="mt-8 text-sm text-muted-foreground">
+        Or
+        <x-ui.button
             href="{{ route('two-factor.login', $recovery ? [] : ['recovery' => 1]) }}"
-            class="text-foreground underline underline-offset-4"
+            variant="link"
         >
-            {{ $recovery ? 'login using an authentication code' : 'login using a recovery code' }}
-        </a>
+            {{ $recovery ? 'use an authentication code' : 'use a recovery code' }}
+        </x-ui.button>
     </p>
-</x-layouts.guest>
+</x-layouts.auth>

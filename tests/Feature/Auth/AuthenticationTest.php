@@ -76,3 +76,45 @@ test('users are rate limited', function () {
 
     $response->assertTooManyRequests();
 });
+
+test('company login from the homepage goes to the company workspace', function () {
+    $user = User::factory()->company()->onboarded()->create();
+
+    $this->from(route('home'))
+        ->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->assertRedirect(route('company', absolute: false));
+});
+
+test('creator login from the homepage goes to the creator workspace', function () {
+    $user = User::factory()->creator()->onboarded()->create();
+
+    $this->from(route('home'))
+        ->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ])
+        ->assertRedirect(route('creator', absolute: false));
+});
+
+test('creator login ignores a company intended url', function () {
+    $user = User::factory()->creator()->onboarded()->create();
+
+    $this->get('/company')->assertRedirect(route('login'));
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect(route('creator', absolute: false));
+});
+
+test('unfinished company login goes to company onboarding', function () {
+    $user = User::factory()->company()->create();
+
+    $this->post(route('login.store'), [
+        'email' => $user->email,
+        'password' => 'password',
+    ])->assertRedirect(route('onboarding.company', absolute: false));
+});

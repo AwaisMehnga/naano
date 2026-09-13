@@ -65,8 +65,6 @@ class CreateNewUser implements CreatesNewUsers
             return $user;
         });
 
-        $user->sendEmailVerificationNotification();
-
         return $user;
     }
 }

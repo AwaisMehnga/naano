@@ -47,7 +47,7 @@ test('new creators can register', function () {
         ->and($user->hasRole('creator'))->toBeTrue()
         ->and($user->creatorProfile)->not->toBeNull();
 
-    Notification::assertSentTo($user, EmailVerificationCode::class);
+    Notification::assertSentToTimes($user, EmailVerificationCode::class, 1);
 });
 
 test('new companies can register', function () {
@@ -73,7 +73,7 @@ test('new companies can register', function () {
         ->and($user->hasRole('company'))->toBeTrue()
         ->and($user->company)->not->toBeNull();
 
-    Notification::assertSentTo($user, EmailVerificationCode::class);
+    Notification::assertSentToTimes($user, EmailVerificationCode::class, 1);
 });
 
 test('company registration assigns the company role even when roles were not seeded', function () {
@@ -110,4 +110,46 @@ test('registration requires a role', function () {
     ])->assertSessionHasErrors('role');
 
     $this->assertGuest();
+});
+
+test('verified creator registration continues to creator onboarding', function () {
+    Notification::fake();
+
+    $this->post(route('register.store'), [
+        'first_name' => 'Ada',
+        'last_name' => 'Lovelace',
+        'email' => 'ada@example.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'role' => 'creator',
+        'hear_about' => 'linkedin',
+    ])->assertRedirect(route('verification.notice', absolute: false));
+
+    $user = User::query()->where('email', 'ada@example.com')->first();
+    $code = Notification::sent($user, EmailVerificationCode::class)->last()->code;
+
+    $this->post(route('verification.code'), [
+        'code' => $code,
+    ])->assertRedirect(route('onboarding.creator', absolute: false).'?verified=1');
+});
+
+test('verified company registration continues to company onboarding', function () {
+    Notification::fake();
+
+    $this->post(route('register.store'), [
+        'first_name' => 'Ada',
+        'last_name' => 'Lovelace',
+        'email' => 'ada@brand.com',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+        'role' => 'company',
+        'hear_about' => 'linkedin',
+    ])->assertRedirect(route('verification.notice', absolute: false));
+
+    $user = User::query()->where('email', 'ada@brand.com')->first();
+    $code = Notification::sent($user, EmailVerificationCode::class)->last()->code;
+
+    $this->post(route('verification.code'), [
+        'code' => $code,
+    ])->assertRedirect(route('onboarding.company', absolute: false).'?verified=1');
 });
