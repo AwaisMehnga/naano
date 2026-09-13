@@ -15,7 +15,7 @@
     <div data-analyze-status class="hidden space-y-2 text-sm">
         <p data-check class="hidden text-muted-foreground">Reading your website…</p>
         <p data-check class="hidden text-muted-foreground">Extracting product signals…</p>
-        <p data-check class="hidden text-muted-foreground">Identifying your ICP…</p>
+        <p data-check class="hidden text-muted-foreground">Finding audiences on the page…</p>
         <p data-check class="hidden text-muted-foreground">Preparing your brief…</p>
     </div>
 

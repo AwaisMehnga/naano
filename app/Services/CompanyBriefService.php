@@ -18,9 +18,9 @@ class CompanyBriefService
         return $user->company()->firstOrCreate([]);
     }
 
-    public function step(Company $company): string
+    public function step(Company $company, ?string $requested = null): string
     {
-        if ($company->website === null) {
+        if ($company->website === null || $requested === 'website') {
             return 'website';
         }
 
@@ -36,9 +36,18 @@ class CompanyBriefService
 
         $text = $this->fetchSiteText($website);
 
+        if ($text === '') {
+            return ['analyzed' => false];
+        }
+
         try {
             $response = (new BrandBriefAgent)->prompt(
-                $text === '' ? 'Website: '.$website : $text,
+                implode("\n\n", [
+                    'Write the brief from this page text only. Do not use outside knowledge.',
+                    'Website: '.$website,
+                    'Page text:',
+                    $text,
+                ]),
                 provider: Lab::DeepSeek,
                 timeout: 60,
             );
@@ -47,11 +56,7 @@ class CompanyBriefService
 
             $company->update([
                 'value_proposition' => (string) ($brief['value_proposition'] ?? ''),
-                'icps' => [
-                    ['title' => (string) ($brief['icp_1_title'] ?? ''), 'description' => (string) ($brief['icp_1_description'] ?? '')],
-                    ['title' => (string) ($brief['icp_2_title'] ?? ''), 'description' => (string) ($brief['icp_2_description'] ?? '')],
-                    ['title' => (string) ($brief['icp_3_title'] ?? ''), 'description' => (string) ($brief['icp_3_description'] ?? '')],
-                ],
+                'icps' => $this->icpsFromBrief($brief),
             ]);
 
             return ['analyzed' => true];
@@ -70,6 +75,24 @@ class CompanyBriefService
             'icps' => $data['icps'],
             'onboarded_at' => now(),
         ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $brief
+     * @return list<array{title: string, description: string}>
+     */
+    private function icpsFromBrief(array $brief): array
+    {
+        return collect($brief['icps'] ?? [])
+            ->filter(fn (mixed $icp): bool => is_array($icp))
+            ->map(fn (array $icp): array => [
+                'title' => (string) ($icp['title'] ?? ''),
+                'description' => (string) ($icp['description'] ?? ''),
+            ])
+            ->filter(fn (array $icp): bool => $icp['title'] !== '' && $icp['description'] !== '')
+            ->take(5)
+            ->values()
+            ->all();
     }
 
     private function fetchSiteText(string $website): string

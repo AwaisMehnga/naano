@@ -17,7 +17,13 @@ class BrandBriefAgent implements Agent, HasStructuredOutput
      */
     public function instructions(): Stringable|string
     {
-        return 'You write a short B2B brand brief from a company website. Stay factual. Do not invent product claims.';
+        return <<<'INSTRUCTIONS'
+            You write a short B2B brand brief from a company website page.
+
+            Use only facts present in the page text. Do not invent product claims, buyers, or industries.
+            value_proposition: two to four sentences that paraphrase what the company sells and for whom.
+            icps: only buyer audiences the page names or clearly describes. Return as many as the page supports, from zero to five. Do not pad to a quota. If the page describes one customer, return one ICP.
+            INSTRUCTIONS;
     }
 
     /**
@@ -27,12 +33,14 @@ class BrandBriefAgent implements Agent, HasStructuredOutput
     {
         return [
             'value_proposition' => $schema->string()->required(),
-            'icp_1_title' => $schema->string()->required(),
-            'icp_1_description' => $schema->string()->required(),
-            'icp_2_title' => $schema->string()->required(),
-            'icp_2_description' => $schema->string()->required(),
-            'icp_3_title' => $schema->string()->required(),
-            'icp_3_description' => $schema->string()->required(),
+            'icps' => $schema->array()
+                ->min(0)
+                ->max(5)
+                ->items($schema->object([
+                    'title' => $schema->string()->required(),
+                    'description' => $schema->string()->required(),
+                ])->withoutAdditionalProperties())
+                ->required(),
         ];
     }
 }

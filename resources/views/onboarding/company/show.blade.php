@@ -5,16 +5,14 @@
         'website' => 'Add your website',
         'brief' => 'Value prop & ICP',
     ];
-    $icps = old('icps', $company->icps ?? [
-        ['title' => '', 'description' => ''],
-        ['title' => '', 'description' => ''],
+    $icps = old('icps', $company->icps ?: [
         ['title' => '', 'description' => ''],
     ]);
 @endphp
 
 <x-layouts.onboarding
     title="Company setup"
-    heading="{{ $headings[$step] }}"
+    :heading="$headings[$step]"
     :step="$stepIndex"
     :steps="$steps"
 >
@@ -30,7 +28,7 @@
                 @forelse (($company->icps ?? []) as $icp)
                     <li class="rounded-md bg-muted px-3 py-2">{{ $icp['title'] }}</li>
                 @empty
-                    <li class="text-muted-foreground">3 ICPs after analyze</li>
+                    <li class="text-muted-foreground">Audiences appear after we read the site.</li>
                 @endforelse
             </ul>
         </x-ui.card>

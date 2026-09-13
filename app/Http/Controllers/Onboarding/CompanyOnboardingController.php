@@ -22,11 +22,12 @@ class CompanyOnboardingController extends Controller
     {
         $user = $request->user();
         $company = $this->briefs->company($user);
+        $requested = $request->query('step');
 
         return view('onboarding.company.show', [
             'user' => $user,
             'company' => $company,
-            'step' => $this->briefs->step($company),
+            'step' => $this->briefs->step($company, is_string($requested) ? $requested : null),
         ]);
     }
 

@@ -19,7 +19,7 @@ class StoreCompanyBriefRequest extends FormRequest
     {
         return [
             'value_proposition' => ['required', 'string', 'min:40', 'max:4000'],
-            'icps' => ['required', 'array', 'size:3'],
+            'icps' => ['required', 'array', 'min:1', 'max:5'],
             'icps.*.title' => ['required', 'string', 'max:120'],
             'icps.*.description' => ['required', 'string', 'max:800'],
         ];

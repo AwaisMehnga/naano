@@ -185,3 +185,66 @@ document.querySelectorAll('[data-offer-form]').forEach((form) => {
         index += 1;
     });
 });
+
+document.querySelectorAll('[data-icp-form]').forEach((form) => {
+    const list = form.querySelector('[data-icp-list]');
+    const template = form.querySelector('[data-icp-template]');
+    const add = form.querySelector('[data-add-icp]');
+
+    if (!(list instanceof HTMLElement) || !(template instanceof HTMLTemplateElement) || !(add instanceof HTMLElement)) {
+        return;
+    }
+
+    let index = list.querySelectorAll('[data-icp-row]').length;
+
+    const syncRemoveButtons = () => {
+        const rows = [...list.querySelectorAll('[data-icp-row]')];
+        const canRemove = rows.length > 1;
+
+        rows.forEach((row) => {
+            const remove = row.querySelector('[data-remove-icp]');
+
+            if (remove instanceof HTMLElement) {
+                remove.classList.toggle('hidden', !canRemove);
+            }
+        });
+
+        add.classList.toggle('hidden', rows.length >= 5);
+    };
+
+    add.addEventListener('click', () => {
+        if (list.querySelectorAll('[data-icp-row]').length >= 5) {
+            return;
+        }
+
+        const html = template.innerHTML.replaceAll('__INDEX__', String(index));
+        list.insertAdjacentHTML('beforeend', html);
+        index += 1;
+        syncRemoveButtons();
+    });
+
+    list.addEventListener('click', (event) => {
+        const target = event.target;
+
+        if (!(target instanceof HTMLElement)) {
+            return;
+        }
+
+        const remove = target.closest('[data-remove-icp]');
+
+        if (!(remove instanceof HTMLElement)) {
+            return;
+        }
+
+        const row = remove.closest('[data-icp-row]');
+
+        if (!(row instanceof HTMLElement) || list.querySelectorAll('[data-icp-row]').length < 2) {
+            return;
+        }
+
+        row.remove();
+        syncRemoveButtons();
+    });
+
+    syncRemoveButtons();
+});
