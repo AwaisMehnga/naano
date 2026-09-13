@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
+import { euros } from '@/company/pages/creators/format';
 import { ApiError, creatorApi, http } from '@/lib/api';
 
 type Metrics = {
@@ -68,6 +69,11 @@ export default function CreatorMetricsPage() {
                     <Stat
                         label="Leads"
                         value={formatNumber(data.leads_count)}
+                    />
+                    <Stat
+                        label="Earnings"
+                        value={euros(data.earnings_cents)}
+                        hint="Credited after live URL"
                     />
                 </div>
             )}

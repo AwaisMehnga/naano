@@ -143,3 +143,19 @@ test('workspace overview includes spend from posted captures', function () {
         ->assertOk()
         ->assertJsonPath('data.spend_cents', 24000);
 });
+
+test('companies can download a campaign report json payload', function () {
+    [$owner, $collaboration] = bookedDeal();
+    $campaign = $collaboration->campaign;
+    $other = User::factory()->company()->onboarded()->create();
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.reports.campaigns.show', $campaign))
+        ->assertOk()
+        ->assertJsonPath('data.spend_cents', 0)
+        ->assertJsonPath('data.creators.0.collaboration_id', $collaboration->id);
+
+    $this->actingAs($other)
+        ->getJson(route('api.company.reports.campaigns.show', $campaign))
+        ->assertNotFound();
+});

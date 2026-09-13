@@ -1,6 +1,6 @@
 import DashboardLayout from '@/layouts/dashboard';
-import SpaHome from '@/pages/spa-home';
 import { Navigate } from 'react-router';
+import CompanyAnalyticsPage from './pages/analytics';
 import CompanyCampaignsPage from './pages/campaigns';
 import CompanyContractPage from './pages/campaigns/contract';
 import CompanyPostReviewPage from './pages/campaigns/post-review';
@@ -11,6 +11,8 @@ import CompanyAudiencePage from './pages/setting/audience';
 import CompanyProfilePage from './pages/setting/profile';
 import CompanyTeamAccessPage from './pages/setting/team-access';
 import CompanyWalletPage from './pages/wallet';
+import NotificationsPage from '@/pages/notifications';
+import NotificationSettingsPage from '@/pages/setting/notifications';
 
 export const routes = [
     {
@@ -19,7 +21,7 @@ export const routes = [
         children: [
             {
                 index: true,
-                element: <SpaHome title="Company" />,
+                element: <CompanyAnalyticsPage />,
             },
             {
                 path: 'campaigns',
@@ -50,6 +52,10 @@ export const routes = [
                 element: <CompanyCreatorsPage />,
             },
             {
+                path: 'notifications',
+                element: <NotificationsPage />,
+            },
+            {
                 path: 'setting',
                 element: <CompanySettingLayout />,
                 children: [
@@ -68,6 +74,10 @@ export const routes = [
                     {
                         path: 'team-access',
                         element: <CompanyTeamAccessPage />,
+                    },
+                    {
+                        path: 'notifications',
+                        element: <NotificationSettingsPage />,
                     },
                 ],
             },

@@ -13,7 +13,7 @@ class UserService
     public function __construct(private CurrentCompanyService $currentCompany) {}
 
     /**
-     * @return array{id: int, name: string, email: string, email_verified_at: mixed, avatar: string|null, role: string|null, onboarded: bool, current_company_id: int|null, membership_role: string|null}
+     * @return array{id: int, name: string, email: string, email_verified_at: mixed, avatar: string|null, role: string|null, onboarded: bool, current_company_id: int|null, membership_role: string|null, unread_notifications_count: int}
      */
     public function current(User $user, Request $request): array
     {
@@ -30,6 +30,7 @@ class UserService
             'onboarded' => $user->isOnboarded(),
             'current_company_id' => $company?->id,
             'membership_role' => $role?->value,
+            'unread_notifications_count' => $user->unreadNotifications()->count(),
         ];
     }
 

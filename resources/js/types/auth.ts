@@ -5,4 +5,5 @@ export type User = {
     avatar?: string | null;
     email_verified_at: string | null;
     role?: string | null;
+    unread_notifications_count?: number;
 };

@@ -135,6 +135,10 @@ export const companyApi = {
         `/api/company/collaborations/${id}/contract`,
     collaborationPosts: (id: number) =>
         `/api/company/collaborations/${id}/posts`,
+    collaborationMessages: (id: number) =>
+        `/api/company/collaborations/${id}/messages`,
+    collaborationMessagesRead: (id: number) =>
+        `/api/company/collaborations/${id}/messages/read`,
     post: (id: number) => `/api/company/posts/${id}`,
     postApprove: (id: number) => `/api/company/posts/${id}/approve`,
     postChanges: (id: number) => `/api/company/posts/${id}/changes`,
@@ -179,6 +183,10 @@ export const creatorApi = {
         `/api/creator/collaborations/${id}/contract`,
     collaborationPosts: (id: number) =>
         `/api/creator/collaborations/${id}/posts`,
+    collaborationMessages: (id: number) =>
+        `/api/creator/collaborations/${id}/messages`,
+    collaborationMessagesRead: (id: number) =>
+        `/api/creator/collaborations/${id}/messages/read`,
     post: (id: number) => `/api/creator/posts/${id}`,
     postSubmit: (id: number) => `/api/creator/posts/${id}/submit`,
     postSchedule: (id: number) => `/api/creator/posts/${id}/schedule`,
@@ -196,4 +204,8 @@ export const creatorApi = {
 
 export const sharedApi = {
     niches: '/api/niches',
+    notifications: '/api/notifications',
+    notificationsReadAll: '/api/notifications/read',
+    notificationRead: (id: string) => `/api/notifications/${id}/read`,
+    notificationPreferences: '/api/notification-preferences',
 };

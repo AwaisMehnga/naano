@@ -29,6 +29,7 @@ class CompanyCollaborationService
         private CompanyWalletService $wallets,
         private ContractService $contracts,
         private TrackingLinkService $tracking,
+        private CollaborationNotifier $notifier,
     ) {}
 
     /**
@@ -121,6 +122,8 @@ class CompanyCollaborationService
             ['from' => null, 'to' => CollaborationStatus::Invited->value],
         );
 
+        $this->notifier->invited($collaboration, $actor);
+
         return $this->payload($collaboration);
     }
 
@@ -201,6 +204,8 @@ class CompanyCollaborationService
             ['from' => $from->value, 'to' => CollaborationStatus::Selected->value],
         );
 
+        $this->notifier->selected($collaboration, $actor);
+
         return $this->payload($collaboration);
     }
 
@@ -280,6 +285,8 @@ class CompanyCollaborationService
                 ['from' => CollaborationStatus::Selected->value, 'to' => CollaborationStatus::Booked->value],
             );
 
+            $this->notifier->booked($collaboration, $actor);
+
             return $this->payload($collaboration);
         });
     }
@@ -323,6 +330,8 @@ class CompanyCollaborationService
             null,
             ['from' => $from->value, 'to' => CollaborationStatus::Cancelled->value],
         );
+
+        $this->notifier->cancelled($collaboration, $actor);
 
         return $this->payload($collaboration);
     }

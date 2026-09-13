@@ -6,6 +6,7 @@ const items = [
     { title: 'Audience', href: '/setting/audience' },
     { title: 'Billing', href: '/setting/billing' },
     { title: 'Account', href: '/setting/account' },
+    { title: 'Notifications', href: '/setting/notifications' },
 ];
 
 export default function CreatorSettingLayout() {

@@ -61,6 +61,7 @@ export default function CampaignAnalytics({
     const [creators, setCreators] = useState<CreatorRow[]>([]);
     const [pipeline, setPipeline] = useState<Record<number, string>>({});
     const [note, setNote] = useState('');
+    const [downloading, setDownloading] = useState(false);
 
     async function load() {
         const [{ data: analytics }, { data: creatorRows }] = await Promise.all([
@@ -114,6 +115,33 @@ export default function CampaignAnalytics({
         }
     }
 
+    async function downloadReport() {
+        setDownloading(true);
+
+        try {
+            const { data: report } = await http.get<CampaignAnalytics>(
+                companyApi.campaignReport(campaignId),
+            );
+            const blob = new Blob([JSON.stringify(report, null, 2)], {
+                type: 'application/json',
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `campaign-${campaignId}-report.json`;
+            link.click();
+            URL.revokeObjectURL(url);
+        } catch (caught) {
+            toast.error(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not download this report.',
+            );
+        } finally {
+            setDownloading(false);
+        }
+    }
+
     async function savePipeline(leadId: number) {
         const eurosValue = Number(pipeline[leadId]);
         const cents = Number.isFinite(eurosValue)
@@ -141,12 +169,22 @@ export default function CampaignAnalytics({
 
     return (
         <section className="grid gap-6">
-            <div>
-                <h2 className="text-lg font-semibold">Analytics</h2>
-                <p className="text-muted-foreground text-sm">
-                    Unique clicks, CTR, qualified visits, and attributed
-                    pipeline for this campaign.
-                </p>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                    <h2 className="text-lg font-semibold">Analytics</h2>
+                    <p className="text-muted-foreground text-sm">
+                        Unique clicks, CTR, qualified visits, and attributed
+                        pipeline for this campaign.
+                    </p>
+                </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    disabled={downloading}
+                    onClick={() => void downloadReport()}
+                >
+                    Download JSON
+                </Button>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard

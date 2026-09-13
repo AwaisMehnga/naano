@@ -83,19 +83,13 @@ test('rejected posts cannot be edited or submitted', function () {
         ->assertUnprocessable();
 });
 
-test('publishing a post does not capture the wallet hold', function () {
+test('publishing the last post captures the wallet hold', function () {
     [$owner, $collaboration, $creatorUser] = bookedDeal();
     $post = $collaboration->posts()->first();
     $post->update([
         'body' => 'Shipped.',
         'status' => PostStatus::Approved,
     ]);
-
-    $available = $owner->company->wallet->fresh()->available_cents;
-    $held = $owner->company->wallet->fresh()->transactions()
-        ->where('type', 'hold')
-        ->where('status', 'posted')
-        ->sum('amount_cents');
 
     $this->actingAs($creatorUser)
         ->postJson(route('api.creator.posts.publish', $post), [
@@ -104,14 +98,11 @@ test('publishing a post does not capture the wallet hold', function () {
         ->assertOk()
         ->assertJsonPath('data.status', 'published');
 
-    expect($owner->company->wallet->fresh()->available_cents)->toBe($available);
-
-    $this->assertDatabaseMissing('wallet_transactions', [
+    $this->assertDatabaseHas('wallet_transactions', [
         'collaboration_id' => $collaboration->id,
         'type' => 'capture',
+        'status' => 'posted',
     ]);
-
-    expect($held)->toBe(24000);
 });
 
 test('companies cannot review another workspace post', function () {

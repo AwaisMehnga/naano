@@ -16,6 +16,7 @@ class CreatorPostService
     public function __construct(
         private TrackingLinkService $tracking,
         private CompanyWalletService $wallets,
+        private CollaborationNotifier $notifier,
     ) {}
 
     /**
@@ -105,6 +106,8 @@ class CreatorPostService
         $post->submitted_at = now();
         $post->save();
 
+        $this->notifier->postSubmitted($post, $user);
+
         return $this->payload($post->fresh());
     }
 
@@ -161,6 +164,8 @@ class CreatorPostService
             && $collaboration->posts->every(fn (Post $row): bool => $row->status === PostStatus::Published)) {
             $this->wallets->captureHold($collaboration->campaign->company, $collaboration);
         }
+
+        $this->notifier->postPublished($post, $user);
 
         return $this->payload($post->fresh());
     }

@@ -2,8 +2,15 @@ import { useEffect, useState } from 'react';
 import { UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLink } from '@/components/app-link';
+import CollaborationThread from '@/components/collaboration-thread';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { euros, initials } from '@/company/pages/creators/format';
 import { ApiError, companyApi, http } from '@/lib/api';
 import { cn } from '@/lib/utils';
@@ -36,6 +43,8 @@ export default function CampaignCollaborations({
     } = useCampaigns();
     const [inviteOpen, setInviteOpen] = useState(false);
     const [canManage, setCanManage] = useState(false);
+    const [threadId, setThreadId] = useState<number | null>(null);
+    const threadRow = collaborations.find((row) => row.id === threadId);
 
     useEffect(() => {
         http.get<{ can_manage_money: boolean }>(companyApi.profile)
@@ -148,6 +157,14 @@ export default function CampaignCollaborations({
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => setThreadId(row.id)}
+                                    >
+                                        Message
+                                    </Button>
                                     {row.review_post_id && (
                                         <Button
                                             type="button"
@@ -262,6 +279,29 @@ export default function CampaignCollaborations({
                 open={inviteOpen}
                 onOpenChange={setInviteOpen}
             />
+            <Dialog
+                open={threadId !== null}
+                onOpenChange={(open) => {
+                    if (!open) {
+                        setThreadId(null);
+                    }
+                }}
+            >
+                <DialogContent className="sm:max-w-lg">
+                    <DialogHeader>
+                        <DialogTitle>
+                            {threadRow?.creator.display_name ?? 'Messages'}
+                        </DialogTitle>
+                    </DialogHeader>
+                    {threadId !== null && (
+                        <CollaborationThread
+                            collaborationId={threadId}
+                            side="company"
+                            canSend={threadRow?.status !== 'cancelled'}
+                        />
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\Company\CampaignReportController;
 use App\Http\Controllers\Api\Company\CampaignTrackingLinkController;
 use App\Http\Controllers\Api\Company\CollaborationActionController;
 use App\Http\Controllers\Api\Company\CollaborationController as CompanyCollaborationController;
+use App\Http\Controllers\Api\Company\CollaborationMessageController as CompanyCollaborationMessageController;
 use App\Http\Controllers\Api\Company\CompanyProfileController;
 use App\Http\Controllers\Api\Company\CreatorController;
 use App\Http\Controllers\Api\Company\IcpController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Api\Creator\AnalyticsController as CreatorAnalyticsCont
 use App\Http\Controllers\Api\Creator\AudienceController as CreatorAudienceController;
 use App\Http\Controllers\Api\Creator\BillingController;
 use App\Http\Controllers\Api\Creator\CollaborationController as CreatorCollaborationController;
+use App\Http\Controllers\Api\Creator\CollaborationMessageController as CreatorCollaborationMessageController;
 use App\Http\Controllers\Api\Creator\CollaborationMetricController;
 use App\Http\Controllers\Api\Creator\ConnectController;
 use App\Http\Controllers\Api\Creator\CreatorAccountController;
@@ -35,6 +37,8 @@ use App\Http\Controllers\Api\Creator\PostController as CreatorPostController;
 use App\Http\Controllers\Api\Creator\PostMetricController as CreatorPostMetricController;
 use App\Http\Controllers\Api\Creator\ProfileController as CreatorProfileController;
 use App\Http\Controllers\Api\NichesController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\NotificationPreferenceController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\TrackingEventController;
 use App\Http\Controllers\Api\UserController;
@@ -48,6 +52,14 @@ Route::post('t/{slug}/events', [TrackingEventController::class, 'store'])
 Route::middleware('auth')->group(function () {
     Route::apiSingleton('user', UserController::class)->only(['show'])->names(['show' => 'user']);
     Route::get('niches', [NichesController::class, 'index'])->name('niches.index');
+
+    Route::middleware('verified')->group(function () {
+        Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+        Route::post('notifications/read', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+        Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::get('notification-preferences', [NotificationPreferenceController::class, 'show'])->name('notification-preferences.show');
+        Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
+    });
 
     Route::middleware(['verified', 'role:company', 'onboarded', 'current.company'])->prefix('company')->name('company.')->group(function () {
         Route::get('ping', [UserController::class, 'show'])->name('ping');
@@ -79,6 +91,9 @@ Route::middleware('auth')->group(function () {
         Route::post('collaborations/{collaboration}/book', [CollaborationActionController::class, 'book'])->name('collaborations.book');
         Route::post('collaborations/{collaboration}/cancel', [CollaborationActionController::class, 'cancel'])->name('collaborations.cancel');
         Route::post('collaborations/{collaboration}/follow-ups', [CollaborationActionController::class, 'followUp'])->name('collaborations.follow-ups.store');
+        Route::get('collaborations/{collaboration}/messages', [CompanyCollaborationMessageController::class, 'index'])->name('collaborations.messages.index');
+        Route::post('collaborations/{collaboration}/messages', [CompanyCollaborationMessageController::class, 'store'])->name('collaborations.messages.store');
+        Route::post('collaborations/{collaboration}/messages/read', [CompanyCollaborationMessageController::class, 'read'])->name('collaborations.messages.read');
         Route::get('collaborations/{collaboration}/posts', [CompanyPostController::class, 'index'])->name('collaborations.posts.index');
         Route::get('posts/{post}', [CompanyPostController::class, 'show'])->name('posts.show');
         Route::post('posts/{post}/approve', [CompanyPostController::class, 'approve'])->name('posts.approve');
@@ -123,6 +138,9 @@ Route::middleware('auth')->group(function () {
         Route::get('collaborations/{collaboration}', [CreatorCollaborationController::class, 'show'])->name('collaborations.show');
         Route::post('collaborations/{collaboration}/accept', [CreatorCollaborationController::class, 'accept'])->name('collaborations.accept');
         Route::post('collaborations/{collaboration}/decline', [CreatorCollaborationController::class, 'decline'])->name('collaborations.decline');
+        Route::get('collaborations/{collaboration}/messages', [CreatorCollaborationMessageController::class, 'index'])->name('collaborations.messages.index');
+        Route::post('collaborations/{collaboration}/messages', [CreatorCollaborationMessageController::class, 'store'])->name('collaborations.messages.store');
+        Route::post('collaborations/{collaboration}/messages/read', [CreatorCollaborationMessageController::class, 'read'])->name('collaborations.messages.read');
         Route::get('collaborations/{collaboration}/contract', [CreatorCollaborationController::class, 'contract'])->name('collaborations.contract');
         Route::get('collaborations/{collaboration}/posts', [CreatorPostController::class, 'index'])->name('collaborations.posts.index');
         Route::post('collaborations/{collaboration}/posts', [CreatorPostController::class, 'store'])->name('collaborations.posts.store');

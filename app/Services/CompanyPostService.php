@@ -12,7 +12,10 @@ use Illuminate\Validation\ValidationException;
 
 class CompanyPostService
 {
-    public function __construct(private TrackingLinkService $tracking) {}
+    public function __construct(
+        private TrackingLinkService $tracking,
+        private CollaborationNotifier $notifier,
+    ) {}
 
     /**
      * @return list<array<string, mixed>>
@@ -51,6 +54,8 @@ class CompanyPostService
         $post->reviewed_by_user_id = $actor->id;
         $post->save();
 
+        $this->notifier->postApproved($post, $actor);
+
         return $this->payload($company, $post->fresh());
     }
 
@@ -68,6 +73,8 @@ class CompanyPostService
         $post->reviewed_by_user_id = $actor->id;
         $post->save();
 
+        $this->notifier->postChangesRequested($post, $actor);
+
         return $this->payload($company, $post->fresh());
     }
 
@@ -84,6 +91,8 @@ class CompanyPostService
         $post->reviewed_at = now();
         $post->reviewed_by_user_id = $actor->id;
         $post->save();
+
+        $this->notifier->postRejected($post, $actor);
 
         return $this->payload($company, $post->fresh());
     }

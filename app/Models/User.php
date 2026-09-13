@@ -89,6 +89,31 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             ->wherePivotNull('deleted_at');
     }
 
+    /**
+     * @return HasOne<NotificationPreference, $this>
+     */
+    public function notificationPreference(): HasOne
+    {
+        return $this->hasOne(NotificationPreference::class);
+    }
+
+    public function wantsEmail(string $key): bool
+    {
+        $prefs = $this->notificationPreference;
+
+        if ($prefs === null) {
+            return true;
+        }
+
+        return match ($key) {
+            'invites' => $prefs->email_invites,
+            'applications' => $prefs->email_applications,
+            'campaign_updates' => $prefs->email_campaign_updates,
+            'messages' => $prefs->email_messages,
+            default => true,
+        };
+    }
+
     public function side(): ?string
     {
         if ($this->hasRole('creator')) {

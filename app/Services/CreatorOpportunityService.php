@@ -22,6 +22,7 @@ class CreatorOpportunityService
     public function __construct(
         private CompanyCollaborationService $collaborations,
         private ContractService $contracts,
+        private CollaborationNotifier $notifier,
     ) {}
 
     /**
@@ -90,6 +91,8 @@ class CreatorOpportunityService
         );
 
         $collaboration->load(['campaign.company', 'creatorProfile']);
+
+        $this->notifier->applied($collaboration, $user);
 
         return $this->dealPayload($collaboration);
     }
@@ -184,6 +187,8 @@ class CreatorOpportunityService
 
         $collaboration->load(['campaign.company', 'creatorProfile']);
 
+        $this->notifier->selected($collaboration, $user);
+
         return $this->dealPayload($collaboration);
     }
 
@@ -215,6 +220,8 @@ class CreatorOpportunityService
         );
 
         $collaboration->load(['campaign.company', 'creatorProfile']);
+
+        $this->notifier->declined($collaboration, $user);
 
         return $this->dealPayload($collaboration);
     }

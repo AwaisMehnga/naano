@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLink } from '@/components/app-link';
+import CollaborationThread from '@/components/collaboration-thread';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -38,11 +39,23 @@ type DealDetail = {
     guidelines: string | null;
 };
 
+type DealMetrics = {
+    impressions: number;
+    likes: number;
+    comments: number;
+    clicks: number;
+    unique_clicks: number;
+    qualified_clicks: number;
+    leads_count: number;
+    ctr: number | null;
+};
+
 export default function CreatorDealShowPage() {
     const { id } = useParams();
     const dealId = Number(id);
     const navigate = useNavigate();
     const [deal, setDeal] = useState<DealDetail | null>(null);
+    const [metrics, setMetrics] = useState<DealMetrics | null>(null);
     const [posts, setPosts] = useState<CreatorPost[]>([]);
     const [bodies, setBodies] = useState<Record<number, string>>({});
     const [publishedUrl, setPublishedUrl] = useState<Record<number, string>>(
@@ -53,11 +66,16 @@ export default function CreatorDealShowPage() {
     const [busy, setBusy] = useState(false);
 
     async function load() {
-        const [{ data: nextDeal }, { data: nextPosts }] = await Promise.all([
-            http.get<DealDetail>(creatorApi.collaboration(dealId)),
-            http.get<CreatorPost[]>(creatorApi.collaborationPosts(dealId)),
-        ]);
+        const [{ data: nextDeal }, { data: nextPosts }, { data: nextMetrics }] =
+            await Promise.all([
+                http.get<DealDetail>(creatorApi.collaboration(dealId)),
+                http.get<CreatorPost[]>(creatorApi.collaborationPosts(dealId)),
+                http.get<DealMetrics>(
+                    creatorApi.collaborationMetrics(dealId),
+                ),
+            ]);
         setDeal(nextDeal);
+        setMetrics(nextMetrics);
         setPosts(nextPosts);
         setBodies(
             Object.fromEntries(
@@ -242,6 +260,41 @@ export default function CreatorDealShowPage() {
                                 Contract
                             </AppLink>
                         </Button>
+                    )}
+                    {metrics && (
+                        <section className="grid gap-4 md:grid-cols-3">
+                            <div className="border-border bg-card rounded-2xl border p-5">
+                                <p className="text-muted-foreground text-sm">
+                                    Impressions
+                                </p>
+                                <p className="mt-2 text-2xl font-semibold">
+                                    {formatNumber(metrics.impressions)}
+                                </p>
+                            </div>
+                            <div className="border-border bg-card rounded-2xl border p-5">
+                                <p className="text-muted-foreground text-sm">
+                                    Unique clicks
+                                </p>
+                                <p className="mt-2 text-2xl font-semibold">
+                                    {formatNumber(metrics.unique_clicks)}
+                                </p>
+                                <p className="text-muted-foreground mt-1 text-sm">
+                                    {formatNumber(metrics.clicks)} total · CTR{' '}
+                                    {pct(metrics.ctr)}
+                                </p>
+                            </div>
+                            <div className="border-border bg-card rounded-2xl border p-5">
+                                <p className="text-muted-foreground text-sm">
+                                    Qualified
+                                </p>
+                                <p className="mt-2 text-2xl font-semibold">
+                                    {formatNumber(metrics.qualified_clicks)}
+                                </p>
+                                <p className="text-muted-foreground mt-1 text-sm">
+                                    {formatNumber(metrics.leads_count)} leads
+                                </p>
+                            </div>
+                        </section>
                     )}
                     {(deal.brief?.context || deal.guidelines) && (
                         <section className="border-border bg-card grid gap-3 rounded-2xl border p-5">
@@ -437,6 +490,14 @@ export default function CreatorDealShowPage() {
                             </article>
                         ))
                     )}
+                    <section className="border-border bg-card grid gap-3 rounded-2xl border p-5">
+                        <h2 className="font-medium">Messages</h2>
+                        <CollaborationThread
+                            collaborationId={deal.id}
+                            side="creator"
+                            canSend={deal.status !== 'cancelled'}
+                        />
+                    </section>
                 </>
             )}
         </div>
@@ -457,4 +518,16 @@ function toLocalInput(iso: string | null): string {
     const pad = (value: number) => String(value).padStart(2, '0');
 
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function formatNumber(value: number): string {
+    return new Intl.NumberFormat('en-GB').format(value);
+}
+
+function pct(value: number | null): string {
+    if (value === null) {
+        return '—';
+    }
+
+    return `${(value * 100).toFixed(1)}%`;
 }

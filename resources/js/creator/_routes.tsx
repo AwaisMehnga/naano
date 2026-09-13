@@ -12,6 +12,8 @@ import CreatorAccountPage from './pages/setting/account';
 import CreatorAudiencePage from './pages/setting/audience';
 import CreatorBillingPage from './pages/setting/billing';
 import CreatorProfilePage from './pages/setting/profile';
+import NotificationsPage from '@/pages/notifications';
+import NotificationSettingsPage from '@/pages/setting/notifications';
 
 export const routes = [
     {
@@ -47,6 +49,10 @@ export const routes = [
                 element: <CreatorContractPage />,
             },
             {
+                path: 'notifications',
+                element: <NotificationsPage />,
+            },
+            {
                 path: 'setting',
                 element: <CreatorSettingLayout />,
                 children: [
@@ -69,6 +75,10 @@ export const routes = [
                     {
                         path: 'account',
                         element: <CreatorAccountPage />,
+                    },
+                    {
+                        path: 'notifications',
+                        element: <NotificationSettingsPage />,
                     },
                 ],
             },
