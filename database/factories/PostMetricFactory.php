@@ -22,6 +22,7 @@ class PostMetricFactory extends Factory
             'likes' => 0,
             'comments' => 0,
             'clicks' => 0,
+            'unique_clicks' => 0,
             'qualified_clicks' => 0,
             'leads_count' => 0,
             'captured_at' => now(),

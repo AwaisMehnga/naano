@@ -3,10 +3,18 @@
 use App\Http\Controllers\Auth\EmailCodeController;
 use App\Http\Controllers\Onboarding\CompanyOnboardingController;
 use App\Http\Controllers\Onboarding\CreatorOnboardingController;
+use App\Http\Controllers\TrackingPixelController;
+use App\Http\Controllers\TrackingRedirectController;
 use App\Support\HomeRedirect;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+
+Route::get('t/{slug}', [TrackingRedirectController::class, 'show'])
+    ->where('slug', '[A-Za-z0-9]+')
+    ->name('tracking.redirect');
+
+Route::get('pixel.js', [TrackingPixelController::class, 'show'])->name('tracking.pixel');
 
 Route::middleware('guest')->group(function () {
     Route::view('register/creator', 'auth.register-form', ['role' => 'creator'])->name('register.creator');

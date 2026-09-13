@@ -18,11 +18,13 @@ use App\Models\Company;
 use App\Models\CreatorProfile;
 use App\Models\Lead;
 use App\Models\Post;
+use App\Models\TrackingLink;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Services\ContractService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class CampaignSeeder extends Seeder
 {
@@ -174,6 +176,7 @@ class CampaignSeeder extends Seeder
         $this->seedVisibilityCollaborations($visibility, $ownerId, $creators);
         $this->seedInvites($pipeline, $ownerId, $creators);
         $this->seedCompletedHiring($hiring, $creators);
+        $this->seedHireTrackingLinks($company, $visibility);
         $this->seedWallet($company, $visibility);
     }
 
@@ -240,12 +243,14 @@ class CampaignSeeder extends Seeder
             ]);
 
             if ($row['status'] === CollaborationStatus::Booked) {
-                Post::query()->create([
+                $post = Post::query()->create([
                     'collaboration_id' => $collaboration->id,
                     'status' => PostStatus::InReview,
                     'body' => 'Anyone can say they are a great developer. Not everyone can show the receipts. The work has to live where people can inspect it — repos, articles, case studies — before the first call.',
                     'submitted_at' => now()->subDay(),
                 ]);
+
+                $this->hireLink($campaign->company, $collaboration, $post);
             }
 
             if ($row['status'] === CollaborationStatus::Completed) {
@@ -337,6 +342,44 @@ class CampaignSeeder extends Seeder
             'body' => 'Hiring managers need fast signals of reliability. Public work is that signal.',
             'published_url' => 'https://www.linkedin.com/posts/phil-demo-hiring',
             'published_at' => now()->subWeeks(3),
+        ]);
+    }
+
+    private function seedHireTrackingLinks(Company $company, Campaign $campaign): void
+    {
+        if (! is_string($company->website) || trim($company->website) === '') {
+            $company->website = 'https://awaismehnga.dev';
+            $company->save();
+        }
+
+        foreach ($campaign->collaborations()->where('status', CollaborationStatus::Booked)->with('posts')->get() as $collaboration) {
+            if ($collaboration->trackingLinks()->exists()) {
+                continue;
+            }
+
+            $post = $collaboration->posts->sortBy('id')->first();
+
+            if ($post instanceof Post) {
+                $this->hireLink($company, $collaboration, $post);
+            }
+        }
+    }
+
+    private function hireLink(Company $company, Collaboration $collaboration, Post $post): void
+    {
+        $website = is_string($company->website) && trim($company->website) !== ''
+            ? $company->website
+            : 'https://awaismehnga.dev';
+
+        TrackingLink::query()->create([
+            'post_id' => $post->id,
+            'collaboration_id' => $collaboration->id,
+            'destination_url' => $website,
+            'utm_source' => 'naano',
+            'utm_medium' => 'linkedin',
+            'utm_campaign' => (string) $collaboration->campaign_id,
+            'utm_content' => (string) $collaboration->id,
+            'slug' => Str::lower(Str::random(10)),
         ]);
     }
 

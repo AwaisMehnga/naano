@@ -11,7 +11,7 @@ use App\Support\AjaxResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-class ProfileController extends Controller
+class CompanyProfileController extends Controller
 {
     public function __construct(
         private CompanyProfileService $profiles,

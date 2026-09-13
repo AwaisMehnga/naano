@@ -30,10 +30,11 @@ return Application::configure(basePath: dirname(__DIR__))
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
+        $middleware->encryptCookies(except: ['appearance', 'sidebar_state', 'naano_vid']);
 
         $middleware->validateCsrfTokens(except: [
             'api/stripe/webhook',
+            'api/t/*',
         ]);
 
         $middleware->web(append: [

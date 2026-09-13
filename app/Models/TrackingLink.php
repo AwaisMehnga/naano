@@ -53,6 +53,14 @@ class TrackingLink extends Model
     }
 
     /**
+     * @return HasMany<TrackingClick, $this>
+     */
+    public function clicks(): HasMany
+    {
+        return $this->hasMany(TrackingClick::class);
+    }
+
+    /**
      * @return HasMany<Lead, $this>
      */
     public function leads(): HasMany

@@ -1,38 +1,185 @@
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { euros } from '@/company/pages/creators/format';
+import { ApiError, companyApi, http } from '@/lib/api';
 import type { CampaignPost } from './types';
 
+type Metrics = {
+    impressions: number;
+    likes: number;
+    comments: number;
+    clicks: number;
+    unique_clicks: number;
+    qualified_clicks: number;
+    leads_count: number;
+    ctr: number | null;
+    ctr_total: number | null;
+};
+
+type DailyClick = { day: string; clicks: number };
+
+type LeadRow = {
+    id: number;
+    source: string;
+    occurred_at: string | null;
+    payload: { pipeline_cents?: number; note?: string } | null;
+};
+
+type CreatorRow = {
+    collaboration_id: number;
+    status: string;
+    creator: { id: number; display_name: string | null };
+    impressions: number;
+    unique_clicks: number;
+    qualified_clicks: number;
+    leads_count: number;
+    ctr: number | null;
+};
+
+type CampaignAnalytics = Metrics & {
+    pipeline_cents: number;
+    spend_cents: number;
+    daily_clicks: DailyClick[];
+    posts: (CampaignPost & { metrics: Metrics })[];
+    leads: LeadRow[];
+};
+
 export default function CampaignAnalytics({
+    campaignId,
     leadsCount,
     posts,
 }: {
+    campaignId: number;
     leadsCount: number;
     posts: CampaignPost[];
 }) {
+    const [data, setData] = useState<CampaignAnalytics | null>(null);
+    const [creators, setCreators] = useState<CreatorRow[]>([]);
+    const [pipeline, setPipeline] = useState<Record<number, string>>({});
+    const [note, setNote] = useState('');
+
+    async function load() {
+        const [{ data: analytics }, { data: creatorRows }] = await Promise.all([
+            http.get<CampaignAnalytics>(companyApi.campaignAnalytics(campaignId)),
+            http.get<CreatorRow[]>(companyApi.campaignAnalyticsCreators(campaignId)),
+        ]);
+        setData(analytics);
+        setCreators(creatorRows);
+        setPipeline(
+            Object.fromEntries(
+                analytics.leads.map((lead) => [
+                    lead.id,
+                    lead.payload?.pipeline_cents
+                        ? String(lead.payload.pipeline_cents / 100)
+                        : '',
+                ]),
+            ),
+        );
+    }
+
+    useEffect(() => {
+        load().catch((caught: unknown) => {
+            toast.error(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not load analytics.',
+            );
+        });
+    }, [campaignId]);
+
+    const maxClicks = Math.max(
+        1,
+        ...(data?.daily_clicks.map((row) => row.clicks) ?? [0]),
+    );
+
+    async function addLead() {
+        try {
+            await http.post(companyApi.campaignLeads(campaignId), {
+                source: 'manual',
+                payload: { note },
+            });
+            setNote('');
+            toast.success('Lead added');
+            await load();
+        } catch (caught) {
+            toast.error(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not add this lead.',
+            );
+        }
+    }
+
+    async function savePipeline(leadId: number) {
+        const eurosValue = Number(pipeline[leadId]);
+        const cents = Number.isFinite(eurosValue)
+            ? Math.round(eurosValue * 100)
+            : 0;
+
+        try {
+            await http.patch(companyApi.lead(leadId), {
+                payload: { pipeline_cents: cents },
+            });
+            toast.success('Pipeline saved');
+            await load();
+        } catch (caught) {
+            toast.error(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not update pipeline.',
+            );
+        }
+    }
+
+    const snapshot = data;
+    const postRows: Array<CampaignPost & { metrics?: Metrics }> =
+        snapshot?.posts.length ? snapshot.posts : posts;
+
     return (
         <section className="grid gap-6">
             <div>
                 <h2 className="text-lg font-semibold">Analytics</h2>
                 <p className="text-muted-foreground text-sm">
-                    Metrics stay empty until tracking URLs and the analytics
-                    engine ship. Leads and posts below are live.
+                    Unique clicks, CTR, qualified visits, and attributed
+                    pipeline for this campaign.
                 </p>
             </div>
             <div className="grid gap-4 md:grid-cols-3">
                 <StatCard
-                    label="Est. reach"
-                    value="0"
-                    hint="No published posts yet"
+                    label="Impressions"
+                    value={formatNumber(snapshot?.impressions ?? 0)}
+                    hint="LinkedIn ingest"
+                />
+                <StatCard
+                    label="Unique clicks"
+                    value={formatNumber(snapshot?.unique_clicks ?? 0)}
+                    hint={`${formatNumber(snapshot?.clicks ?? 0)} total · CTR ${pct(snapshot?.ctr ?? null)}`}
                 />
                 <StatCard
                     label="Qualified clicks"
-                    value="0"
-                    hint="Since the campaign started"
+                    value={formatNumber(snapshot?.qualified_clicks ?? 0)}
+                    hint="Pixel dwell ≥ 30s"
+                />
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+                <StatCard
+                    label="Spend"
+                    value={euros(snapshot?.spend_cents ?? 0)}
+                    hint="Captured holds"
                 />
                 <StatCard
-                    label="Committed budget"
-                    value="€ 0"
-                    hint="Since the campaign started"
+                    label="Pipeline"
+                    value={euros(snapshot?.pipeline_cents ?? 0)}
+                    hint="Attributed lead value"
+                />
+                <StatCard
+                    label="Leads"
+                    value={String(snapshot?.leads_count ?? leadsCount)}
+                    hint="Form + manual"
                 />
             </div>
             <div className="border-border bg-card rounded-2xl border p-5">
@@ -41,101 +188,96 @@ export default function CampaignAnalytics({
                     Daily clicks · last 12 days
                 </p>
                 <div className="flex h-40 items-end gap-2">
-                    {Array.from({ length: 12 }).map((_, index) => (
-                        <div
-                            key={index}
-                            className="bg-muted h-2 flex-1 rounded-sm"
-                        />
-                    ))}
+                    {(snapshot?.daily_clicks ?? Array.from({ length: 12 })).map(
+                        (row, index) => {
+                            const clicks =
+                                typeof row === 'object' ? row.clicks : 0;
+
+                            return (
+                                <div
+                                    key={typeof row === 'object' ? row.day : index}
+                                    className="bg-primary/70 rounded-sm"
+                                    style={{
+                                        height: `${Math.max(8, (clicks / maxClicks) * 100)}%`,
+                                        flex: 1,
+                                    }}
+                                />
+                            );
+                        },
+                    )}
                 </div>
                 <div className="text-muted-foreground mt-3 flex justify-between text-xs">
-                    <span>1 Sept</span>
-                    <span>12 Sept</span>
+                    <span>
+                        {snapshot?.daily_clicks[0]?.day ?? '—'}
+                    </span>
+                    <span>
+                        {snapshot?.daily_clicks.at(-1)?.day ?? '—'}
+                    </span>
                 </div>
             </div>
             <div className="border-border bg-card grid gap-4 rounded-2xl border p-5">
                 <div>
                     <h3 className="font-medium">Post performance</h3>
                     <p className="text-muted-foreground text-sm">
-                        Without a pixel. Latest metrics collected from your
-                        posts.
+                        Latest metrics collected from tracking hops and the
+                        pixel.
                     </p>
                 </div>
                 <div className="grid grid-cols-3 gap-4 text-center">
-                    <MiniStat label="Posts" value="0" />
-                    <MiniStat label="reactions" value="0" />
-                    <MiniStat label="comments" value="0" />
-                </div>
-                <div className="border-border bg-muted/40 rounded-xl border p-4">
-                    <p className="font-medium">Measure site conversions</p>
-                    <p className="text-muted-foreground mt-1 text-sm">
-                        Connect the pixel to add visits, sign-ups and revenue to
-                        your post results.
-                    </p>
-                    <Button type="button" variant="outline" className="mt-3" disabled>
-                        Install the pixel
-                    </Button>
+                    <MiniStat
+                        label="Posts"
+                        value={String(postRows.length)}
+                    />
+                    <MiniStat
+                        label="reactions"
+                        value={formatNumber(snapshot?.likes ?? 0)}
+                    />
+                    <MiniStat
+                        label="comments"
+                        value={formatNumber(snapshot?.comments ?? 0)}
+                    />
                 </div>
             </div>
             <div className="border-border bg-card rounded-2xl border p-5">
                 <h3 className="font-medium">Attribution by creator</h3>
-                <p className="text-muted-foreground mt-6 text-sm">
-                    No attributed activity yet.
-                </p>
-            </div>
-            <div className="grid gap-4 md:grid-cols-3">
-                <StatCard label="CPM" value="—" />
-                <StatCard label="Creators booked" value="0" />
-                <StatCard
-                    label="LinkedIn leads"
-                    value="0"
-                    hint="Calculated on — verified impressions"
-                />
-            </div>
-            <div className="border-border bg-card rounded-2xl border p-5">
-                <h3 className="font-medium">Verified reach</h3>
-                <p className="text-muted-foreground mt-1 text-sm">
-                    0 of 0 posts measured · Available when a verified day-7
-                    reading exists
-                </p>
-                <div className="mt-4 overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="text-muted-foreground text-left">
-                                <th className="py-2 font-medium"></th>
-                                <th className="py-2 font-medium">impressions</th>
-                                <th className="py-2 font-medium">reactions</th>
-                                <th className="py-2 font-medium">comments</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {['D+1', 'D+3', 'D+7'].map((row) => (
-                                <tr key={row} className="border-border border-t">
-                                    <td className="py-2">{row}</td>
-                                    <td className="py-2">—</td>
-                                    <td className="py-2">—</td>
-                                    <td className="py-2">—</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div className="border-border bg-card rounded-2xl border p-5">
-                <p className="text-muted-foreground text-sm">Leads</p>
-                <p className="mt-1 text-3xl font-semibold">{leadsCount}</p>
-                <p className="text-muted-foreground mt-1 text-sm">
-                    Attributed leads on this campaign
-                </p>
+                {creators.length === 0 ? (
+                    <p className="text-muted-foreground mt-6 text-sm">
+                        No attributed activity yet.
+                    </p>
+                ) : (
+                    <div className="mt-4 grid gap-3">
+                        {creators.map((row) => (
+                            <div
+                                key={row.collaboration_id}
+                                className="border-border flex flex-wrap items-center justify-between gap-3 border-t pt-3 first:border-t-0 first:pt-0"
+                            >
+                                <div>
+                                    <p className="font-medium">
+                                        {row.creator.display_name}
+                                    </p>
+                                    <p className="text-muted-foreground text-xs">
+                                        {row.status.replaceAll('_', ' ')}
+                                    </p>
+                                </div>
+                                <p className="text-sm">
+                                    {formatNumber(row.unique_clicks)} unique ·{' '}
+                                    {formatNumber(row.qualified_clicks)}{' '}
+                                    qualified · {row.leads_count} leads · CTR{' '}
+                                    {pct(row.ctr)}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
             <div className="grid gap-4">
                 <h3 className="text-lg font-semibold">Posts</h3>
-                {posts.length === 0 ? (
+                {postRows.length === 0 ? (
                     <p className="text-muted-foreground text-sm">
                         No posts on this campaign yet.
                     </p>
                 ) : (
-                    posts.map((post) => (
+                    postRows.map((post) => (
                         <article
                             key={post.id}
                             className="border-border rounded-xl border p-4"
@@ -153,6 +295,14 @@ export default function CampaignAnalytics({
                                     {post.body}
                                 </p>
                             )}
+                            {post.metrics && (
+                                <p className="text-muted-foreground mt-2 text-sm">
+                                    {formatNumber(post.metrics.impressions)}{' '}
+                                    impressions ·{' '}
+                                    {formatNumber(post.metrics.unique_clicks)}{' '}
+                                    unique · CTR {pct(post.metrics.ctr)}
+                                </p>
+                            )}
                             {post.published_url && (
                                 <a
                                     href={post.published_url}
@@ -164,6 +314,66 @@ export default function CampaignAnalytics({
                                 </a>
                             )}
                         </article>
+                    ))
+                )}
+            </div>
+            <div className="border-border bg-card grid gap-4 rounded-2xl border p-5">
+                <h3 className="font-medium">Leads</h3>
+                <form
+                    className="flex flex-wrap gap-2"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        void addLead();
+                    }}
+                >
+                    <Input
+                        value={note}
+                        onChange={(event) => setNote(event.target.value)}
+                        placeholder="Manual lead note"
+                    />
+                    <Button type="submit" disabled={note.trim() === ''}>
+                        Add lead
+                    </Button>
+                </form>
+                {(snapshot?.leads ?? []).length === 0 ? (
+                    <p className="text-muted-foreground text-sm">
+                        No attributed leads yet.
+                    </p>
+                ) : (
+                    snapshot?.leads.map((lead) => (
+                        <div
+                            key={lead.id}
+                            className="border-border grid gap-2 border-t pt-3"
+                        >
+                            <p className="text-sm">
+                                {lead.source} ·{' '}
+                                {lead.payload?.note ?? 'No note'}
+                            </p>
+                            <div className="flex flex-wrap items-end gap-2">
+                                <div className="grid gap-1">
+                                    <Label htmlFor={`pipeline-${lead.id}`}>
+                                        Pipeline €
+                                    </Label>
+                                    <Input
+                                        id={`pipeline-${lead.id}`}
+                                        value={pipeline[lead.id] ?? ''}
+                                        onChange={(event) =>
+                                            setPipeline((current) => ({
+                                                ...current,
+                                                [lead.id]: event.target.value,
+                                            }))
+                                        }
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => void savePipeline(lead.id)}
+                                >
+                                    Save
+                                </Button>
+                            </div>
+                        </div>
                     ))
                 )}
             </div>
@@ -198,4 +408,16 @@ function MiniStat({ label, value }: { label: string; value: string }) {
             <p className="text-muted-foreground text-xs">{label}</p>
         </div>
     );
+}
+
+function formatNumber(value: number): string {
+    return new Intl.NumberFormat('en-GB').format(value);
+}
+
+function pct(value: number | null): string {
+    if (value === null) {
+        return '—';
+    }
+
+    return `${(value * 100).toFixed(1)}%`;
 }

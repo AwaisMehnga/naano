@@ -9,6 +9,7 @@ import CampaignAnalytics from './analytics-shell';
 import CampaignBriefEditor from './brief-editor';
 import CampaignCollaborations from './collaborations';
 import CampaignStatusSelect from './status-select';
+import CampaignTracking from './tracking';
 import { useCampaigns } from './store';
 import {
     objectiveLabels,
@@ -19,6 +20,7 @@ import {
 const tabs: { id: DetailTab; label: string }[] = [
     { id: 'collaborations', label: 'Collaborations' },
     { id: 'brief', label: 'Brief' },
+    { id: 'tracking', label: 'Tracking' },
     { id: 'analytics', label: 'Analytics' },
 ];
 
@@ -48,7 +50,7 @@ export default function CompanyCampaignShowPage() {
     }
 
     return (
-        <div className="mx-auto flex w-full w-full flex-1 flex-col gap-8 p-4 lg:p-6">
+        <div className="mx-auto flex w-full flex-1 flex-col gap-8 p-4 lg:p-6">
             <div className="flex flex-col gap-4">
                 <Button
                     type="button"
@@ -115,8 +117,12 @@ export default function CompanyCampaignShowPage() {
                             brief={campaign.brief}
                         />
                     )}
+                    {tab === 'tracking' && (
+                        <CampaignTracking campaignId={campaignId} />
+                    )}
                     {tab === 'analytics' && (
                         <CampaignAnalytics
+                            campaignId={campaignId}
                             leadsCount={campaign.leads_count}
                             posts={campaign.posts}
                         />

@@ -1,11 +1,16 @@
 <?php
 
+use App\Enums\CollaborationSource;
+use App\Enums\CollaborationStatus;
 use App\Enums\CompanyMemberRole;
 use App\Enums\CreatorVettingStatus;
+use App\Models\Campaign;
+use App\Models\Collaboration;
 use App\Models\Company;
 use App\Models\CompanyMember;
 use App\Models\CreatorProfile;
 use App\Models\User;
+use App\Models\Wallet;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
@@ -84,6 +89,37 @@ function companyWithMember(): array
     ]);
 
     return [$owner, $company, $member];
+}
+
+/**
+ * @return array{0: User, 1: Collaboration, 2: User}
+ */
+function bookedDeal(?User $owner = null): array
+{
+    $owner ??= User::factory()->company()->onboarded()->create();
+    $company = $owner->company;
+    $campaign = Campaign::factory()->create([
+        'company_id' => $company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    $creator = marketplaceCreator();
+    $collaboration = Collaboration::factory()->create([
+        'campaign_id' => $campaign->id,
+        'creator_profile_id' => $creator->id,
+        'status' => CollaborationStatus::Selected,
+        'source' => CollaborationSource::Invite,
+    ]);
+
+    Wallet::query()->updateOrCreate(
+        ['company_id' => $company->id],
+        ['available_cents' => 50000, 'currency' => 'EUR'],
+    );
+
+    test()->actingAs($owner)
+        ->postJson(route('api.company.collaborations.book', $collaboration))
+        ->assertOk();
+
+    return [$owner, $collaboration->fresh(), $creator->user];
 }
 
 function fakePng(string $name = 'photo.png'): UploadedFile

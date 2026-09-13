@@ -9,7 +9,7 @@ use App\Services\CreatorAccountService;
 use App\Support\AjaxResponse;
 use Illuminate\Http\JsonResponse;
 
-class AccountController extends Controller
+class CreatorAccountController extends Controller
 {
     public function __construct(private CreatorAccountService $accounts) {}
 

@@ -7,7 +7,7 @@ use App\Services\NicheService;
 use App\Support\AjaxResponse;
 use Illuminate\Http\JsonResponse;
 
-class NicheController extends Controller
+class NichesController extends Controller
 {
     public function __construct(private NicheService $niches) {}
 

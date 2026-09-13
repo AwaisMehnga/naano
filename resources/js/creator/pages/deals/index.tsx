@@ -86,6 +86,16 @@ export default function CreatorDealsPage() {
                                 </p>
                             </div>
                             <div className="flex gap-2">
+                                <Button
+                                    type="button"
+                                    size="sm"
+                                    variant="outline"
+                                    asChild
+                                >
+                                    <AppLink href={`/deals/${item.id}`}>
+                                        Open
+                                    </AppLink>
+                                </Button>
                                 {item.status === 'invited' && (
                                     <>
                                         <Button

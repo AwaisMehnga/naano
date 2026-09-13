@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  * @property int $likes
  * @property int $comments
  * @property int $clicks
+ * @property int $unique_clicks
  * @property int $qualified_clicks
  * @property int $leads_count
  * @property int|null $cpm_cents
@@ -28,6 +29,7 @@ use Illuminate\Support\Carbon;
     'likes',
     'comments',
     'clicks',
+    'unique_clicks',
     'qualified_clicks',
     'leads_count',
     'cpm_cents',

@@ -120,6 +120,8 @@ export type CollaborationRow = {
     status: string;
     booked_price_cents: number | null;
     booked_posts_count: number | null;
+    has_published_post: boolean;
+    review_post_id: number | null;
     creator: {
         id: number;
         display_name: string | null;
@@ -188,7 +190,7 @@ export const pipelineLabels: Record<PipelineTab, string> = {
     completed: 'Completed',
 };
 
-export type DetailTab = 'collaborations' | 'brief' | 'analytics';
+export type DetailTab = 'collaborations' | 'brief' | 'tracking' | 'analytics';
 
 export type StatusAction =
     | 'launch'

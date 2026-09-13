@@ -148,6 +148,19 @@ export default function CampaignCollaborations({
                                     </div>
                                 </div>
                                 <div className="flex gap-2">
+                                    {row.review_post_id && (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            asChild
+                                        >
+                                            <AppLink
+                                                href={`/campaigns/${campaignId}/posts/${row.review_post_id}`}
+                                            >
+                                                Review
+                                            </AppLink>
+                                        </Button>
+                                    )}
                                     {['invited', 'applied', 'outreach'].includes(
                                         row.status,
                                     ) && (
@@ -180,7 +193,8 @@ export default function CampaignCollaborations({
                                         </Button>
                                     )}
                                     {row.status !== 'cancelled' &&
-                                        row.status !== 'completed' && (
+                                        row.status !== 'completed' &&
+                                        !row.has_published_post && (
                                             <Button
                                                 type="button"
                                                 size="sm"

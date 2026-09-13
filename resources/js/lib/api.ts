@@ -133,6 +133,24 @@ export const companyApi = {
         `/api/company/collaborations/${id}/events`,
     collaborationContract: (id: number) =>
         `/api/company/collaborations/${id}/contract`,
+    collaborationPosts: (id: number) =>
+        `/api/company/collaborations/${id}/posts`,
+    post: (id: number) => `/api/company/posts/${id}`,
+    postApprove: (id: number) => `/api/company/posts/${id}/approve`,
+    postChanges: (id: number) => `/api/company/posts/${id}/changes`,
+    postReject: (id: number) => `/api/company/posts/${id}/reject`,
+    campaignTrackingLinks: (id: number) =>
+        `/api/company/campaigns/${id}/tracking-links`,
+    trackingLink: (id: number) => `/api/company/tracking-links/${id}`,
+    analyticsOverview: '/api/company/analytics/overview',
+    campaignAnalytics: (id: number) =>
+        `/api/company/campaigns/${id}/analytics`,
+    campaignAnalyticsCreators: (id: number) =>
+        `/api/company/campaigns/${id}/analytics/creators`,
+    campaignLeads: (id: number) => `/api/company/campaigns/${id}/leads`,
+    lead: (id: number) => `/api/company/leads/${id}`,
+    postMetrics: (id: number) => `/api/company/posts/${id}/metrics`,
+    campaignReport: (id: number) => `/api/company/reports/campaigns/${id}`,
     wallet: '/api/company/wallet',
     walletTransactions: (
         query: Record<string, string | number | undefined> = {},
@@ -159,6 +177,16 @@ export const creatorApi = {
         `/api/creator/collaborations/${id}/decline`,
     collaborationContract: (id: number) =>
         `/api/creator/collaborations/${id}/contract`,
+    collaborationPosts: (id: number) =>
+        `/api/creator/collaborations/${id}/posts`,
+    post: (id: number) => `/api/creator/posts/${id}`,
+    postSubmit: (id: number) => `/api/creator/posts/${id}/submit`,
+    postSchedule: (id: number) => `/api/creator/posts/${id}/schedule`,
+    postPublish: (id: number) => `/api/creator/posts/${id}/publish`,
+    analyticsOverview: '/api/creator/analytics/overview',
+    collaborationMetrics: (id: number) =>
+        `/api/creator/collaborations/${id}/metrics`,
+    postMetrics: (id: number) => `/api/creator/posts/${id}/metrics`,
 };
 
 export const sharedApi = {

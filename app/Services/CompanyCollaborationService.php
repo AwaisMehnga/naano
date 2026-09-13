@@ -6,6 +6,7 @@ use App\Enums\CollaborationEventType;
 use App\Enums\CollaborationSource;
 use App\Enums\CollaborationStatus;
 use App\Enums\CreatorVettingStatus;
+use App\Enums\PostStatus;
 use App\Exceptions\WalletUnderfundedException;
 use App\Models\Campaign;
 use App\Models\Collaboration;
@@ -27,6 +28,7 @@ class CompanyCollaborationService
     public function __construct(
         private CompanyWalletService $wallets,
         private ContractService $contracts,
+        private TrackingLinkService $tracking,
     ) {}
 
     /**
@@ -51,6 +53,8 @@ class CompanyCollaborationService
 
         $query = $campaign->collaborations()
             ->with($this->creatorRelations())
+            ->with(['posts' => fn ($posts) => $posts->where('status', PostStatus::InReview)->orderByDesc('id')])
+            ->withExists($this->publishedPostExists())
             ->orderByDesc('id');
 
         $pipeline = $filters['pipeline'] ?? null;
@@ -214,6 +218,14 @@ class CompanyCollaborationService
             ]);
         }
 
+        $website = $company->website;
+
+        if (! is_string($website) || trim($website) === '') {
+            throw ValidationException::withMessages([
+                'website' => 'Add a company website before booking. Tracking links need a destination.',
+            ]);
+        }
+
         $offer = $this->resolveOffer($collaboration, $offerId);
         $wallet = $this->wallets->forCompany($company);
 
@@ -240,6 +252,21 @@ class CompanyCollaborationService
             $collaboration->booked_posts_count = $offer['posts_count'];
             $collaboration->booked_at = now();
             $collaboration->save();
+
+            $count = max(1, (int) $collaboration->booked_posts_count);
+            $firstDraft = null;
+
+            for ($i = 0; $i < $count; $i++) {
+                $draft = $collaboration->posts()->create([
+                    'status' => PostStatus::Draft,
+                ]);
+                $firstDraft ??= $draft;
+            }
+
+            if ($firstDraft instanceof Post) {
+                $this->tracking->createHireLink($company, $collaboration, $firstDraft);
+            }
+
             $collaboration->load(['campaign', 'creatorProfile']);
 
             $this->contracts->generate($company, $collaboration);
@@ -267,6 +294,12 @@ class CompanyCollaborationService
         if (in_array($collaboration->status, [CollaborationStatus::Cancelled, CollaborationStatus::Completed], true)) {
             throw ValidationException::withMessages([
                 'status' => 'This collaboration cannot be cancelled.',
+            ]);
+        }
+
+        if ($this->hasPublishedPost($collaboration)) {
+            throw ValidationException::withMessages([
+                'status' => 'This collaboration cannot be cancelled after a post is published.',
             ]);
         }
 
@@ -304,6 +337,7 @@ class CompanyCollaborationService
             ->whereHas('campaign', fn ($campaign) => $campaign->where('company_id', $company->id))
             ->with($this->creatorRelations())
             ->with('campaign')
+            ->withExists($this->publishedPostExists())
             ->orderByDesc('id');
 
         $status = $filters['status'] ?? null;
@@ -494,6 +528,10 @@ class CompanyCollaborationService
             'status' => $collaboration->status->value,
             'booked_price_cents' => $collaboration->booked_price_cents,
             'booked_posts_count' => $collaboration->booked_posts_count,
+            'has_published_post' => $this->hasPublishedPost($collaboration),
+            'review_post_id' => $collaboration->relationLoaded('posts')
+                ? $collaboration->posts->first(fn (Post $post): bool => $post->status === PostStatus::InReview)?->id
+                : null,
             'creator' => [
                 'id' => $profile->id,
                 'display_name' => $profile->display_name,
@@ -503,6 +541,25 @@ class CompanyCollaborationService
                 'from_price_cents' => $fromPrice,
             ],
         ];
+    }
+
+    /**
+     * @return array<string, \Closure>
+     */
+    private function publishedPostExists(): array
+    {
+        return [
+            'posts as has_published_post' => fn ($posts) => $posts->where('status', PostStatus::Published),
+        ];
+    }
+
+    private function hasPublishedPost(Collaboration $collaboration): bool
+    {
+        if (array_key_exists('has_published_post', $collaboration->getAttributes())) {
+            return (bool) $collaboration->getAttribute('has_published_post');
+        }
+
+        return $collaboration->posts()->where('status', PostStatus::Published)->exists();
     }
 
     /**

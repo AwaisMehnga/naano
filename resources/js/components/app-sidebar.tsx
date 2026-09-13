@@ -1,4 +1,4 @@
-import { Briefcase, Handshake, LayoutGrid, Megaphone, Users, Wallet } from 'lucide-react';
+import { BarChart3, Briefcase, Handshake, LayoutGrid, Megaphone, Users, Wallet } from 'lucide-react';
 import { AppLink } from '@/components/app-link';
 import AppLogo from '@/components/app-logo';
 import { NavFooter } from '@/components/nav-footer';
@@ -64,6 +64,11 @@ export function AppSidebar({ homeHref = '/' }: { homeHref?: string } = {}) {
                         title: 'Deals',
                         href: '/deals',
                         icon: Handshake,
+                    } satisfies NavItem,
+                    {
+                        title: 'Metrics',
+                        href: '/metrics',
+                        icon: BarChart3,
                     } satisfies NavItem,
                 ]
               : []),

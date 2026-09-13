@@ -3,6 +3,8 @@ import SpaHome from '@/pages/spa-home';
 import { Navigate } from 'react-router';
 import CreatorDealsPage from './pages/deals';
 import CreatorContractPage from './pages/deals/contract';
+import CreatorDealShowPage from './pages/deals/show';
+import CreatorMetricsPage from './pages/metrics';
 import CreatorOpportunitiesPage from './pages/opportunities';
 import CreatorOpportunityShowPage from './pages/opportunities/show';
 import CreatorSettingLayout from './pages/setting';
@@ -31,6 +33,14 @@ export const routes = [
             {
                 path: 'deals',
                 element: <CreatorDealsPage />,
+            },
+            {
+                path: 'deals/:id',
+                element: <CreatorDealShowPage />,
+            },
+            {
+                path: 'metrics',
+                element: <CreatorMetricsPage />,
             },
             {
                 path: 'collaborations/:id/contract',

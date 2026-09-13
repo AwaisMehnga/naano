@@ -77,7 +77,9 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(function (User $user): void {
             $user->assignRole('company');
-            $company = $user->company()->create([]);
+            $company = $user->company()->create([
+                'website' => 'https://example.com',
+            ]);
             $company->members()->create([
                 'user_id' => $user->id,
                 'role' => CompanyMemberRole::Owner,

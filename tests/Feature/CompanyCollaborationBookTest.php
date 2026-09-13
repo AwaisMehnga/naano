@@ -3,10 +3,12 @@
 use App\Enums\CollaborationSource;
 use App\Enums\CollaborationStatus;
 use App\Enums\ContractStatus;
+use App\Enums\PostStatus;
 use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use App\Models\Campaign;
 use App\Models\Collaboration;
+use App\Models\Post;
 use App\Models\User;
 use App\Models\Wallet;
 
@@ -161,6 +163,71 @@ test('cancelling a booked collaboration releases the hold and voids the contract
         'status' => WalletTransactionStatus::Posted->value,
         'amount_cents' => 24000,
     ]);
+});
+
+test('cancelling after a published post returns 422 and leaves the hold', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    $creator = marketplaceCreator();
+    $collaboration = Collaboration::factory()->create([
+        'campaign_id' => $campaign->id,
+        'creator_profile_id' => $creator->id,
+        'status' => CollaborationStatus::Selected,
+    ]);
+    Wallet::factory()->create([
+        'company_id' => $owner->company->id,
+        'available_cents' => 50000,
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.collaborations.book', $collaboration))
+        ->assertOk();
+
+    Post::factory()->create([
+        'collaboration_id' => $collaboration->id,
+        'status' => PostStatus::Published,
+        'published_url' => 'https://www.linkedin.com/posts/ada-live',
+    ]);
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.collaborations.cancel', $collaboration))
+        ->assertUnprocessable()
+        ->assertJsonPath('data.status.0', 'This collaboration cannot be cancelled after a post is published.');
+
+    expect($collaboration->fresh()->status)->toBe(CollaborationStatus::Booked)
+        ->and($owner->company->wallet->fresh()->available_cents)->toBe(26000);
+
+    $this->assertDatabaseHas('contracts', [
+        'collaboration_id' => $collaboration->id,
+        'status' => ContractStatus::Active->value,
+    ]);
+});
+
+test('collaboration lists mark a published post so cancel can be hidden', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+    ]);
+    $collaboration = Collaboration::factory()->create([
+        'campaign_id' => $campaign->id,
+        'creator_profile_id' => marketplaceCreator()->id,
+        'status' => CollaborationStatus::Booked,
+    ]);
+    Post::factory()->create([
+        'collaboration_id' => $collaboration->id,
+        'status' => PostStatus::Published,
+        'published_url' => 'https://www.linkedin.com/posts/ada-live',
+    ]);
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.campaigns.collaborations.index', $campaign))
+        ->assertOk()
+        ->assertJsonPath('data.0.id', $collaboration->id)
+        ->assertJsonPath('data.0.has_published_post', true);
 });
 
 test('company select does not set accepted_at', function () {
