@@ -19,9 +19,12 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(StripeGateway::class, StripeSdkGateway::class);
 
-        if ($this->app->environment('local') && class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)) {
+        if (
+            $this->app->environment('local') &&
+            class_exists(\Laravel\Telescope\TelescopeServiceProvider::class)
+        ) {
             $this->app->register(\Laravel\Telescope\TelescopeServiceProvider::class);
-            $this->app->register(TelescopeServiceProvider::class);
+            $this->app->register(\App\Providers\TelescopeServiceProvider::class);
         }
     }
 
