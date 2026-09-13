@@ -50,7 +50,9 @@ class CreateNewUser implements CreatesNewUsers
             $user->assignRole($role);
 
             if ($role === 'creator') {
-                $user->creatorProfile()->create([]);
+                $user->creatorProfile()->create([
+                    'display_name' => $user->name,
+                ]);
             } else {
                 $company = $user->company()->create([]);
                 $company->members()->create([

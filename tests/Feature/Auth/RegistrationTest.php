@@ -45,7 +45,8 @@ test('new creators can register', function () {
     expect($user)->not->toBeNull()
         ->and($user->name)->toBe('Ada Lovelace')
         ->and($user->hasRole('creator'))->toBeTrue()
-        ->and($user->creatorProfile)->not->toBeNull();
+        ->and($user->creatorProfile)->not->toBeNull()
+        ->and($user->creatorProfile->display_name)->toBe('Ada Lovelace');
 
     Notification::assertSentToTimes($user, EmailVerificationCode::class, 1);
 });
