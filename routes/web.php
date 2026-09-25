@@ -11,6 +11,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 
+if (app()->environment('local')) {
+    Route::view('components', 'components-gallery')->name('components.gallery');
+}
+
 Route::get('t/{slug}', [TrackingRedirectController::class, 'show'])
     ->where('slug', '[A-Za-z0-9]+')
     ->name('tracking.redirect');

@@ -13,15 +13,12 @@ export default defineConfig({
                 'resources/js/landing.js',
                 'resources/js/company/app.tsx',
                 'resources/js/creator/app.tsx',
+                'resources/js/components-gallery.tsx',
             ],
             refresh: true,
             fonts: [
-                bunny('Instrument Sans', {
-                    weights: [400, 500, 600],
-                }),
-                bunny('Instrument Serif', {
-                    weights: [400],
-                    styles: ['normal', 'italic'],
+                bunny('Inter', {
+                    weights: [300, 400, 500, 600],
                 }),
             ],
         }),

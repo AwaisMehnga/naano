@@ -8,7 +8,7 @@ description: >-
 
 # Naano UI design
 
-This skill is mandatory. Visual language is Agentcard: warm paper, ink type, one blue for actions. Content and IA follow naano.com. Do not invent a second look.
+This skill is mandatory. Visual language is the lime system: soft grey canvas, black ink CTAs, white soft cards, lime accent (`#C7F33C`). Content and IA follow naano.com. Do not invent a second look.
 
 ## Before any markup
 
@@ -23,15 +23,15 @@ This skill is mandatory. Visual language is Agentcard: warm paper, ink type, one
 3. Marketing pages use `x-layouts.marketing`. Auth pages use `x-layouts.auth`. Onboarding pages use `x-layouts.onboarding`. Never put the homepage in the auth split layout.
 4. Copy: sentence case, active verbs, one job per control. Primary CTA labels: “Sign in”, “Create account”, “Continue”, “Verify”, “Analyze website”, “Go to workspace”, “Get started”, “Book creators”, “Get booked”. Errors name the field and the fix.
 5. Motion: GSAP only on landing section reveals and the first auth/onboarding paint. `prefers-reduced-motion: reduce` → opacity only. Never animate login submit, keyboard, or repeated controls. Duration 180–400ms, ease `cubic-bezier(0.23, 1, 0.32, 1)`. Enter from `opacity: 0; y: 16` (not `scale(0)`).
-6. Spacing: `gap-2` inside fields, `gap-5` inside forms, section `py-24` / `px-6`, content `max-w-6xl mx-auto`. Buttons `rounded-sm` (4px). Cards `rounded-lg` (8px). No full-width hairline rules between landing sections. No drop shadows on cards.
+6. Spacing: `gap-2` inside fields, `gap-5` inside forms, section `py-24` / `px-6`, content `max-w-6xl mx-auto`. Buttons `rounded-pill`. Soft cards `rounded-2xl` with soft shadow. No full-width hairline rules between landing sections.
 
-## Marketing layout (Agentcard)
+## Marketing layout
 
 Copy this structure. Do not replace it with a centered SaaS hero.
 
-- Paper canvas, space between bands (no full-width hairline rules), flat cards.
-- Masthead: logo left, text links in ink, one blue `Get started` on the right. No backdrop blur.
-- Display headline: large sans, one italic serif word via `x-ui.em` (Agentcard “Let *agents* buy things”).
+- Soft grey canvas, space between bands (no full-width hairline rules), soft white cards.
+- Masthead: logo left, text links in ink, one black (or lime accent) `Get started` on the right. No backdrop blur.
+- Display headline: large Inter sans; optional emphasis via `x-ui.em`.
 - Body under the hero: ~70ch, `text-lg` or `text-xl`, ink not muted for the lead sentence; muted for supporting lines.
 - Numbered process uses `01` `02` `03` in muted tracking, then a title. Numbers only when the content is a real sequence.
 - Two-up split (companies / creators, or two pricing paths): equal columns with gap, not a divider line.
@@ -57,19 +57,21 @@ Landing section order (naano.com IA):
 - `/` landing → `x-layouts.marketing`
 - login, register, password, verify, 2FA, confirm → `x-layouts.auth`
 - creator/company onboarding → `x-layouts.onboarding`
-- company/creator SPA → `x-layouts.spa` (IBM Plex; do not restyle SPA from marketing/auth work)
+- company/creator SPA → `x-layouts.spa` (Inter; `font-dashboard`)
+- local component gallery → `/components` (`APP_ENV=local` only)
 
 ## Dashboards (company and creator SPA)
 
-- Layout: `x-layouts.spa` + `font-dashboard` (IBM Plex Sans). Full-width main. Breadcrumbs in the header from the route.
-- React UI: `resources/js/components/ui`. Dense, `rounded-sm` buttons, no drop shadows, no `dark:`.
+- Layout: `x-layouts.spa` + `font-dashboard` (Inter). Full-width main. Breadcrumbs in the header from the route.
+- React UI: `resources/js/components/ui` + `resources/js/components/ds`. Pill buttons, soft cards, lime accents, no `dark:`.
 - Colors stay the semantic tokens in `app.css`. Chart series use `chart-1` … `chart-5` or `var(--chart-1)`.
+- Preview kit: local `/components` gallery.
 
 ## Do not
 
 - Restyle dashboard React pages unless the task is explicitly the SPA.
-- Add fonts on marketing/auth/onboarding beyond Instrument Sans and Instrument Serif. Dashboards use IBM Plex Sans only.
+- Add fonts beyond Inter for product surfaces.
 - Add `class="dark"` to marketing, auth, onboarding, or SPA layouts.
 - Call `redirect()->intended()` after login or email verify. Use `HomeRedirect::afterAuth()`.
-- Use ink-filled primary buttons. Primary is blue.
-- Clone Agentcard copy, newspaper mastheads, or pixel fonts. Clone the layout system; write Naano copy.
+- Use blue as the brand primary. Primary is black; accent is lime.
+- Clone newspaper mastheads or pixel fonts. Keep Naano copy.

@@ -11,8 +11,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ $title }} - {{ config('app.name') }}</title>
         <x-ui.favicon />
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=ibm-plex-sans:400,500,600" rel="stylesheet" />
+        @fonts
         @viteReactRefresh
         @vite(['resources/css/app.css', $entry])
     </head>
