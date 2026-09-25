@@ -21,7 +21,7 @@ Prefer shared components. Do not paste their class strings into pages.
 | `LinkedInPostPreview` | LinkedIn-style feed card for draft/live post preview |
 | `LinkedInPostBuilder` | Compose + live preview; reusable creator/company |
 | `LinkedInPostBuilderDialog` | Dialog wrapper with Save / Submit for post drafting |
-| `NotchedCard` | Soft-canvas opportunity/deal card (`rounded-3xl bg-muted`). Neutral only — never accent-filled. Use chips for metadata. |
+| `NotchedCard` | Soft-canvas opportunity/deal card (`rounded-3xl bg-muted` by default). May use `bg-accent` for brand fills; prefer bright accent over soft-lime. Use chips for metadata. |
 | `InfoChip` | Outline pill for country / match / status on cards |
 | `SearchPill` | Pill search + circular primary search button |
 | `FilterToolbar` | Flex row for **separate** filter pills — never one bundled filter dropdown |

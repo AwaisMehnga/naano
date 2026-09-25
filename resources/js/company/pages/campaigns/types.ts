@@ -125,6 +125,20 @@ export type CampaignDetail = CampaignListItem & {
     posts: CampaignPost[];
 };
 
+export type CollaborationCreator = {
+    id: number;
+    display_name: string | null;
+    headline: string | null;
+    photo_url: string | null;
+    country: string | null;
+    bio: string | null;
+    linkedin_url: string | null;
+    niches: Array<{ id: number; name: string; slug: string }>;
+    followers_count: number | null;
+    connections_count: number | null;
+    from_price_cents: number | null;
+};
+
 export type CollaborationRow = {
     id: number;
     source: string;
@@ -134,14 +148,7 @@ export type CollaborationRow = {
     has_published_post: boolean;
     review_post_id: number | null;
     campaign?: { id: number; name: string };
-    creator: {
-        id: number;
-        display_name: string | null;
-        headline: string | null;
-        photo_url: string | null;
-        country: string | null;
-        from_price_cents: number | null;
-    };
+    creator: CollaborationCreator;
 };
 
 export type CollaborationList = {

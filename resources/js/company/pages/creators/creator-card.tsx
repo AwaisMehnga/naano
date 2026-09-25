@@ -1,11 +1,8 @@
-import { Linkedin, Star } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import {
     compact,
     countryLabel,
-    estimatedCpm,
     euros,
     initials,
 } from '@/company/pages/creators/format';
@@ -25,115 +22,99 @@ export default function CreatorCard({
     onBook: () => void;
     onStar: () => void;
 }) {
-    const cpm = estimatedCpm(creator.from_price_cents, creator.followers_count);
+    const niche =
+        creator.niches[0]?.name ??
+        creator.headline ??
+        'LinkedIn creator';
+    const location = countryLabel(creator.country);
+    const meta =
+        location !== '—'
+            ? `${niche} · ${location}`
+            : niche;
 
     return (
-        <article className="border-border bg-card flex h-full flex-col overflow-hidden rounded-2xl border">
-            <div className="bg-muted relative h-24">
-                <div className="absolute top-3 left-3 flex items-center gap-2">
-                    {creator.linkedin_url ? (
-                        <a
-                            href={creator.linkedin_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(event) => event.stopPropagation()}
-                            className="border-border bg-card text-foreground inline-flex size-8 items-center justify-center rounded-full border"
-                            aria-label="LinkedIn"
-                        >
-                            <Linkedin className="size-3.5" />
-                        </a>
-                    ) : (
-                        <span className="border-border bg-card text-muted-foreground inline-flex size-8 items-center justify-center rounded-full border">
-                            <Linkedin className="size-3.5" />
-                        </span>
-                    )}
-                </div>
-                <div className="absolute top-3 right-3 flex items-center gap-2">
-                    <Button
-                        type="button"
-                        size="icon"
-                        variant="ghost"
-                        className="bg-card size-8 rounded-full"
-                        aria-label={
-                            starred
-                                ? 'Remove from shortlist'
-                                : 'Add to shortlist'
-                        }
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onStar();
-                        }}
-                    >
-                        <Star
-                            className={cn(
-                                'size-4',
-                                starred && 'fill-primary text-primary',
-                            )}
+        <article className="relative flex min-h-112 flex-col overflow-hidden rounded-3xl border border-border bg-primary text-primary-foreground">
+            <div className="absolute inset-0">
+                {creator.photo_url ? (
+                    <img
+                        src={creator.photo_url}
+                        alt=""
+                        loading="lazy"
+                        decoding="async"
+                        className="size-full object-cover object-top"
+                    />
+                ) : (
+                    <div className="flex size-full items-center justify-center bg-accent text-6xl font-semibold text-accent-foreground">
+                        {initials(creator.display_name)}
+                    </div>
+                )}
+                <div className="absolute inset-0 bg-linear-to-t from-primary via-primary/75 to-primary/10" />
+            </div>
+
+            <div className="relative z-10 flex flex-1 flex-col justify-end gap-5 p-5">
+                <span className="absolute top-4 left-4 inline-flex items-center gap-1.5 rounded-pill bg-primary/70 px-3 py-1.5 text-xs font-medium text-primary-foreground backdrop-blur-sm">
+                    <Zap className="size-3.5 text-accent" />
+                    Vetted
+                </span>
+
+                <button
+                    type="button"
+                    className="flex w-full flex-col gap-5 text-center"
+                    onClick={onOpen}
+                >
+                    <div className="space-y-1">
+                        <h3 className="text-2xl font-semibold tracking-tight text-balance">
+                            {creator.display_name ?? 'Untitled creator'}
+                        </h3>
+                        <p className="line-clamp-1 text-sm text-primary-foreground/70">
+                            {meta}
+                        </p>
+                    </div>
+
+                    <div className="grid grid-cols-3 divide-x divide-primary-foreground/20">
+                        <Stat
+                            value={compact(creator.followers_count)}
+                            label="Followers"
                         />
-                    </Button>
+                        <Stat
+                            value={compact(creator.connections_count)}
+                            label="Connections"
+                        />
+                        <Stat
+                            value={euros(creator.from_price_cents)}
+                            label="Per post"
+                        />
+                    </div>
+                </button>
+
+                <div className="grid grid-cols-2 gap-2">
                     <Button
                         type="button"
-                        size="sm"
-                        className="h-8 rounded-full px-3"
+                        variant="accent"
+                        className="rounded-pill"
                         onClick={(event) => {
                             event.stopPropagation();
                             onBook();
                         }}
                     >
-                        Book
+                        Invite
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                            'rounded-pill border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground',
+                            starred &&
+                                'border-accent bg-accent/25 text-primary-foreground hover:bg-accent/35 hover:text-primary-foreground',
+                        )}
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            onStar();
+                        }}
+                    >
+                        {starred ? 'Shortlisted' : 'Shortlist'}
                     </Button>
                 </div>
-            </div>
-            <div className="flex flex-1 flex-col px-5 pb-4">
-                <button
-                    type="button"
-                    className="flex w-full flex-col items-center text-center"
-                    onClick={onOpen}
-                >
-                    <Avatar className="border-card -mt-10 size-20 rounded-full border-4">
-                        {creator.photo_url && (
-                            <AvatarImage src={creator.photo_url} alt="" />
-                        )}
-                        <AvatarFallback className="text-lg">
-                            {initials(creator.display_name)}
-                        </AvatarFallback>
-                    </Avatar>
-                    <h3 className="mt-3 text-base font-semibold">
-                        {creator.display_name ?? 'Untitled creator'}
-                    </h3>
-                    <p className="text-muted-foreground mt-1 line-clamp-1 text-sm">
-                        {creator.headline ?? countryLabel(creator.country)}
-                    </p>
-                    {creator.niches.length > 0 && (
-                        <p className="text-muted-foreground mt-1 line-clamp-1 text-xs">
-                            {creator.niches
-                                .map((niche) => niche.name)
-                                .join(' · ')}
-                        </p>
-                    )}
-                </button>
-                <div className="mt-5 grid grid-cols-4 gap-2 text-center">
-                    <Stat
-                        label="Followers"
-                        value={compact(creator.followers_count)}
-                    />
-                    <Stat label="Jobs done" value="—" />
-                    <Stat label="Est. CPM" value={euros(cpm)} />
-                    <Stat
-                        label="From"
-                        value={euros(creator.from_price_cents)}
-                    />
-                </div>
-                <Separator className="my-4" />
-                <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full justify-between px-1 text-sm"
-                    onClick={onOpen}
-                >
-                    View profile
-                    <span aria-hidden>→</span>
-                </Button>
             </div>
         </article>
     );
@@ -141,11 +122,9 @@ export default function CreatorCard({
 
 function Stat({ label, value }: { label: string; value: string }) {
     return (
-        <div>
-            <p className="text-sm font-semibold">{value}</p>
-            <p className="text-muted-foreground text-[10px] tracking-wide uppercase">
-                {label}
-            </p>
+        <div className="px-2">
+            <p className="text-lg font-semibold tracking-tight">{value}</p>
+            <p className="text-xs text-primary-foreground/60">{label}</p>
         </div>
     );
 }

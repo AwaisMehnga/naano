@@ -618,6 +618,9 @@ class CompanyCollaborationService
     private function creatorRelations(): array
     {
         return [
+            'creatorProfile.niches' => fn ($query) => $query
+                ->orderBy('sort_order')
+                ->orderBy('id'),
             'creatorProfile.offers' => fn ($query) => $query
                 ->where('is_active', true)
                 ->orderBy('price_cents')
@@ -635,6 +638,7 @@ class CompanyCollaborationService
     {
         $profile = $collaboration->creatorProfile;
         $fromPrice = $profile->offers->min('price_cents') ?? $profile->price_cents;
+        $audience = $profile->audienceProfiles->first();
 
         return [
             'id' => $collaboration->id,
@@ -652,6 +656,23 @@ class CompanyCollaborationService
                 'headline' => $profile->headline,
                 'photo_url' => PublicDisk::url($profile->photo_path),
                 'country' => $profile->country,
+                'bio' => $profile->bio,
+                'linkedin_url' => $profile->linkedin_url,
+                'niches' => $profile->relationLoaded('niches')
+                    ? $profile->niches
+                        ->map(fn ($niche): array => [
+                            'id' => $niche->id,
+                            'name' => $niche->name,
+                            'slug' => $niche->slug,
+                        ])
+                        ->values()
+                        ->all()
+                    : [],
+                'followers_count' => $audience?->followers_count,
+                'connections_count' => $audience?->connections_count
+                    ?? (is_array($profile->linkedin_profile)
+                        ? ($profile->linkedin_profile['connections_count'] ?? null)
+                        : null),
                 'from_price_cents' => $fromPrice,
             ],
         ];

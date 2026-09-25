@@ -27,7 +27,7 @@ export default function DashboardCreatorCard({
 }) {
     return (
         <SoftCard className="flex h-full flex-col overflow-hidden p-0">
-            <div className="relative h-24 bg-lime-soft">
+            <div className="relative h-24 bg-accent">
                 <div className="absolute top-3 left-3">
                     {creator.linkedin_url ? (
                         <IconButton variant="outline" size="sm" asChild>

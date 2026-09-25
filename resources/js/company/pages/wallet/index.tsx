@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
+import { AppLink } from '@/components/app-link';
+import { MetricStat, SoftCard } from '@/components/ds';
+import { InfoChip } from '@/components/info-chip';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { centsFromEuros, euros } from '@/company/pages/creators/format';
 import { canManageMoney } from '@/lib/current-user';
 import { ApiError, companyApi, http } from '@/lib/api';
+import { cn } from '@/lib/utils';
 
 type Wallet = {
     available_cents: number;
@@ -25,6 +29,22 @@ type WalletTransaction = {
     collaboration_id: number | null;
     stripe_id: string | null;
     created_at: string | null;
+};
+
+const typeLabels: Record<string, string> = {
+    topup: 'Top-up',
+    hold: 'Hold',
+    release: 'Release',
+    payout: 'Payout',
+    refund: 'Refund',
+    charge: 'Charge',
+};
+
+const statusLabels: Record<string, string> = {
+    pending: 'Pending',
+    completed: 'Completed',
+    failed: 'Failed',
+    cancelled: 'Cancelled',
 };
 
 export default function CompanyWalletPage() {
@@ -66,7 +86,9 @@ export default function CompanyWalletPage() {
             return;
         }
 
-        const id = pendingId ?? transactions.find((row) => row.status === 'pending')?.id;
+        const id =
+            pendingId ??
+            transactions.find((row) => row.status === 'pending')?.id;
 
         if (!id) {
             return;
@@ -118,91 +140,162 @@ export default function CompanyWalletPage() {
 
     return (
         <div className="flex w-full flex-1 flex-col gap-8">
-            <div>
-                <h1 className="text-2xl font-semibold tracking-tight">Wallet</h1>
-                <p className="text-muted-foreground mt-1 text-sm">
-                    Campaign funds are held here until a live post URL is
-                    submitted.
+            <div className="space-y-2">
+                <h1 className="text-heading font-medium tracking-tight">
+                    Wallet
+                </h1>
+                <p className="max-w-xl text-sm text-muted-foreground">
+                    Campaign funds sit here until a live post URL is submitted.
                 </p>
             </div>
+
             <InputError message={error ?? undefined} />
-            {waiting && (
-                <p className="text-muted-foreground text-sm">
-                    Waiting for Stripe to confirm the top-up…
-                </p>
-            )}
-            {wallet && (
-                <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="border-border bg-card rounded-2xl border p-5">
-                        <p className="text-muted-foreground text-sm">Available</p>
-                        <p className="mt-2 text-3xl font-semibold">
-                            {euros(wallet.available_cents)}
-                        </p>
-                    </div>
-                    <div className="border-border bg-card rounded-2xl border p-5">
-                        <p className="text-muted-foreground text-sm">Held</p>
-                        <p className="mt-2 text-3xl font-semibold">
-                            {euros(wallet.held_cents)}
-                        </p>
-                    </div>
-                </div>
-            )}
-            {canManage && (
-                <form
-                    className="border-border bg-card grid max-w-md gap-3 rounded-2xl border p-5"
-                    onSubmit={(event) => {
-                        event.preventDefault();
-                        void topup();
-                    }}
-                >
-                    <Label htmlFor="topup">Top up (EUR)</Label>
-                    <Input
-                        id="topup"
-                        type="number"
-                        min="50"
-                        step="1"
-                        value={amount}
-                        onChange={(event) => setAmount(event.target.value)}
-                    />
-                    <Button type="submit" disabled={saving}>
-                        {saving ? 'Redirecting…' : 'Add funds'}
-                    </Button>
-                </form>
-            )}
-            <section className="grid gap-3">
-                <h2 className="text-lg font-semibold">Ledger</h2>
-                {transactions.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                        No transactions yet.
+
+            {waiting ? (
+                <SoftCard className="border-transparent bg-accent">
+                    <p className="text-sm text-accent-foreground">
+                        Waiting for Stripe to confirm the top-up…
                     </p>
-                ) : (
-                    <div className="grid gap-2">
-                        {transactions.map((row) => (
+                </SoftCard>
+            ) : null}
+
+            {wallet ? (
+                <div className="grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)]">
+                    <SoftCard className="border-transparent bg-accent">
+                        <MetricStat
+                            value={euros(wallet.available_cents)}
+                            label="Available"
+                            hint={
+                                <span className="text-accent-foreground/70">
+                                    Ready to book creators · {wallet.currency}
+                                </span>
+                            }
+                            className="text-accent-foreground [&_p]:text-accent-foreground"
+                        />
+                    </SoftCard>
+
+                    <SoftCard>
+                        <MetricStat
+                            value={euros(wallet.held_cents)}
+                            label="Held"
+                            hint="Locked on booked collaborations until posts go live."
+                        />
+                    </SoftCard>
+                </div>
+            ) : null}
+
+            {wallet && wallet.campaign_holds.length > 0 ? (
+                <SoftCard title="Campaign holds">
+                    <div className="grid gap-3">
+                        {wallet.campaign_holds.map((hold) => (
                             <div
-                                key={row.id}
-                                className="border-border flex items-center justify-between rounded-xl border px-4 py-3 text-sm"
+                                key={hold.campaign_id}
+                                className="flex items-center justify-between gap-3 rounded-2xl border border-border bg-background px-4 py-3"
                             >
-                                <div>
-                                    <p className="font-medium">
-                                        {row.type} · {row.status}
-                                    </p>
-                                    <p className="text-muted-foreground text-xs">
-                                        {row.created_at
-                                            ? new Date(
-                                                  row.created_at,
-                                              ).toLocaleString()
-                                            : ''}
-                                    </p>
-                                </div>
-                                <p>
-                                    {row.direction === 'debit' ? '−' : '+'}
-                                    {euros(row.amount_cents)}
+                                <AppLink
+                                    href={`/campaigns/${hold.campaign_id}`}
+                                    className="text-sm font-medium underline-offset-4 hover:underline"
+                                >
+                                    Campaign #{hold.campaign_id}
+                                </AppLink>
+                                <p className="text-sm font-medium">
+                                    {euros(hold.held_cents)}
                                 </p>
                             </div>
                         ))}
                     </div>
+                </SoftCard>
+            ) : null}
+
+            {canManage ? (
+                <SoftCard title="Add funds">
+                    <form
+                        className="flex gap-4 items-center"
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            void topup();
+                        }}
+                    >
+                        <div className="grid gap-2">
+                            <Label htmlFor="topup">Amount (EUR)</Label>
+                            <Input
+                                id="topup"
+                                type="number"
+                                min="50"
+                                step="1"
+                                value={amount}
+                                onChange={(event) =>
+                                    setAmount(event.target.value)
+                                }
+                                className="rounded-pill"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Minimum €50. You’ll finish payment with Stripe.
+                            </p>
+                        </div>
+                        <Button
+                            type="submit"
+                            variant="accent"
+                            className="w-fit rounded-pill"
+                            disabled={saving}
+                        >
+                            {saving ? 'Redirecting…' : 'Add funds'}
+                        </Button>
+                    </form>
+                </SoftCard>
+            ) : null}
+
+            <SoftCard title="Ledger">
+                {transactions.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">
+                        No transactions yet.
+                    </p>
+                ) : (
+                    <div className="grid gap-3">
+                        {transactions.map((row) => {
+                            const credit = row.direction !== 'debit';
+
+                            return (
+                                <div
+                                    key={row.id}
+                                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-background px-4 py-3"
+                                >
+                                    <div className="min-w-0 space-y-2">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <p className="text-sm font-medium">
+                                                {typeLabels[row.type] ??
+                                                    row.type}
+                                            </p>
+                                            <InfoChip>
+                                                {statusLabels[row.status] ??
+                                                    row.status}
+                                            </InfoChip>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground">
+                                            {row.created_at
+                                                ? new Date(
+                                                      row.created_at,
+                                                  ).toLocaleString()
+                                                : '—'}
+                                        </p>
+                                    </div>
+                                    <p
+                                        className={cn(
+                                            'text-sm font-semibold tabular-nums',
+                                            credit
+                                                ? 'text-foreground'
+                                                : 'text-muted-foreground',
+                                        )}
+                                    >
+                                        {credit ? '+' : '−'}
+                                        {euros(row.amount_cents)}
+                                    </p>
+                                </div>
+                            );
+                        })}
+                    </div>
                 )}
-            </section>
+            </SoftCard>
         </div>
     );
 }

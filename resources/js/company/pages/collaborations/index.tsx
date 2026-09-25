@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router';
-import { UserPlus } from 'lucide-react';
+import { Layers, UserPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { AppLink } from '@/components/app-link';
 import CollaborationChatSheet from '@/components/collaboration-chat-sheet';
@@ -9,6 +9,8 @@ import {
     DataTable,
     type DataTableQuery,
 } from '@/components/data-table';
+import { FilterDropdown } from '@/components/filter-select';
+import { SearchPill, SegmentedNav } from '@/components/ds';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import InviteCreatorDialog from '@/company/pages/campaigns/invite-dialog';
@@ -32,7 +34,6 @@ import {
     readShortlist,
     toggleShortlist,
 } from '@/lib/creator-shortlist';
-import { cn } from '@/lib/utils';
 
 const pipelines: PipelineTab[] = [
     'all',
@@ -60,6 +61,7 @@ export default function CompanyCollaborationsPage() {
     const { campaign, fetchCampaign, select, book, cancelCollab } =
         useCampaigns();
     const [pipeline, setPipeline] = useState<PipelineTab>('all');
+    const [draftQuery, setDraftQuery] = useState('');
     const [query, setQuery] = useState<DataTableQuery>({
         page: 1,
         per_page: 25,
@@ -126,6 +128,10 @@ export default function CompanyCollaborationsPage() {
         );
     }, [campaignParam]);
 
+    useEffect(() => {
+        setDraftQuery(query.q);
+    }, [query.q]);
+
     async function load() {
         setLoading(true);
 
@@ -158,6 +164,35 @@ export default function CompanyCollaborationsPage() {
 
     async function reload() {
         await load();
+    }
+
+    function applySearch() {
+        setQuery((current) => ({
+            ...current,
+            page: 1,
+            q: draftQuery.trim(),
+        }));
+    }
+
+    function setCampaignFilter(value: string) {
+        setQuery((current) => ({
+            ...current,
+            page: 1,
+            filters: {
+                ...current.filters,
+                campaign: value === 'all' ? null : value,
+            },
+        }));
+    }
+
+    function clearFilters() {
+        setDraftQuery('');
+        setQuery((current) => ({
+            ...current,
+            page: 1,
+            q: '',
+            filters: { ...current.filters, campaign: null },
+        }));
     }
 
     async function bookRow(row: CollaborationRow) {
@@ -213,15 +248,18 @@ export default function CompanyCollaborationsPage() {
 
     const counts = page?.counts ?? campaign?.collab_counts ?? emptyCounts;
     const selectedCampaignId = Number(query.filters.campaign);
+    const filtersActive =
+        query.q.trim() !== '' ||
+        (query.filters.campaign !== null && query.filters.campaign !== '');
 
     return (
-        <div className="flex w-full flex-1 flex-col gap-6">
-            <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">
+        <div className="flex w-full flex-1 flex-col gap-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-2">
+                    <h1 className="text-heading font-medium tracking-tight">
                         Collaborations
                     </h1>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="max-w-xl text-sm text-muted-foreground">
                         Invites, applications, and booked creators.
                     </p>
                 </div>
@@ -229,7 +267,7 @@ export default function CompanyCollaborationsPage() {
                     selectedCampaignId > 0 && (
                         <Button
                             type="button"
-                            variant="outline"
+                            className="rounded-pill"
                             onClick={() => setInviteOpen(true)}
                         >
                             <UserPlus className="size-4" />
@@ -237,52 +275,63 @@ export default function CompanyCollaborationsPage() {
                         </Button>
                     )}
             </div>
-            <div className="flex flex-wrap gap-5 border-b border-border">
-                {pipelines.map((tab) => (
-                    <button
-                        key={tab}
+
+            <SegmentedNav
+                items={pipelines.map((tab) => ({
+                    id: tab,
+                    label: `${pipelineLabels[tab]} ${counts[tab]}`,
+                }))}
+                value={pipeline}
+                onChange={(id) => {
+                    setPipeline(id as PipelineTab);
+                    setQuery((current) => ({ ...current, page: 1 }));
+                }}
+                className="w-fit max-w-full flex-wrap"
+            />
+
+            <div className="flex flex-wrap items-center gap-3">
+                <SearchPill
+                    value={draftQuery}
+                    onChange={setDraftQuery}
+                    onSubmit={applySearch}
+                    placeholder="Search creators or campaigns…"
+                    className="min-w-[16rem] max-w-md flex-1"
+                />
+                <FilterDropdown
+                    label="Campaign"
+                    icon={<Layers className="size-4" />}
+                    value={query.filters.campaign ?? 'all'}
+                    idleValue="all"
+                    onChange={setCampaignFilter}
+                    items={[
+                        { value: 'all', label: 'All campaigns' },
+                        ...campaigns.map((item) => ({
+                            value: String(item.id),
+                            label: item.name,
+                        })),
+                    ]}
+                />
+                {filtersActive ? (
+                    <Button
                         type="button"
-                        className={cn(
-                            'border-b-2 pb-3 text-sm',
-                            pipeline === tab
-                                ? 'border-primary font-medium text-foreground'
-                                : 'border-transparent text-muted-foreground',
-                        )}
-                        onClick={() => {
-                            setPipeline(tab);
-                            setQuery((current) => ({ ...current, page: 1 }));
-                        }}
+                        variant="outline"
+                        size="sm"
+                        className="h-14 rounded-pill bg-card px-5"
+                        onClick={clearFilters}
                     >
-                        {pipelineLabels[tab]}
-                        <span className="ml-2 text-muted-foreground">
-                            {counts[tab]}
-                        </span>
-                    </button>
-                ))}
+                        Clear
+                    </Button>
+                ) : null}
             </div>
+
             <DataTable
                 page={page}
                 query={query}
                 onQueryChange={setQuery}
                 loading={loading}
-                searchPlaceholder="Search creators or campaigns"
+                search={false}
                 empty="No collaborations in this view."
                 rowKey={(row) => row.id}
-                filterGroups={[
-                    {
-                        label: 'Campaign',
-                        filters: [
-                            {
-                                key: 'campaign',
-                                label: 'Campaign',
-                                options: campaigns.map((item) => ({
-                                    value: String(item.id),
-                                    label: item.name,
-                                })),
-                            },
-                        ],
-                    },
-                ]}
                 columns={[
                     {
                         key: 'creator',
@@ -321,7 +370,17 @@ export default function CompanyCollaborationsPage() {
                     {
                         key: 'campaign',
                         header: 'Campaign',
-                        cell: (row) => row.campaign?.name ?? '—',
+                        cell: (row) =>
+                            row.campaign ? (
+                                <AppLink
+                                    href={`/campaigns/${row.campaign.id}`}
+                                    className="font-medium text-foreground underline-offset-4 hover:underline"
+                                >
+                                    {row.campaign.name}
+                                </AppLink>
+                            ) : (
+                                '—'
+                            ),
                     },
                     {
                         key: 'price',
@@ -471,7 +530,8 @@ export default function CompanyCollaborationsPage() {
                                             </div>
                                         </button>
                                         <p className="mt-4 text-sm">
-                                            From {euros(creator.from_price_cents)}
+                                            From{' '}
+                                            {euros(creator.from_price_cents)}
                                         </p>
                                     </article>
                                 ))}

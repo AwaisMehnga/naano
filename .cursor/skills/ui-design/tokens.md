@@ -14,7 +14,7 @@
 | Muted text | `#6B7280` | `text-muted-foreground` |
 | Border | `#E5E5E8` | `border-border` |
 
-Primary is black for filled pills and active nav. Accent is lime for badges, chart callouts, and highlights. Soft lime is for soft fills only.
+Primary is black for filled pills and active nav. Accent (`bg-accent`) is the bright lime for brand banners, badges, and highlights — prefer it over soft-lime. Soft lime (`bg-lime-soft`) is only for quiet secondary fills, never a substitute for accent.
 
 ## Allowed semantic color classes
 

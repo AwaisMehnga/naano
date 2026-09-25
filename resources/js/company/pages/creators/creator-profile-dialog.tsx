@@ -187,38 +187,51 @@ export default function CreatorProfileDialog({
                 {creator && (
                     <div className="grid min-h-0 flex-1 lg:grid-cols-[1fr_20rem]">
                         <div className="min-h-0 overflow-y-auto">
-                            <header className="border-border flex items-start gap-4 border-b px-6 py-5 pr-24">
-                                <Avatar className="size-14 rounded-full">
-                                    {creator.photo_url && (
-                                        <AvatarImage
-                                            src={creator.photo_url}
-                                            alt=""
-                                        />
-                                    )}
-                                    <AvatarFallback>
-                                        {initials(creator.display_name)}
-                                    </AvatarFallback>
-                                </Avatar>
-                                <div className="min-w-0">
-                                    <p className="text-lg font-semibold">
-                                        {creator.display_name ??
-                                            'Untitled creator'}
-                                    </p>
-                                    <p className="text-muted-foreground text-sm">
-                                        {creator.headline ??
-                                            countryLabel(creator.country)}
-                                    </p>
-                                    <p className="text-muted-foreground mt-1 text-xs">
-                                        {creator.niches
-                                            .map((niche) => niche.name)
-                                            .join(' · ') || 'LinkedIn creator'}
-                                    </p>
+                            <header className="relative isolate min-h-48 overflow-hidden bg-primary text-primary-foreground">
+                                {creator.photo_url ? (
+                                    <img
+                                        src={creator.photo_url}
+                                        alt=""
+                                        className="absolute inset-0 size-full object-cover object-top"
+                                    />
+                                ) : (
+                                    <div className="absolute inset-0 bg-accent" />
+                                )}
+                                <div className="absolute inset-0 bg-linear-to-t from-primary via-primary/70 to-primary/20" />
+                                <div className="relative flex items-end gap-4 px-6 pb-5 pt-14 pr-24">
+                                    <Avatar className="size-16 rounded-full border-2 border-primary-foreground/30">
+                                        {creator.photo_url && (
+                                            <AvatarImage
+                                                src={creator.photo_url}
+                                                alt=""
+                                            />
+                                        )}
+                                        <AvatarFallback className="bg-accent text-accent-foreground">
+                                            {initials(creator.display_name)}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0">
+                                        <p className="text-xl font-semibold tracking-tight">
+                                            {creator.display_name ??
+                                                'Untitled creator'}
+                                        </p>
+                                        <p className="text-sm text-primary-foreground/75">
+                                            {creator.headline ??
+                                                countryLabel(creator.country)}
+                                        </p>
+                                        <p className="mt-1 text-xs text-primary-foreground/60">
+                                            {creator.niches
+                                                .map((niche) => niche.name)
+                                                .join(' · ') ||
+                                                'LinkedIn creator'}
+                                        </p>
+                                    </div>
                                 </div>
                                 <Button
                                     type="button"
                                     size="icon"
                                     variant="ghost"
-                                    className="absolute top-4 right-12 size-8 rounded-full"
+                                    className="absolute top-4 right-12 size-8 rounded-full text-primary-foreground hover:bg-primary-foreground/15 hover:text-primary-foreground"
                                     aria-label={
                                         starred
                                             ? 'Remove from shortlist'
@@ -230,7 +243,7 @@ export default function CreatorProfileDialog({
                                         className={cn(
                                             'size-4',
                                             starred &&
-                                                'fill-primary text-primary',
+                                                'fill-accent text-accent',
                                         )}
                                     />
                                 </Button>
@@ -317,6 +330,8 @@ export default function CreatorProfileDialog({
                                         <LinkedInInsightsPanel
                                             insights={creator.linkedin_insights}
                                             compactHeader
+                                            showPosts={false}
+                                            stacked
                                         />
                                     )}
                                 {tab === 'content' && (
@@ -344,7 +359,7 @@ export default function CreatorProfileDialog({
                                     )}
                                 </p>
                             </div>
-                            <div className="mt-4 grid grid-cols-2 gap-2">
+                            <div className="mt-4 grid gap-2">
                                 <Button
                                     type="button"
                                     variant={
@@ -355,7 +370,7 @@ export default function CreatorProfileDialog({
                                 >
                                     Book
                                 </Button>
-                                <Button
+                                {/* <Button
                                     type="button"
                                     variant={
                                         mode === 'negotiate'
@@ -366,7 +381,7 @@ export default function CreatorProfileDialog({
                                     onClick={() => setMode('negotiate')}
                                 >
                                     Negotiate
-                                </Button>
+                                </Button> */}
                             </div>
                             <form className="mt-4 space-y-4" onSubmit={submit}>
                                 <div className="space-y-2">

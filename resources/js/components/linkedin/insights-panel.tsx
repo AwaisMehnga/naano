@@ -113,12 +113,18 @@ export function LinkedInInsightsPanel({
     insights,
     className,
     compactHeader = false,
+    showPosts = true,
+    stacked = false,
     onRetrySync,
     syncing = false,
 }: {
     insights: LinkedInInsights;
     className?: string;
     compactHeader?: boolean;
+    /** When false, hide top/recent post lists (company profile view). */
+    showPosts?: boolean;
+    /** Single-column layout for dialogs. */
+    stacked?: boolean;
     onRetrySync?: () => void;
     syncing?: boolean;
 }) {
@@ -148,7 +154,7 @@ export function LinkedInInsightsPanel({
                 <SoftCard
                     className={cn(
                         postsStatus === 'syncing' &&
-                            'border-transparent bg-lime-soft',
+                            'border-transparent bg-accent',
                     )}
                 >
                     <div className="flex flex-wrap items-center justify-between gap-4">
@@ -191,7 +197,7 @@ export function LinkedInInsightsPanel({
                             {header.picture_url ? (
                                 <AvatarImage src={header.picture_url} alt="" />
                             ) : null}
-                            <AvatarFallback className="bg-lime-soft text-lime-soft-foreground">
+                            <AvatarFallback className="bg-accent text-accent-foreground">
                                 {initials(header.name)}
                             </AvatarFallback>
                         </Avatar>
@@ -242,7 +248,7 @@ export function LinkedInInsightsPanel({
                         {header.picture_url ? (
                             <AvatarImage src={header.picture_url} alt="" />
                         ) : null}
-                        <AvatarFallback className="bg-lime-soft text-lime-soft-foreground">
+                        <AvatarFallback className="bg-accent text-accent-foreground">
                             {initials(header.name)}
                         </AvatarFallback>
                     </Avatar>
@@ -257,7 +263,7 @@ export function LinkedInInsightsPanel({
                 </div>
             )}
 
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-4 gap-5">
                 <SoftCard>
                     <MetricStat
                         value={
@@ -374,17 +380,29 @@ export function LinkedInInsightsPanel({
                 )}
             </SoftCard>
 
-            <div className="grid gap-5 lg:grid-cols-2">
-                <SoftCard title="Top posts">
-                    <PostList posts={top_posts} empty={emptyCopy} />
-                </SoftCard>
-                <SoftCard title="Recent posts">
-                    <PostList posts={recent_posts} empty={emptyCopy} />
-                </SoftCard>
-            </div>
+            {showPosts ? (
+                <div
+                    className={cn(
+                        'grid gap-5',
+                        stacked ? 'grid-cols-1' : 'lg:grid-cols-2',
+                    )}
+                >
+                    <SoftCard title="Top posts">
+                        <PostList posts={top_posts} empty={emptyCopy} />
+                    </SoftCard>
+                    <SoftCard title="Recent posts">
+                        <PostList posts={recent_posts} empty={emptyCopy} />
+                    </SoftCard>
+                </div>
+            ) : null}
 
             {engagers ? (
-                <div className="grid gap-5 lg:grid-cols-2">
+                <div
+                    className={cn(
+                        'grid gap-5',
+                        stacked ? 'grid-cols-1' : 'lg:grid-cols-2',
+                    )}
+                >
                     <SoftCard title="Who engages">
                         <p className="mb-4 text-sm text-muted-foreground">
                             {compact(engagers.people_count)} people
@@ -459,7 +477,12 @@ export function LinkedInInsightsPanel({
                         </SoftCard>
                     ) : null}
 
-                    <div className="grid gap-5 lg:grid-cols-2">
+                    <div
+                        className={cn(
+                            'grid gap-5',
+                            stacked ? 'grid-cols-1' : 'lg:grid-cols-2',
+                        )}
+                    >
                         <SoftCard title="Experience">
                             {background.positions.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">

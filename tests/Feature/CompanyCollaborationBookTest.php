@@ -9,6 +9,8 @@ use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use App\Models\Campaign;
 use App\Models\Collaboration;
+use App\Models\CreatorAudienceProfile;
+use App\Models\Niche;
 use App\Models\Post;
 use App\Models\User;
 use App\Models\Wallet;
@@ -460,7 +462,14 @@ test('owners can source a creator and list company collaborations', function () 
         'company_id' => $owner->company->id,
         'created_by_user_id' => $owner->id,
     ]);
-    $creator = marketplaceCreator(['display_name' => 'Sourced Ada']);
+    $creator = marketplaceCreator(['display_name' => 'Sourced Ada', 'bio' => 'Writes for SaaS operators']);
+    $niche = Niche::factory()->create(['name' => 'SaaS', 'slug' => 'saas']);
+    $creator->niches()->attach($niche->id);
+    CreatorAudienceProfile::factory()->create([
+        'creator_profile_id' => $creator->id,
+        'followers_count' => 12500,
+        'connections_count' => 800,
+    ]);
 
     $this->actingAs($owner)
         ->postJson(route('api.company.campaigns.sourcing.store', $campaign), [
@@ -474,6 +483,12 @@ test('owners can source a creator and list company collaborations', function () 
         ->getJson(route('api.company.collaborations.index'))
         ->assertOk()
         ->assertJsonPath('data.data.0.creator.display_name', 'Sourced Ada')
+        ->assertJsonPath('data.data.0.creator.bio', 'Writes for SaaS operators')
+        ->assertJsonPath('data.data.0.creator.niches.0.name', 'SaaS')
+        ->assertJsonPath('data.data.0.creator.followers_count', 12500)
+        ->assertJsonPath('data.data.0.creator.connections_count', 800)
+        ->assertJsonPath('data.data.0.campaign.id', $campaign->id)
+        ->assertJsonPath('data.data.0.campaign.name', $campaign->name)
         ->assertJsonPath('data.counts.todo', 1)
         ->assertJsonPath('data.per_page', 25);
 });

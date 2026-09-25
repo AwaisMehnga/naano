@@ -15,7 +15,7 @@ type NotchedCardProps = {
     className?: string;
 };
 
-/** Soft-canvas opportunity/deal card. Neutral surface only — never accent-filled. */
+/** Soft-canvas opportunity/deal card. Default muted surface; pass `className` with `bg-accent` for brand fills. */
 export function NotchedCard({
     name,
     role,

@@ -257,7 +257,7 @@ export default function CompanyAnalyticsPage() {
                         label="Leads"
                     />
                 </SoftCard>
-                <SoftCard className="bg-lime-soft border-transparent">
+                <SoftCard className="border-transparent bg-accent">
                     <MetricStat
                         value={
                             overview
@@ -265,6 +265,7 @@ export default function CompanyAnalyticsPage() {
                                 : '—'
                         }
                         label="Pipeline"
+                        className="text-accent-foreground [&_p]:text-accent-foreground"
                     />
                 </SoftCard>
             </div>
