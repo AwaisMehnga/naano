@@ -273,7 +273,12 @@ export default function CompanyWalletPage() {
                                 className="rounded-pill"
                             />
                             <p className="text-xs text-muted-foreground">
-                                Minimum €50. You’ll finish payment with Stripe.
+                                Minimum €50. Payments are in Stripe test mode for
+                                now — use card{' '}
+                                <span className="font-mono text-foreground">
+                                    4242 4242 4242 4242
+                                </span>
+                                , any future expiry, any CVC.
                             </p>
                         </div>
                         <Button
