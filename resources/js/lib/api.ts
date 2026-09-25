@@ -99,8 +99,6 @@ export const companyApi = {
     icp: (id: number) => `/api/company/icps/${id}`,
     members: '/api/company/members',
     member: (id: number) => `/api/company/members/${id}`,
-    workspaces: '/api/company/workspaces',
-    workspace: (id: number) => `/api/company/workspaces/${id}`,
     creators: (query: Record<string, string | number | undefined> = {}) =>
         withQuery('/api/company/creators', query),
     creator: (id: number) => `/api/company/creators/${id}`,
@@ -208,6 +206,10 @@ export const creatorApi = {
 
 export const sharedApi = {
     niches: '/api/niches',
+    profiles: '/api/profiles',
+    profilesCreator: '/api/profiles/creator',
+    profilesCompany: '/api/profiles/company',
+    profilesActive: '/api/profiles/active',
     notifications: '/api/notifications',
     notificationsReadAll: '/api/notifications/read',
     notificationRead: (id: string) => `/api/notifications/${id}/read`,

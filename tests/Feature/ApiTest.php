@@ -27,24 +27,24 @@ test('authenticated users receive ajax success from api user', function () {
                 'email' => $user->email,
                 'avatar' => null,
                 'role' => null,
+                'active_profile' => null,
+                'profiles' => [],
+                'can_create_profiles' => ['creator', 'company'],
                 'onboarded' => false,
-                'current_company_id' => null,
-                'membership_role' => null,
             ],
         ]);
 });
 
-test('onboarded company users receive workspace context on api user', function () {
+test('onboarded company users receive active profile context on api user', function () {
     $user = User::factory()->company()->onboarded()->create();
-    $company = $user->companies()->first();
 
     $this->actingAs($user)
         ->getJson(route('api.user'))
         ->assertOk()
         ->assertJsonPath('data.role', 'company')
+        ->assertJsonPath('data.active_profile', 'company')
         ->assertJsonPath('data.onboarded', true)
-        ->assertJsonPath('data.current_company_id', $company->id)
-        ->assertJsonPath('data.membership_role', 'owner');
+        ->assertJsonPath('data.profiles.0.type', 'company');
 });
 
 test('guests cannot call company profile', function () {

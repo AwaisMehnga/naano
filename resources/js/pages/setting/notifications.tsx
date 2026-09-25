@@ -11,14 +11,12 @@ type Preferences = {
     email_invites: boolean;
     email_applications: boolean;
     email_campaign_updates: boolean;
-    email_messages: boolean;
 };
 
 const toggles: { key: keyof Preferences; label: string }[] = [
     { key: 'email_invites', label: 'Campaign invites' },
     { key: 'email_applications', label: 'Applications' },
     { key: 'email_campaign_updates', label: 'Campaign updates' },
-    { key: 'email_messages', label: 'Messages' },
 ];
 
 export default function NotificationSettingsPage() {

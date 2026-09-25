@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Enums\ProfileType;
+use App\Services\ActiveProfileService;
 use App\Services\EmailCodeService;
 use App\Support\AuthMail;
 use Database\Factories\UserFactory;
@@ -10,10 +12,9 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Http\Request;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Fortify\Contracts\PasskeyUser;
@@ -73,25 +74,6 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
     }
 
     /**
-     * @return HasMany<CompanyMember, $this>
-     */
-    public function companyMemberships(): HasMany
-    {
-        return $this->hasMany(CompanyMember::class);
-    }
-
-    /**
-     * @return BelongsToMany<Company, $this>
-     */
-    public function companies(): BelongsToMany
-    {
-        return $this->belongsToMany(Company::class, 'company_members')
-            ->withTimestamps()
-            ->withPivot(['id', 'role', 'invited_at', 'joined_at', 'deleted_at'])
-            ->wherePivotNull('deleted_at');
-    }
-
-    /**
      * @return HasOne<NotificationPreference, $this>
      */
     public function notificationPreference(): HasOne
@@ -111,31 +93,39 @@ class User extends Authenticatable implements MustVerifyEmail, PasskeyUser
             'invites' => $prefs->email_invites,
             'applications' => $prefs->email_applications,
             'campaign_updates' => $prefs->email_campaign_updates,
-            'messages' => $prefs->email_messages,
             default => true,
         };
     }
 
-    public function side(): ?string
+    public function ownsProfile(ProfileType $type): bool
     {
-        if ($this->hasRole('creator')) {
-            return 'creator';
-        }
-
-        if ($this->hasRole('company')) {
-            return 'company';
-        }
-
-        return null;
+        return app(ActiveProfileService::class)->userOwns($this, $type);
     }
 
-    public function isOnboarded(): bool
+    public function activeProfileType(?Request $request = null): ?ProfileType
     {
-        return match ($this->side()) {
-            'creator' => $this->creatorProfile?->onboarded_at !== null,
-            'company' => $this->companies()->whereNotNull('companies.onboarded_at')->exists(),
-            default => false,
-        };
+        return app(ActiveProfileService::class)->type($request ?? request());
+    }
+
+    /**
+     * @deprecated Use activeProfileType() — kept for transitional call sites.
+     */
+    public function side(): ?string
+    {
+        return $this->activeProfileType()?->value
+            ?? app(ActiveProfileService::class)->defaultType($this)?->value;
+    }
+
+    public function isOnboarded(?ProfileType $type = null): bool
+    {
+        $type ??= $this->activeProfileType()
+            ?? app(ActiveProfileService::class)->defaultType($this);
+
+        if (! $type instanceof ProfileType) {
+            return false;
+        }
+
+        return app(ActiveProfileService::class)->isOnboarded($this, $type);
     }
 
     public function sendEmailVerificationNotification(): void

@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\Company;
 
+use App\Enums\ProfileType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -10,7 +11,7 @@ class OverviewCompanyAnalyticsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('company') ?? false;
+        return $this->user()?->ownsProfile(ProfileType::Company) ?? false;
     }
 
     protected function prepareForValidation(): void

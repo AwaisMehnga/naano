@@ -14,6 +14,14 @@ class CollaborationMessageReceived extends MarketplaceNotification
         public string $href,
     ) {}
 
+    /**
+     * @return list<string>
+     */
+    public function via(object $notifiable): array
+    {
+        return ['database'];
+    }
+
     protected function emailPreferenceKey(): string
     {
         return 'messages';

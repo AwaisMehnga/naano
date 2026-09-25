@@ -16,57 +16,23 @@ class CurrentCompanyService
             return null;
         }
 
-        $memberships = $user->companyMemberships()->orderBy('id')->get();
-
-        if ($memberships->isEmpty()) {
-            return null;
-        }
-
-        $headerId = $request->headers->get('X-Company-Id');
-
-        if (is_string($headerId) && $headerId !== '') {
-            $membership = $memberships->firstWhere('company_id', (int) $headerId);
-
-            if ($membership === null) {
-                return null;
-            }
-
-            $company = Company::query()->find($membership->company_id);
-
-            if ($company instanceof Company) {
-                $request->session()->put('current_company_id', $company->id);
-            }
-
-            return $company;
-        }
-
-        $sessionId = $request->session()->get('current_company_id');
-
-        if (is_numeric($sessionId)) {
-            $membership = $memberships->firstWhere('company_id', (int) $sessionId);
-
-            if ($membership !== null) {
-                return Company::query()->find($membership->company_id);
-            }
-        }
-
-        $company = Company::query()->find($memberships->first()->company_id);
-
-        if ($company instanceof Company) {
-            $request->session()->put('current_company_id', $company->id);
-        }
-
-        return $company;
+        return $user->company;
     }
 
     public function fromRequest(Request $request): Company
     {
         $company = $request->attributes->get('currentCompany');
 
-        if (! $company instanceof Company) {
-            abort(403, 'No company workspace.');
+        if ($company instanceof Company) {
+            return $company;
         }
 
-        return $company;
+        $resolved = $this->resolve($request);
+
+        if (! $resolved instanceof Company) {
+            abort(403, 'No company profile.');
+        }
+
+        return $resolved;
     }
 }

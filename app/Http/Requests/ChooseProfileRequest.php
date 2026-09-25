@@ -1,16 +1,16 @@
 <?php
 
-namespace App\Http\Requests\Api\Company;
+namespace App\Http\Requests;
 
-use App\Enums\CompanyMemberRole;
+use App\Enums\ProfileType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateCompanyMemberRequest extends FormRequest
+class ChooseProfileRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('company') ?? false;
+        return $this->user() !== null;
     }
 
     /**
@@ -19,7 +19,7 @@ class UpdateCompanyMemberRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'role' => ['required', Rule::enum(CompanyMemberRole::class)],
+            'type' => ['required', Rule::enum(ProfileType::class)->only(ProfileType::activeCases())],
         ];
     }
 }

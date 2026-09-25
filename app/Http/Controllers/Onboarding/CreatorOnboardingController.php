@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Onboarding;
 
+use App\Enums\ProfileType;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Onboarding\StoreCreatorIndustriesRequest;
 use App\Http\Requests\Onboarding\StoreCreatorLinkedInRequest;
@@ -97,7 +98,7 @@ class CreatorOnboardingController extends Controller
     {
         $user = $request->user();
 
-        if (! $user instanceof User || ! $user->hasRole('creator')) {
+        if (! $user instanceof User || ! $user->ownsProfile(ProfileType::Creator)) {
             abort(403);
         }
 

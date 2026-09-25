@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\CompanyMemberRole;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -60,48 +59,43 @@ class UserFactory extends Factory
     }
 
     /**
-     * Assign the creator role and an empty profile.
+     * Create an empty creator profile.
      */
     public function creator(): static
     {
         return $this->afterCreating(function (User $user): void {
-            $user->assignRole('creator');
-            $user->creatorProfile()->create([
-                'country' => 'FR',
-            ]);
+            $user->creatorProfile()->firstOrCreate(
+                ['user_id' => $user->id],
+                ['country' => 'FR'],
+            );
         });
     }
 
     /**
-     * Assign the company role and an empty company.
+     * Create an empty company profile.
      */
     public function company(): static
     {
         return $this->afterCreating(function (User $user): void {
-            $user->assignRole('company');
-            $company = $user->company()->create([
-                'website' => 'https://example.com',
-            ]);
-            $company->members()->create([
-                'user_id' => $user->id,
-                'role' => CompanyMemberRole::Owner,
-                'joined_at' => now(),
-            ]);
+            $user->company()->firstOrCreate(
+                ['user_id' => $user->id],
+                ['website' => 'https://example.com'],
+            );
         });
     }
 
     /**
-     * Mark the user's side profile as onboarded.
+     * Mark owned profiles as onboarded.
      */
     public function onboarded(): static
     {
         return $this->afterCreating(function (User $user): void {
-            if ($user->hasRole('creator')) {
-                $user->creatorProfile()->update(['onboarded_at' => now()]);
+            if ($user->creatorProfile !== null) {
+                $user->creatorProfile->update(['onboarded_at' => now()]);
             }
 
-            if ($user->hasRole('company')) {
-                $user->company()->update(['onboarded_at' => now()]);
+            if ($user->company !== null) {
+                $user->company->update(['onboarded_at' => now()]);
             }
         });
     }

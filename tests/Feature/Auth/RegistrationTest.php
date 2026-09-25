@@ -45,7 +45,6 @@ test('new creators can register', function () {
 
     expect($user)->not->toBeNull()
         ->and($user->name)->toBe('Ada Lovelace')
-        ->and($user->hasRole('creator'))->toBeTrue()
         ->and($user->creatorProfile)->not->toBeNull()
         ->and($user->creatorProfile->display_name)->toBe('Ada Lovelace');
 
@@ -72,13 +71,12 @@ test('new companies can register', function () {
 
     expect($user)->not->toBeNull()
         ->and($user->name)->toBe('Ada Lovelace')
-        ->and($user->hasRole('company'))->toBeTrue()
         ->and($user->company)->not->toBeNull();
 
     Notification::assertSentToTimes($user, EmailVerificationCode::class, 1);
 });
 
-test('company registration assigns the company role even when roles were not seeded', function () {
+test('company registration creates a company profile without Spatie roles', function () {
     Notification::fake();
 
     Role::query()->delete();
@@ -97,8 +95,8 @@ test('company registration assigns the company role even when roles were not see
     $user = User::query()->where('email', 'ada@brand.com')->first();
 
     expect($user)->not->toBeNull()
-        ->and($user->hasRole('company'))->toBeTrue()
-        ->and($user->company)->not->toBeNull();
+        ->and($user->company)->not->toBeNull()
+        ->and($user->roles)->toHaveCount(0);
 });
 
 test('registration screen shows the password rules', function () {
@@ -154,8 +152,7 @@ test('unverified registration can be retried with a valid password', function (s
 
     $user = $user->fresh();
 
-    expect($user->name)->toBe('Ada Lovelace')
-        ->and($user->hasRole($role))->toBeTrue();
+    expect($user->name)->toBe('Ada Lovelace');
 
     if ($role === 'creator') {
         expect($user->creatorProfile)->not->toBeNull();
@@ -193,7 +190,9 @@ test('verified emails cannot register again', function () {
     $this->assertDatabaseCount('users', 1);
 });
 
-test('registration requires a role', function () {
+test('registration without a role creates a user with no profile', function () {
+    Notification::fake();
+
     $this->post(route('register.store'), [
         'first_name' => 'Ada',
         'last_name' => 'Lovelace',
@@ -201,9 +200,17 @@ test('registration requires a role', function () {
         'password' => 'password',
         'password_confirmation' => 'password',
         'hear_about' => 'linkedin',
-    ])->assertSessionHasErrors('role');
+    ])->assertRedirect(route('verification.notice', absolute: false));
 
-    $this->assertGuest();
+    $this->assertAuthenticated();
+
+    $user = User::query()->where('email', 'ada@example.com')->first();
+
+    expect($user)->not->toBeNull()
+        ->and($user->creatorProfile)->toBeNull()
+        ->and($user->company)->toBeNull();
+
+    Notification::assertSentToTimes($user, EmailVerificationCode::class, 1);
 });
 
 test('verified creator registration continues to creator onboarding', function () {

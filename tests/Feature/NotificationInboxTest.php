@@ -50,10 +50,11 @@ test('inviting a creator writes a database notification for that creator', funct
         ->assertJsonPath('data.unread_count', 0);
 });
 
-test('applying notifies company members and not the creator', function () {
+test('applying notifies the company owner and not the creator', function () {
     Queue::fake();
 
-    [$owner, $company, $member] = companyWithMember();
+    $owner = User::factory()->company()->onboarded()->create();
+    $company = $owner->company;
     $campaign = Campaign::factory()->create([
         'company_id' => $company->id,
         'created_by_user_id' => $owner->id,
@@ -73,11 +74,6 @@ test('applying notifies company members and not the creator', function () {
         ->assertJsonPath('data.unread_count', 1)
         ->assertJsonPath('data.notifications.0.type', 'application')
         ->assertJsonPath('data.notifications.0.data.href', '/collaboration?campaign='.$campaign->id);
-
-    $this->actingAs($member)
-        ->getJson(route('api.notifications.index'))
-        ->assertOk()
-        ->assertJsonPath('data.unread_count', 1);
 
     $this->actingAs($creator->user)
         ->getJson(route('api.notifications.index'))
@@ -144,7 +140,6 @@ test('muted invite email still stores a database notification', function () {
         'email_invites' => false,
         'email_applications' => true,
         'email_campaign_updates' => true,
-        'email_messages' => true,
     ]);
 
     $this->actingAs($owner)

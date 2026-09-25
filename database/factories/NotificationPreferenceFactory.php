@@ -21,7 +21,6 @@ class NotificationPreferenceFactory extends Factory
             'email_invites' => true,
             'email_applications' => true,
             'email_campaign_updates' => true,
-            'email_messages' => true,
         ];
     }
 }

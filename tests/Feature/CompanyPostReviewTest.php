@@ -3,9 +3,8 @@
 use App\Enums\PostStatus;
 use App\Models\User;
 
-test('members can approve a submitted post', function () {
-    [$owner, $company, $member] = companyWithMember();
-    [, $collaboration] = bookedDeal($owner);
+test('owners can approve a submitted post', function () {
+    [$owner, $collaboration] = bookedDeal();
     $post = $collaboration->posts()->first();
     $post->update([
         'body' => 'Draft for review.',
@@ -13,8 +12,7 @@ test('members can approve a submitted post', function () {
         'submitted_at' => now(),
     ]);
 
-    $this->actingAs($member)
-        ->withHeaders(['X-Company-Id' => (string) $company->id])
+    $this->actingAs($owner)
         ->postJson(route('api.company.posts.approve', $post))
         ->assertOk()
         ->assertJsonPath('data.status', 'approved');

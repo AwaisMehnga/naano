@@ -15,14 +15,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property bool $email_invites
  * @property bool $email_applications
  * @property bool $email_campaign_updates
- * @property bool $email_messages
  */
 #[Fillable([
     'user_id',
     'email_invites',
     'email_applications',
     'email_campaign_updates',
-    'email_messages',
 ])]
 class NotificationPreference extends Model
 {
@@ -38,7 +36,6 @@ class NotificationPreference extends Model
             'email_invites' => 'boolean',
             'email_applications' => 'boolean',
             'email_campaign_updates' => 'boolean',
-            'email_messages' => 'boolean',
         ];
     }
 

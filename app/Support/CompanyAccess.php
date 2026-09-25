@@ -2,40 +2,32 @@
 
 namespace App\Support;
 
-use App\Enums\CompanyMemberRole;
 use App\Models\Company;
-use App\Models\CompanyMember;
 use App\Models\User;
 
 class CompanyAccess
 {
     public static function canManageMoney(User $user, Company $company): bool
     {
-        return self::role($user, $company) === CompanyMemberRole::Owner;
+        return $company->user_id === $user->id;
     }
 
     public static function ensureCanManageMoney(User $user, Company $company): void
     {
         if (! self::canManageMoney($user, $company)) {
-            abort(403, 'Only owners can manage campaign funds.');
+            abort(403, 'Only the company owner can manage campaign funds.');
         }
     }
 
-    public static function role(User $user, Company $company): ?CompanyMemberRole
+    public static function owns(User $user, Company $company): bool
     {
-        $membership = CompanyMember::query()
-            ->where('company_id', $company->id)
-            ->where('user_id', $user->id)
-            ->first();
-
-        return $membership?->role;
+        return $company->user_id === $user->id;
     }
 
-    public static function ownerCount(Company $company): int
+    public static function ensureOwns(User $user, Company $company): void
     {
-        return CompanyMember::query()
-            ->where('company_id', $company->id)
-            ->where('role', CompanyMemberRole::Owner)
-            ->count();
+        if (! self::owns($user, $company)) {
+            abort(403, 'You do not own this company.');
+        }
     }
 }

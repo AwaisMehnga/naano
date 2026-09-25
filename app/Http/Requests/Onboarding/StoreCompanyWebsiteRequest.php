@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Onboarding;
 
+use App\Enums\ProfileType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -9,7 +10,7 @@ class StoreCompanyWebsiteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('company') ?? false;
+        return $this->user()?->ownsProfile(ProfileType::Company) ?? false;
     }
 
     /**

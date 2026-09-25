@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\Creator;
 
 use App\Enums\CollaborationSource;
 use App\Enums\CollaborationStatus;
+use App\Enums\ProfileType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -11,7 +12,7 @@ class IndexCreatorCollaborationsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('creator') ?? false;
+        return $this->user()?->ownsProfile(ProfileType::Creator) ?? false;
     }
 
     protected function prepareForValidation(): void

@@ -9,7 +9,7 @@ const titles: Record<string, string> = {
     setting: 'Settings',
     profile: 'Profile',
     audience: 'Audience',
-    'team-access': 'Team access',
+    profiles: 'Profiles',
     opportunities: 'Opportunities',
     deals: 'Deals',
     metrics: 'Metrics',

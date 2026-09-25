@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\Company;
 
 use App\Enums\CollaborationStatus;
+use App\Enums\ProfileType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -10,7 +11,7 @@ class IndexCompanyAllCollaborationsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('company') ?? false;
+        return $this->user()?->ownsProfile(ProfileType::Company) ?? false;
     }
 
     protected function prepareForValidation(): void

@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Enums\ProfileType;
 use App\Models\Collaboration;
 use App\Models\User;
 
@@ -23,7 +24,7 @@ class CampaignUpdated extends MarketplaceNotification
      */
     protected function payload(object $notifiable): array
     {
-        $href = $notifiable instanceof User && $notifiable->hasRole('creator')
+        $href = $notifiable instanceof User && $notifiable->ownsProfile(ProfileType::Creator)
             ? '/deals/'.$this->collaboration->id
             : '/campaigns/'.$this->collaboration->campaign_id;
 

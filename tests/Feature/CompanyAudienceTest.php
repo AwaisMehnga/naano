@@ -5,7 +5,7 @@ use App\Models\User;
 
 test('empty icps are seeded from onboarding jsonb', function () {
     $user = User::factory()->company()->onboarded()->create();
-    $company = $user->companies()->first();
+    $company = $user->company;
     $company->update([
         'icps' => [
             ['title' => 'Ops lead', 'description' => 'Runs operations and tools.'],

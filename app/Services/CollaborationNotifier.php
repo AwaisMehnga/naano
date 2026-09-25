@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\Collaboration;
-use App\Models\CompanyMember;
 use App\Models\Message;
 use App\Models\Post;
 use App\Models\User;
@@ -134,6 +133,7 @@ class CollaborationNotifier
     {
         $collaboration->loadMissing([
             'campaign:id,company_id,name',
+            'campaign.company:id,user_id',
             'creatorProfile:id,user_id',
         ]);
 
@@ -170,13 +170,10 @@ class CollaborationNotifier
      */
     private function companyRecipients(Collaboration $collaboration, User $actor): Collection
     {
+        $ownerId = $collaboration->campaign->company->user_id;
+
         return User::query()
-            ->whereIn(
-                'id',
-                CompanyMember::query()
-                    ->where('company_id', $collaboration->campaign->company_id)
-                    ->select('user_id'),
-            )
+            ->whereKey($ownerId)
             ->whereKeyNot($actor->id)
             ->with('notificationPreference')
             ->get();
@@ -205,7 +202,7 @@ class CollaborationNotifier
 
     private function withContext(Collaboration $collaboration): void
     {
-        $collaboration->loadMissing(['campaign.company.users', 'creatorProfile.user']);
+        $collaboration->loadMissing(['campaign.company.user', 'creatorProfile.user']);
     }
 
     private function isCreator(User $actor, Collaboration $collaboration): bool
@@ -243,12 +240,12 @@ class CollaborationNotifier
      */
     private function notifyCompany(Collaboration $collaboration, User $actor, callable $make): void
     {
-        foreach ($collaboration->campaign->company->users as $user) {
-            if ($user->id === $actor->id) {
-                continue;
-            }
+        $owner = $collaboration->campaign->company->user;
 
-            $user->notify($make());
+        if (! $owner instanceof User || $owner->id === $actor->id) {
+            return;
         }
+
+        $owner->notify($make());
     }
 }

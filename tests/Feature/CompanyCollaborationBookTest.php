@@ -86,8 +86,10 @@ test('booking an underfunded collaboration returns a checkout url', function () 
     expect($collaboration->fresh()->status)->toBe(CollaborationStatus::Selected);
 });
 
-test('members cannot book a collaboration', function () {
-    [$owner, $company, $member] = companyWithMember();
+test('other company users cannot book another workspace collaboration', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $other = User::factory()->company()->onboarded()->create();
+    $company = $owner->company;
     $campaign = Campaign::factory()->create([
         'company_id' => $company->id,
         'created_by_user_id' => $owner->id,
@@ -102,10 +104,9 @@ test('members cannot book a collaboration', function () {
         'available_cents' => 50000,
     ]);
 
-    $this->actingAs($member)
-        ->withHeaders(['X-Company-Id' => (string) $company->id])
+    $this->actingAs($other)
         ->postJson(route('api.company.collaborations.book', $collaboration))
-        ->assertForbidden();
+        ->assertNotFound();
 });
 
 test('invited collaborations cannot be booked', function () {
@@ -347,25 +348,6 @@ test('booking a listed creator when underfunded returns a checkout url', functio
 
     expect($collaboration)->not->toBeNull()
         ->and($collaboration->status)->toBe(CollaborationStatus::Selected);
-});
-
-test('members cannot book a listed creator', function () {
-    [$owner, $company, $member] = companyWithMember();
-    $campaign = Campaign::factory()->create([
-        'company_id' => $company->id,
-        'created_by_user_id' => $owner->id,
-    ]);
-    Wallet::factory()->create([
-        'company_id' => $company->id,
-        'available_cents' => 50000,
-    ]);
-
-    $this->actingAs($member)
-        ->withHeaders(['X-Company-Id' => (string) $company->id])
-        ->postJson(route('api.company.campaigns.book', $campaign), [
-            'creator_profile_id' => marketplaceCreator()->id,
-        ])
-        ->assertForbidden();
 });
 
 test('booking a listed creator who is already booked returns 422', function () {

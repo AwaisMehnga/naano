@@ -20,7 +20,7 @@ class EnsureCurrentCompany
         $company = $this->currentCompany->resolve($request);
 
         if ($company === null) {
-            return AjaxResponse::error('No company workspace.', status: 403);
+            return AjaxResponse::error('No company profile.', status: 403);
         }
 
         $request->attributes->set('currentCompany', $company);

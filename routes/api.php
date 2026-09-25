@@ -15,12 +15,10 @@ use App\Http\Controllers\Api\Company\CompanyProfileController;
 use App\Http\Controllers\Api\Company\CreatorController;
 use App\Http\Controllers\Api\Company\IcpController;
 use App\Http\Controllers\Api\Company\LeadController as CompanyLeadController;
-use App\Http\Controllers\Api\Company\MemberController;
 use App\Http\Controllers\Api\Company\PostController as CompanyPostController;
 use App\Http\Controllers\Api\Company\PostMetricController as CompanyPostMetricController;
 use App\Http\Controllers\Api\Company\TrackingLinkController;
 use App\Http\Controllers\Api\Company\WalletController;
-use App\Http\Controllers\Api\Company\WorkspaceController;
 use App\Http\Controllers\Api\Creator\AnalyticsController as CreatorAnalyticsController;
 use App\Http\Controllers\Api\Creator\AudienceController as CreatorAudienceController;
 use App\Http\Controllers\Api\Creator\BillingController;
@@ -39,6 +37,7 @@ use App\Http\Controllers\Api\Creator\ProfileController as CreatorProfileControll
 use App\Http\Controllers\Api\NichesController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\NotificationPreferenceController;
+use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\StripeWebhookController;
 use App\Http\Controllers\Api\TrackingEventController;
 use App\Http\Controllers\Api\UserController;
@@ -54,6 +53,11 @@ Route::middleware('auth')->group(function () {
     Route::get('niches', [NichesController::class, 'index'])->name('niches.index');
 
     Route::middleware('verified')->group(function () {
+        Route::get('profiles', [ProfileController::class, 'index'])->name('profiles.index');
+        Route::post('profiles/creator', [ProfileController::class, 'storeCreator'])->name('profiles.creator.store');
+        Route::post('profiles/company', [ProfileController::class, 'storeCompany'])->name('profiles.company.store');
+        Route::patch('profiles/active', [ProfileController::class, 'updateActive'])->name('profiles.active.update');
+
         Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
         Route::post('notifications/read', [NotificationController::class, 'readAll'])->name('notifications.read-all');
         Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])->name('notifications.read');
@@ -61,14 +65,12 @@ Route::middleware('auth')->group(function () {
         Route::put('notification-preferences', [NotificationPreferenceController::class, 'update'])->name('notification-preferences.update');
     });
 
-    Route::middleware(['verified', 'role:company', 'onboarded', 'current.company'])->prefix('company')->name('company.')->group(function () {
+    Route::middleware(['verified', 'profile:company', 'onboarded', 'current.company'])->prefix('company')->name('company.')->group(function () {
         Route::get('ping', [UserController::class, 'show'])->name('ping');
-        Route::apiResource('workspaces', WorkspaceController::class)->only(['index', 'update']);
         Route::get('profile', [CompanyProfileController::class, 'show'])->name('profile.show');
         Route::match(['put', 'patch'], 'profile', [CompanyProfileController::class, 'update'])->name('profile.update');
         Route::apiSingleton('audience', CompanyAudienceController::class)->only(['show', 'update']);
         Route::apiResource('icps', IcpController::class)->only(['index', 'store', 'update', 'destroy']);
-        Route::apiResource('members', MemberController::class)->only(['index', 'store', 'update', 'destroy']);
         Route::get('wallet', [WalletController::class, 'show'])->name('wallet.show');
         Route::get('wallet/transactions', [WalletController::class, 'transactions'])->name('wallet.transactions');
         Route::post('wallet/topups', [WalletController::class, 'storeTopup'])->name('wallet.topups.store');
@@ -117,7 +119,7 @@ Route::middleware('auth')->group(function () {
             ->parameters(['creators' => 'creatorProfile']);
     });
 
-    Route::middleware(['verified', 'role:creator', 'onboarded'])->prefix('creator')->name('creator.')->group(function () {
+    Route::middleware(['verified', 'profile:creator', 'onboarded'])->prefix('creator')->name('creator.')->group(function () {
         Route::get('ping', [UserController::class, 'show'])->name('ping');
         Route::apiSingleton('profile', CreatorProfileController::class)->only(['show', 'update']);
         Route::apiSingleton('niches', CreatorNicheController::class)->only(['update']);

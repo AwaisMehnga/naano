@@ -12,10 +12,10 @@ import CompanyCreatorsPage from './pages/creators';
 import CompanySettingLayout from './pages/setting';
 import CompanyAudiencePage from './pages/setting/audience';
 import CompanyProfilePage from './pages/setting/profile';
-import CompanyTeamAccessPage from './pages/setting/team-access';
 import CompanyWalletPage from './pages/wallet';
 import NotificationsPage from '@/pages/notifications';
 import NotificationSettingsPage from '@/pages/setting/notifications';
+import ProfilesPage from '@/pages/setting/profiles';
 
 export const routes = [
     {
@@ -87,8 +87,8 @@ export const routes = [
                         element: <CompanyAudiencePage />,
                     },
                     {
-                        path: 'team-access',
-                        element: <CompanyTeamAccessPage />,
+                        path: 'profiles',
+                        element: <ProfilesPage />,
                     },
                     {
                         path: 'notifications',

@@ -2,6 +2,7 @@
 
 use App\Exceptions\InvalidStripeSignatureException;
 use App\Exceptions\WalletUnderfundedException;
+use App\Http\Middleware\EnsureActiveProfile;
 use App\Http\Middleware\EnsureCurrentCompany;
 use App\Http\Middleware\EnsureOnboarded;
 use App\Http\Middleware\HandleAppearance;
@@ -14,7 +15,6 @@ use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
-use Spatie\Permission\Middleware\RoleMiddleware;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -43,7 +43,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'role' => RoleMiddleware::class,
+            'profile' => EnsureActiveProfile::class,
             'onboarded' => EnsureOnboarded::class,
             'current.company' => EnsureCurrentCompany::class,
         ]);

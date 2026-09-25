@@ -8,7 +8,7 @@ use App\Models\User;
 class NotificationPreferenceService
 {
     /**
-     * @return array{email_invites: bool, email_applications: bool, email_campaign_updates: bool, email_messages: bool}
+     * @return array{email_invites: bool, email_applications: bool, email_campaign_updates: bool}
      */
     public function show(User $user): array
     {
@@ -16,8 +16,8 @@ class NotificationPreferenceService
     }
 
     /**
-     * @param  array{email_invites: bool, email_applications: bool, email_campaign_updates: bool, email_messages: bool}  $data
-     * @return array{email_invites: bool, email_applications: bool, email_campaign_updates: bool, email_messages: bool}
+     * @param  array{email_invites: bool, email_applications: bool, email_campaign_updates: bool}  $data
+     * @return array{email_invites: bool, email_applications: bool, email_campaign_updates: bool}
      */
     public function update(User $user, array $data): array
     {
@@ -36,13 +36,12 @@ class NotificationPreferenceService
                 'email_invites' => true,
                 'email_applications' => true,
                 'email_campaign_updates' => true,
-                'email_messages' => true,
             ],
         );
     }
 
     /**
-     * @return array{email_invites: bool, email_applications: bool, email_campaign_updates: bool, email_messages: bool}
+     * @return array{email_invites: bool, email_applications: bool, email_campaign_updates: bool}
      */
     private function payload(NotificationPreference $preference): array
     {
@@ -50,7 +49,6 @@ class NotificationPreferenceService
             'email_invites' => $preference->email_invites,
             'email_applications' => $preference->email_applications,
             'email_campaign_updates' => $preference->email_campaign_updates,
-            'email_messages' => $preference->email_messages,
         ];
     }
 }

@@ -3,21 +3,20 @@
 namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
-use App\Enums\CompanyMemberRole;
+use App\Enums\ProfileType;
 use App\Models\User;
-use App\Services\CompanyMemberService;
+use App\Services\ProfileService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Laravel\Fortify\Contracts\CreatesNewUsers;
-use Spatie\Permission\Models\Role;
 
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules;
 
-    public function __construct(private CompanyMemberService $members) {}
+    public function __construct(private ProfileService $profiles) {}
 
     /**
      * Validate and create a newly registered user.
@@ -37,7 +36,8 @@ class CreateNewUser implements CreatesNewUsers
                 Rule::unique(User::class)->whereNotNull('email_verified_at'),
             ],
             'password' => $this->passwordRules(),
-            'role' => ['required', Rule::in(['creator', 'company'])],
+            'profile' => ['sometimes', 'nullable', Rule::in(['creator', 'company'])],
+            'role' => ['sometimes', 'nullable', Rule::in(['creator', 'company'])],
             'hear_about' => ['required', 'string', Rule::in(array_keys(config('onboarding.hear_about')))],
         ], [
             'email.unique' => 'This email is already registered. Sign in or reset your password.',
@@ -70,36 +70,15 @@ class CreateNewUser implements CreatesNewUsers
                     ])->save();
                 }
 
-                $this->provisionSide($user, $input['role']);
+                $profile = $input['profile'] ?? $input['role'] ?? null;
 
-                return $user;
+                if (is_string($profile) && $profile !== '') {
+                    $type = ProfileType::from($profile);
+                    $this->profiles->provision($user, $type);
+                }
+
+                return $user->fresh(['creatorProfile', 'company']);
             });
         });
-    }
-
-    private function provisionSide(User $user, string $role): void
-    {
-        Role::findOrCreate($role, 'web');
-        $user->syncRoles([$role]);
-
-        if ($role === 'creator') {
-            $user->creatorProfile()->firstOrCreate(
-                ['user_id' => $user->id],
-                ['display_name' => $user->name],
-            );
-
-            return;
-        }
-
-        if ($user->company === null) {
-            $company = $user->company()->create([]);
-            $company->members()->create([
-                'user_id' => $user->id,
-                'role' => CompanyMemberRole::Owner,
-                'joined_at' => now(),
-            ]);
-        }
-
-        $this->members->acceptPendingInvites($user);
     }
 }

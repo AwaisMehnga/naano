@@ -14,6 +14,7 @@ import CreatorBillingPage from './pages/setting/billing';
 import CreatorProfilePage from './pages/setting/profile';
 import NotificationsPage from '@/pages/notifications';
 import NotificationSettingsPage from '@/pages/setting/notifications';
+import ProfilesPage from '@/pages/setting/profiles';
 
 export const routes = [
     {
@@ -75,6 +76,10 @@ export const routes = [
                     {
                         path: 'account',
                         element: <CreatorAccountPage />,
+                    },
+                    {
+                        path: 'profiles',
+                        element: <ProfilesPage />,
                     },
                     {
                         path: 'notifications',

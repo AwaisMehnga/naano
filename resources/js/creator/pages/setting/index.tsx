@@ -6,6 +6,7 @@ const items = [
     { title: 'Audience', href: '/setting/audience' },
     { title: 'Billing', href: '/setting/billing' },
     { title: 'Account', href: '/setting/account' },
+    { title: 'Profiles', href: '/setting/profiles' },
     { title: 'Notifications', href: '/setting/notifications' },
 ];
 

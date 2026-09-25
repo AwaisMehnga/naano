@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\Company;
 
+use App\Enums\ProfileType;
 use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,7 +12,7 @@ class IndexCompanyWalletTransactionsRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->hasRole('company') ?? false;
+        return $this->user()?->ownsProfile(ProfileType::Company) ?? false;
     }
 
     protected function prepareForValidation(): void

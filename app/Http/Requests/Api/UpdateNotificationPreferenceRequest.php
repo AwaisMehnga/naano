@@ -20,7 +20,6 @@ class UpdateNotificationPreferenceRequest extends FormRequest
             'email_invites' => ['required', 'boolean'],
             'email_applications' => ['required', 'boolean'],
             'email_campaign_updates' => ['required', 'boolean'],
-            'email_messages' => ['required', 'boolean'],
         ];
     }
 }

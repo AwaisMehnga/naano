@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Enums\CompanyMemberRole;
 use App\Models\CompanyIcp;
 use App\Models\User;
 use App\Models\Wallet;
@@ -45,10 +44,6 @@ class WalkthroughSeeder extends Seeder
             ],
         );
 
-        if (! $user->hasRole('company')) {
-            $user->assignRole('company');
-        }
-
         $company = $user->company ?? $user->company()->create([
             'onboarded_at' => now(),
         ]);
@@ -74,14 +69,6 @@ class WalkthroughSeeder extends Seeder
             'onboarded_at' => now(),
         ]);
         $company->save();
-
-        if ($company->members()->where('user_id', $user->id)->doesntExist()) {
-            $company->members()->create([
-                'user_id' => $user->id,
-                'role' => CompanyMemberRole::Owner,
-                'joined_at' => now(),
-            ]);
-        }
 
         if ($company->companyIcps()->doesntExist()) {
             foreach ([

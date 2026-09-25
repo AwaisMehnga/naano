@@ -35,17 +35,6 @@ test('owners can start a wallet top-up', function () {
     ]);
 });
 
-test('members cannot top up the wallet', function () {
-    [, $company, $member] = companyWithMember();
-
-    $this->actingAs($member)
-        ->withHeaders(['X-Company-Id' => (string) $company->id])
-        ->postJson(route('api.company.wallet.topups.store'), [
-            'amount_cents' => 10000,
-        ])
-        ->assertForbidden();
-});
-
 test('top-ups below the minimum are rejected', function () {
     $owner = User::factory()->company()->onboarded()->create();
 
@@ -92,14 +81,4 @@ test('a company cannot poll another workspace top-up', function () {
     $this->actingAs($owner)
         ->getJson(route('api.company.wallet.topups.show', $transaction))
         ->assertNotFound();
-});
-
-test('members can read the wallet', function () {
-    [, $company, $member] = companyWithMember();
-
-    $this->actingAs($member)
-        ->withHeaders(['X-Company-Id' => (string) $company->id])
-        ->getJson(route('api.company.wallet.show'))
-        ->assertOk()
-        ->assertJsonPath('data.available_cents', 0);
 });

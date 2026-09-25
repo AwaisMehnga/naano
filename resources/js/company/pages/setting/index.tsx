@@ -4,7 +4,7 @@ import { SettingsNav } from '@/components/settings-nav';
 const items = [
     { title: 'Profile', href: '/setting/profile' },
     { title: 'Audience', href: '/setting/audience' },
-    { title: 'Team access', href: '/setting/team-access' },
+    { title: 'Profiles', href: '/setting/profiles' },
     { title: 'Notifications', href: '/setting/notifications' },
 ];
 

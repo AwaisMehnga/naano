@@ -5,7 +5,7 @@ use Illuminate\Support\Facades\Storage;
 
 test('owners can view and update the company profile', function () {
     $user = User::factory()->company()->onboarded()->create();
-    $company = $user->companies()->first();
+    $company = $user->company;
     $company->update(['name' => 'Old Co']);
 
     $this->actingAs($user)
@@ -28,33 +28,11 @@ test('owners can view and update the company profile', function () {
         ->and($company->fresh()->billing_email)->toBe('finance@acme.test');
 });
 
-test('members can update profile fields but not billing email', function () {
-    [$owner, $company, $member] = companyWithMember();
-
-    $this->actingAs($member)
-        ->withHeaders(['X-Company-Id' => (string) $company->id])
-        ->patchJson(route('api.company.profile.update'), [
-            'name' => 'Member Rename',
-        ])
-        ->assertOk()
-        ->assertJsonPath('data.name', 'Member Rename')
-        ->assertJsonPath('data.can_manage_money', false);
-
-    $this->actingAs($member)
-        ->withHeaders(['X-Company-Id' => (string) $company->id])
-        ->patchJson(route('api.company.profile.update'), [
-            'billing_email' => 'stolen@acme.test',
-        ])
-        ->assertForbidden();
-
-    expect($company->fresh()->billing_email)->not->toBe('stolen@acme.test');
-});
-
 test('company logos appear on the profile and current user payloads', function () {
     Storage::fake('public');
 
     $user = User::factory()->company()->onboarded()->create();
-    $company = $user->companies()->first();
+    $company = $user->company;
 
     $this->actingAs($user)
         ->patch(route('api.company.profile.update'), [
@@ -87,7 +65,7 @@ test('companies can remove their logo', function () {
     Storage::fake('public');
 
     $user = User::factory()->company()->onboarded()->create();
-    $company = $user->companies()->first();
+    $company = $user->company;
     $path = 'companies/'.$company->id.'/logo.png';
     Storage::disk('public')->put($path, 'fake');
     $company->update(['logo_path' => $path]);

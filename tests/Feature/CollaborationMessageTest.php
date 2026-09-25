@@ -3,6 +3,8 @@
 use App\Enums\CollaborationStatus;
 use App\Models\Message;
 use App\Models\User;
+use App\Notifications\CollaborationMessageReceived;
+use Illuminate\Support\Facades\Notification;
 
 test('companies and creators can send list and read a collaboration thread', function () {
     [$owner, $collaboration, $creatorUser] = bookedDeal();
@@ -99,4 +101,21 @@ test('message body is required', function () {
             'body' => '',
         ])
         ->assertUnprocessable();
+});
+
+test('sending a message stores an in-app notification without email', function () {
+    Notification::fake();
+    [$owner, $collaboration, $creatorUser] = bookedDeal();
+
+    $this->actingAs($owner)
+        ->postJson(route('api.company.collaborations.messages.store', $collaboration), [
+            'body' => 'Hello',
+        ])
+        ->assertOk();
+
+    Notification::assertSentTo(
+        $creatorUser,
+        CollaborationMessageReceived::class,
+        fn ($n, $channels) => $channels === ['database'],
+    );
 });

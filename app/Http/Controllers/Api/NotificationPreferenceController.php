@@ -27,7 +27,6 @@ class NotificationPreferenceController extends Controller
                 'email_invites',
                 'email_applications',
                 'email_campaign_updates',
-                'email_messages',
             ]),
         ));
     }
