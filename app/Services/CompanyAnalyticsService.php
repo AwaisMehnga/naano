@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CampaignStatus;
 use App\Enums\WalletTransactionStatus;
 use App\Enums\WalletTransactionType;
 use App\Models\Campaign;
@@ -24,6 +25,8 @@ class CompanyAnalyticsService
         private PostMetricIngestService $metrics,
         private CompanyLeadService $leads,
         private MediaService $media,
+        private CompanyWalletService $wallets,
+        private CompanyCollaborationService $collaborations,
     ) {}
 
     /**
@@ -33,6 +36,38 @@ class CompanyAnalyticsService
     {
         [$from, $to] = $this->range($from, $to);
         $rollup = $this->workspaceRollup($company);
+        $series = $this->workspaceSeries($company, $from, $to);
+
+        $previousFrom = $from->copy()->subDays($from->diffInDays($to) + 1)->startOfDay();
+        $previousTo = $from->copy()->subDay()->endOfDay();
+        $previousSeries = $this->workspaceSeries($company, $previousFrom, $previousTo);
+
+        $periodClicks = (int) array_sum(array_column($series, 'clicks'));
+        $periodUnique = (int) array_sum(array_column($series, 'unique_clicks'));
+        $periodLeads = (int) array_sum(array_column($series, 'leads'));
+        $periodSpend = (int) array_sum(array_column($series, 'spend_cents'));
+        $periodPipeline = $this->pipelineCentsForCompany($company, $from, $to);
+
+        $previousClicks = (int) array_sum(array_column($previousSeries, 'clicks'));
+        $previousLeads = (int) array_sum(array_column($previousSeries, 'leads'));
+        $previousSpend = (int) array_sum(array_column($previousSeries, 'spend_cents'));
+
+        $statusCounts = Collaboration::query()
+            ->whereHas('campaign', fn ($query) => $query->where('company_id', $company->id))
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status')
+            ->all();
+
+        $wallet = $this->wallets->show($company);
+        $campaignsCount = $company->campaigns()->count();
+        $liveCampaignsCount = $company->campaigns()
+            ->where('status', CampaignStatus::Active)
+            ->count();
+
+        $cplCents = $periodLeads > 0
+            ? (int) round($periodSpend / $periodLeads)
+            : null;
 
         return [
             ...$rollup,
@@ -43,7 +78,28 @@ class CompanyAnalyticsService
                 ->count(),
             'pipeline_cents' => $this->pipelineCentsForCompany($company),
             'spend_cents' => $this->spendCents($company),
-            'series' => $this->workspaceSeries($company, $from, $to),
+            'series' => $series,
+            'comparison' => $this->comparisonSeries($series, $previousSeries),
+            'period' => [
+                'clicks' => $periodClicks,
+                'unique_clicks' => $periodUnique,
+                'leads_count' => $periodLeads,
+                'spend_cents' => $periodSpend,
+                'pipeline_cents' => $periodPipeline,
+            ],
+            'growth' => [
+                'clicks' => $this->growthPercent($periodClicks, $previousClicks),
+                'leads' => $this->growthPercent($periodLeads, $previousLeads),
+                'spend' => $this->growthPercent($periodSpend, $previousSpend),
+            ],
+            'campaigns_count' => $campaignsCount,
+            'live_campaigns_count' => $liveCampaignsCount,
+            'collab_counts' => $this->collaborations->countsFromStatuses($statusCounts),
+            'wallet' => [
+                'available_cents' => $wallet['available_cents'],
+                'held_cents' => $wallet['held_cents'],
+            ],
+            'cpl_cents' => $cplCents,
         ];
     }
 
@@ -270,14 +326,53 @@ class CompanyAnalyticsService
             ->keyBy('day');
     }
 
-    private function pipelineCentsForCompany(Company $company): int
-    {
+    private function pipelineCentsForCompany(
+        Company $company,
+        ?CarbonInterface $from = null,
+        ?CarbonInterface $to = null,
+    ): int {
         $query = Lead::query()->where('company_id', $company->id)->toBase();
+
+        if ($from !== null && $to !== null) {
+            $query->whereBetween('occurred_at', [$from, $to]);
+        }
+
         $pipelineCents = $query->getGrammar()->wrap('payload->pipeline_cents');
 
         return (int) $query
             ->selectRaw("coalesce(sum(cast({$pipelineCents} as bigint)), 0) as aggregate")
             ->value('aggregate');
+    }
+
+    /**
+     * @param  list<array{day: string, clicks: int, unique_clicks: int, leads: int, spend_cents: int}>  $current
+     * @param  list<array{day: string, clicks: int, unique_clicks: int, leads: int, spend_cents: int}>  $previous
+     * @return list<array{day: string, current: int, previous: int}>
+     */
+    private function comparisonSeries(array $current, array $previous): array
+    {
+        $previousValues = array_column($previous, 'clicks');
+
+        return array_values(array_map(
+            function (array $point, int $index) use ($previousValues): array {
+                return [
+                    'day' => $point['day'],
+                    'current' => $point['clicks'],
+                    'previous' => (int) ($previousValues[$index] ?? 0),
+                ];
+            },
+            $current,
+            array_keys($current),
+        ));
+    }
+
+    private function growthPercent(int $current, int $previous): ?float
+    {
+        if ($previous < 1) {
+            return $current > 0 ? 100.0 : null;
+        }
+
+        return round((($current - $previous) / $previous) * 100, 1);
     }
 
     /**

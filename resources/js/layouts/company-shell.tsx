@@ -1,0 +1,16 @@
+import { Outlet } from 'react-router';
+import { CompanyTopBar } from '@/company/components/company-top-bar';
+
+export default function CompanyShellLayout() {
+    return (
+        <div className="flex min-h-svh flex-col bg-background font-dashboard text-foreground">
+            <CompanyTopBar />
+
+            <main className="flex w-full min-w-0 flex-1 flex-col px-6 pb-10 lg:px-8">
+                <div className="flex w-full min-w-0 flex-1 flex-col">
+                    <Outlet />
+                </div>
+            </main>
+        </div>
+    );
+}

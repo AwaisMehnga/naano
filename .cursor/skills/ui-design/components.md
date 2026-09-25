@@ -34,7 +34,7 @@ Primitives: `@/components/ui` (`Button`, `Badge`, `Input`, `Avatar`, …). Butto
 ## React SPA — Shells
 
 - Creator: `resources/js/layouts/creator-shell.tsx` + `CreatorTopBar` (pill `SegmentedNav`, notifications, user StatusPill). **No left icon rail.**
-- Company: Blade `x-layouts.spa` + sidebar; breadcrumbs from route.
+- Company: `resources/js/layouts/company-shell.tsx` + `CompanyTopBar` (pill `SegmentedNav`, notifications, user StatusPill). **No left icon rail.**
 
 Local gallery: `/components` (`APP_ENV=local`).
 

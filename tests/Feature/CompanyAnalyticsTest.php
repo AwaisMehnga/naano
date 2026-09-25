@@ -190,7 +190,87 @@ test('workspace overview returns a daily series without loading click rows', fun
         'spend_cents' => 0,
     ])->and($response->json('data.series.1.leads'))->toBe(1)
         ->and($response->json('data.leads_count'))->toBe(1)
-        ->and($response->json('data.pipeline_cents'))->toBe(50000);
+        ->and($response->json('data.pipeline_cents'))->toBe(50000)
+        ->and($response->json('data.period'))->toMatchArray([
+            'clicks' => 2,
+            'unique_clicks' => 2,
+            'leads_count' => 1,
+            'spend_cents' => 0,
+            'pipeline_cents' => 50000,
+        ])
+        ->and($response->json('data.comparison'))->toHaveCount(3)
+        ->and($response->json('data.wallet.available_cents'))->toBeInt()
+        ->and($response->json('data.wallet.held_cents'))->toBeGreaterThan(0)
+        ->and($response->json('data.collab_counts.active'))->toBe(1)
+        ->and($response->json('data.campaigns_count'))->toBe(1);
+});
+
+test('workspace overview includes period growth wallet and cpl', function () {
+    $this->travelTo('2026-09-13 12:00:00');
+
+    [$owner, $collaboration] = bookedDeal();
+    $post = $collaboration->posts()->first();
+    $link = $collaboration->trackingLinks()->first();
+    $wallet = $owner->company->wallet()->first();
+
+    TrackingClick::factory()->create([
+        'tracking_link_id' => $link->id,
+        'post_id' => $post->id,
+        'occurred_at' => now()->subDay(),
+    ]);
+    Lead::factory()->create([
+        'company_id' => $owner->company->id,
+        'campaign_id' => $collaboration->campaign_id,
+        'post_id' => $post->id,
+        'occurred_at' => now()->subDay(),
+        'payload' => ['pipeline_cents' => 100000],
+    ]);
+    WalletTransaction::factory()->create([
+        'wallet_id' => $wallet->id,
+        'campaign_id' => $collaboration->campaign_id,
+        'collaboration_id' => $collaboration->id,
+        'type' => WalletTransactionType::Capture,
+        'direction' => WalletTransactionDirection::Debit,
+        'amount_cents' => 25000,
+        'status' => WalletTransactionStatus::Posted,
+        'created_at' => now()->subDay(),
+    ]);
+
+    $wallet->refresh();
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.analytics.overview', [
+            'from' => '2026-09-11',
+            'to' => '2026-09-13',
+        ]))
+        ->assertOk()
+        ->assertJsonStructure([
+            'data' => [
+                'period' => [
+                    'clicks',
+                    'unique_clicks',
+                    'leads_count',
+                    'spend_cents',
+                    'pipeline_cents',
+                ],
+                'growth' => ['clicks', 'leads', 'spend'],
+                'comparison',
+                'wallet' => ['available_cents', 'held_cents'],
+                'collab_counts' => ['active', 'todo', 'completed'],
+                'campaigns_count',
+                'live_campaigns_count',
+                'cpl_cents',
+            ],
+        ])
+        ->assertJsonPath('data.period.clicks', 1)
+        ->assertJsonPath('data.period.leads_count', 1)
+        ->assertJsonPath('data.period.spend_cents', 25000)
+        ->assertJsonPath('data.period.pipeline_cents', 100000)
+        ->assertJsonPath('data.cpl_cents', 25000)
+        ->assertJsonPath('data.growth.clicks', 100)
+        ->assertJsonPath('data.growth.spend', 100)
+        ->assertJsonPath('data.wallet.available_cents', $wallet->available_cents)
+        ->assertJsonPath('data.collab_counts.active', 1);
 });
 
 test('workspace overview rejects a range longer than 90 days', function () {

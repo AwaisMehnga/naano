@@ -40,7 +40,7 @@ Also follow [semantic-theme](../semantic-theme/SKILL.md). Read [tokens.md](token
 6. **Stats in a row** — Inline stats are one line: `value` + `label` in a horizontal pill row — never stacked “1 / Live posts” columns.
 7. **Progress contrast** — `ProgressRow` fill is `bg-primary` on a light track (`bg-card` / `bg-muted`). Do not use low-contrast fills.
 8. **Creator shell** — `CreatorShellLayout`: top pill nav only, no left icon rail. Soft canvas + roomy main padding (`px-6` / `lg:px-8`, `pb-10`).
-9. **Company shell** — Still `x-layouts.spa` + sidebar; same tokens, SoftCard language when building new company pages.
+9. **Company shell** — `CompanyShellLayout`: top pill nav only (same soft canvas as creator), no left icon rail.
 10. **Light mode** — Dashboards stay light. Never `class="dark"` on SPA, marketing, auth, or onboarding layouts.
 
 ## Layout recipes

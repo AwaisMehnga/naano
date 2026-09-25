@@ -1,4 +1,4 @@
-import DashboardLayout from '@/layouts/dashboard';
+import CompanyShellLayout from '@/layouts/company-shell';
 import { Navigate } from 'react-router';
 import CompanyAnalyticsPage from './pages/analytics';
 import CompanyBriefPage from './pages/brief';
@@ -20,7 +20,7 @@ import ProfilesPage from '@/pages/setting/profiles';
 export const routes = [
     {
         path: '/',
-        element: <DashboardLayout />,
+        element: <CompanyShellLayout />,
         children: [
             {
                 index: true,
