@@ -73,7 +73,7 @@ export default function CampaignCard({
                     <AppLink href={`/campaigns/${campaign.id}`}>Open</AppLink>
                 </Button>
                 <Button variant="outline" size="sm" className="rounded-pill" asChild>
-                    <AppLink href={`/brief?campaign=${campaign.id}`}>
+                    <AppLink href={`/campaigns/${campaign.id}/brief`}>
                         <Pencil className="size-4" />
                         Brief
                     </AppLink>

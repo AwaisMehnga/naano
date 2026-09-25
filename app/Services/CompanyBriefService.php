@@ -101,7 +101,7 @@ class CompanyBriefService
             ->all();
     }
 
-    private function fetchSiteText(string $website): string
+    public function fetchSiteText(string $website): string
     {
         try {
             $html = Http::connectTimeout(5)

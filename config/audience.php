@@ -30,4 +30,13 @@ return [
         '5 000+',
     ],
 
+    'tones' => [
+        'Professional',
+        'Conversational',
+        'Bold',
+        'Warm',
+        'Technical',
+        'Playful',
+    ],
+
 ];

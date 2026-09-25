@@ -241,8 +241,7 @@ test('campaign status transitions follow the allowed paths', function () {
 
     $this->actingAs($owner)
         ->postJson(route('api.company.campaigns.reopen', $campaign))
-        ->assertOk()
-        ->assertJsonPath('data.status', 'active');
+        ->assertUnprocessable();
 });
 
 test('invalid campaign transitions are rejected', function () {
@@ -275,7 +274,7 @@ test('resume is rejected unless the campaign is paused', function () {
         ->assertUnprocessable();
 });
 
-test('completed and cancelled campaigns can be reopened to active', function () {
+test('cancelled campaigns can be reopened but completed cannot', function () {
     $owner = User::factory()->company()->onboarded()->create();
     $completed = Campaign::factory()->create([
         'company_id' => $owner->company->id,
@@ -290,8 +289,7 @@ test('completed and cancelled campaigns can be reopened to active', function () 
 
     $this->actingAs($owner)
         ->postJson(route('api.company.campaigns.reopen', $completed))
-        ->assertOk()
-        ->assertJsonPath('data.status', 'active');
+        ->assertUnprocessable();
 
     $this->actingAs($owner)
         ->postJson(route('api.company.campaigns.reopen', $cancelled))

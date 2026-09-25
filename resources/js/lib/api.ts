@@ -111,6 +111,8 @@ export const companyApi = {
     campaignReopen: (id: number) => `/api/company/campaigns/${id}/reopen`,
     campaignComplete: (id: number) => `/api/company/campaigns/${id}/complete`,
     campaignCancel: (id: number) => `/api/company/campaigns/${id}/cancel`,
+    campaignBriefChat: (id: number) =>
+        `/api/company/campaigns/${id}/brief/chat`,
     campaignCollaborations: (
         id: number,
         query: Record<string, string | number | undefined> = {},

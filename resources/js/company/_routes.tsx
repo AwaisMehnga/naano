@@ -1,5 +1,5 @@
 import CompanyShellLayout from '@/layouts/company-shell';
-import { Navigate } from 'react-router';
+import { Navigate, useParams, useSearchParams } from 'react-router';
 import CompanyAnalyticsPage from './pages/analytics';
 import CompanyBriefPage from './pages/brief';
 import CompanyCampaignsPage from './pages/campaigns';
@@ -16,6 +16,23 @@ import CompanyWalletPage from './pages/wallet';
 import NotificationsPage from '@/pages/notifications';
 import NotificationSettingsPage from '@/pages/setting/notifications';
 import ProfilesPage from '@/pages/setting/profiles';
+
+function BriefRedirect() {
+    const [params] = useSearchParams();
+    const campaignId = params.get('campaign');
+
+    if (campaignId) {
+        return <Navigate to={`/campaigns/${campaignId}/brief`} replace />;
+    }
+
+    return <Navigate to="/campaigns" replace />;
+}
+
+function CampaignBriefRoute() {
+    const { id } = useParams();
+
+    return <CompanyBriefPage campaignId={Number(id)} />;
+}
 
 export const routes = [
     {
@@ -39,6 +56,10 @@ export const routes = [
                 element: <CompanyCampaignAnalyticsPage />,
             },
             {
+                path: 'campaigns/:id/brief',
+                element: <CampaignBriefRoute />,
+            },
+            {
                 path: 'campaigns/:campaignId/posts/:postId',
                 element: <CompanyPostReviewPage />,
             },
@@ -48,7 +69,7 @@ export const routes = [
             },
             {
                 path: 'brief',
-                element: <CompanyBriefPage />,
+                element: <BriefRedirect />,
             },
             {
                 path: 'wallet',

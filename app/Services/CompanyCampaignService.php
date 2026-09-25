@@ -206,7 +206,6 @@ class CompanyCampaignService
     public function reopen(Company $company, Campaign $campaign): array
     {
         return $this->transition($company, $campaign, CampaignStatus::Active, [
-            CampaignStatus::Completed,
             CampaignStatus::Cancelled,
         ]);
     }

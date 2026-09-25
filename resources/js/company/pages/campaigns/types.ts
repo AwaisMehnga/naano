@@ -230,7 +230,7 @@ export function reachableStatuses(from: CampaignStatus): CampaignStatus[] {
         case 'paused':
             return ['paused', 'active', 'completed', 'cancelled'];
         case 'completed':
-            return ['completed', 'active'];
+            return ['completed'];
         case 'cancelled':
             return ['cancelled', 'active'];
     }
@@ -253,7 +253,7 @@ export function actionForStatusChange(
             return 'resume';
         }
 
-        if (from === 'completed' || from === 'cancelled') {
+        if (from === 'cancelled') {
             return 'reopen';
         }
     }

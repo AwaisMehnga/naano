@@ -414,7 +414,7 @@ function CreateCampaignDialog({
             });
             toast.success('Campaign created');
             onOpenChange(false);
-            void navigate(`/brief?campaign=${campaign.id}`);
+            void navigate(`/campaigns/${campaign.id}/brief`);
         } catch (caught) {
             setError(
                 caught instanceof ApiError

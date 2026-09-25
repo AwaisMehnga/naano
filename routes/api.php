@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Company\AnalyticsController as CompanyAnalyticsController;
 use App\Http\Controllers\Api\Company\AudienceController as CompanyAudienceController;
 use App\Http\Controllers\Api\Company\CampaignAnalyticsController;
+use App\Http\Controllers\Api\Company\CampaignBriefChatController;
 use App\Http\Controllers\Api\Company\CampaignCollaborationController;
 use App\Http\Controllers\Api\Company\CampaignController;
 use App\Http\Controllers\Api\Company\CampaignLeadController;
@@ -84,6 +85,7 @@ Route::middleware('auth')->group(function () {
         Route::post('campaigns/{campaign}/reopen', [CampaignController::class, 'reopen'])->name('campaigns.reopen');
         Route::post('campaigns/{campaign}/complete', [CampaignController::class, 'complete'])->name('campaigns.complete');
         Route::post('campaigns/{campaign}/cancel', [CampaignController::class, 'cancel'])->name('campaigns.cancel');
+        Route::post('campaigns/{campaign}/brief/chat', [CampaignBriefChatController::class, 'store'])->name('campaigns.brief.chat');
         Route::get('campaigns/{campaign}/collaborations', [CampaignCollaborationController::class, 'index'])->name('campaigns.collaborations.index');
         Route::post('campaigns/{campaign}/invites', [CampaignCollaborationController::class, 'store'])->name('campaigns.invites.store');
         Route::post('campaigns/{campaign}/sourcing', [CampaignCollaborationController::class, 'source'])->name('campaigns.sourcing.store');

@@ -18,6 +18,7 @@ class CompanyAudienceService
                 'regions' => config('audience.regions'),
                 'seniority' => config('audience.seniority'),
                 'company_sizes' => config('audience.company_sizes'),
+                'tones' => config('audience.tones'),
             ],
         ];
     }

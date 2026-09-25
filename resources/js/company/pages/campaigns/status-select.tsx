@@ -1,4 +1,4 @@
-import { toast } from 'sonner';
+import { Badge } from '@/components/ui/badge';
 import {
     Select,
     SelectContent,
@@ -7,6 +7,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { ApiError } from '@/lib/api';
+import { toast } from 'sonner';
 import { useCampaigns } from './store';
 import {
     actionForStatusChange,
@@ -26,6 +27,14 @@ export default function CampaignStatusSelect({
     const saving = useCampaigns((state) => state.saving);
     const options = reachableStatuses(status);
 
+    if (status === 'completed') {
+        return (
+            <Badge variant="secondary" className="h-11 rounded-pill px-4">
+                {statusLabels.completed}
+            </Badge>
+        );
+    }
+
     async function change(next: string) {
         const action = actionForStatusChange(status, next as CampaignStatus);
 
@@ -35,7 +44,9 @@ export default function CampaignStatusSelect({
 
         try {
             await transition(campaignId, action);
-            toast.success(`Status set to ${statusLabels[next as CampaignStatus].toLowerCase()}`);
+            toast.success(
+                `Status set to ${statusLabels[next as CampaignStatus].toLowerCase()}`,
+            );
         } catch (caught) {
             toast.error(
                 caught instanceof ApiError
@@ -46,8 +57,12 @@ export default function CampaignStatusSelect({
     }
 
     return (
-        <Select value={status} onValueChange={(value) => void change(value)} disabled={saving}>
-            <SelectTrigger className="w-40" aria-label="Campaign status">
+        <Select
+            value={status}
+            onValueChange={(value) => void change(value)}
+            disabled={saving}
+        >
+            <SelectTrigger className="w-40 rounded-pill" aria-label="Campaign status">
                 <SelectValue />
             </SelectTrigger>
             <SelectContent>

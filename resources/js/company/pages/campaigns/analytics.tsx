@@ -29,8 +29,8 @@ export default function CompanyCampaignAnalyticsPage() {
     }
 
     return (
-        <div className="flex w-full flex-1 flex-col gap-6">
-            <div>
+        <div className="flex w-full flex-1 flex-col gap-8">
+            <div className="space-y-2">
                 <Button
                     type="button"
                     variant="ghost"
@@ -40,22 +40,19 @@ export default function CompanyCampaignAnalyticsPage() {
                     <ArrowLeft className="size-4" />
                     Campaign
                 </Button>
-                <h1 className="mt-3 text-2xl font-semibold tracking-tight">
-                    {campaign?.name ?? 'Analytics'}
+                <p className="text-sm text-muted-foreground">Analytics</p>
+                <h1 className="text-heading font-medium tracking-tight">
+                    {campaign?.name ?? 'Campaign'}
                 </h1>
-                <p className="mt-1 text-sm text-muted-foreground">
-                    Campaign clicks, leads, spend, and creator breakdown.
+                <p className="text-sm text-muted-foreground">
+                    Reach, clicks, spend, and who drove them.
                 </p>
             </div>
             <InputError message={error ?? undefined} />
             {loading && campaign === null ? (
                 <p className="text-sm text-muted-foreground">Loading…</p>
             ) : campaign ? (
-                <CampaignAnalytics
-                    campaignId={campaignId}
-                    leadsCount={campaign.leads_count}
-                    posts={campaign.posts}
-                />
+                <CampaignAnalytics campaignId={campaignId} />
             ) : null}
         </div>
     );
