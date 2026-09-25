@@ -2,6 +2,7 @@
 
 namespace App\Services\LinkedIn;
 
+use App\Enums\LinkedInPostsSyncStatus;
 use App\Jobs\SyncLinkedInPostsJob;
 use App\Models\CreatorAudienceProfile;
 use App\Models\CreatorProfile;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Throwable;
 
 class LinkedInSyncService
 {
@@ -140,18 +142,34 @@ class LinkedInSyncService
 
         $fresh = $profile->fresh() ?? $profile;
 
-        try {
-            $this->syncPosts($fresh);
-        } catch (\Throwable $e) {
-            Log::warning('LinkedIn posts sync failed during refresh', [
-                'creator_profile_id' => $fresh->id,
-                'message' => $e->getMessage(),
-            ]);
-
-            SyncLinkedInPostsJob::dispatch($fresh->id);
-        }
+        $this->syncPostsOrQueue($fresh);
 
         return app(LinkedInProfilePresenter::class)->present($fresh->fresh() ?? $fresh);
+    }
+
+    /**
+     * Queue or run a posts-only sync (no profile refresh cooldown).
+     *
+     * @return array<string, mixed>
+     */
+    public function syncPostsOnly(CreatorProfile $profile): array
+    {
+        if (! $profile->isLinkedInVerified()) {
+            throw ValidationException::withMessages([
+                'linkedin' => 'Verify your LinkedIn profile first.',
+            ]);
+        }
+
+        if (! is_string($profile->linkedin_url) || $profile->linkedin_url === '') {
+            throw ValidationException::withMessages([
+                'linkedin_url' => 'LinkedIn URL is missing.',
+            ]);
+        }
+
+        $this->markPostsSyncing($profile);
+        $this->syncPostsOrQueue($profile->fresh() ?? $profile);
+
+        return app(LinkedInProfilePresenter::class)->present($profile->fresh() ?? $profile);
     }
 
     public function syncPosts(CreatorProfile $profile): void
@@ -160,59 +178,114 @@ class LinkedInSyncService
             return;
         }
 
+        $this->markPostsSyncing($profile);
+
         set_time_limit(0);
 
-        $actor = (string) config('services.apify.posts_actor');
-        $maxPosts = max(1, (int) config('services.apify.max_posts', 50));
-        $scrapeComments = filter_var(config('services.apify.scrape_comments', true), FILTER_VALIDATE_BOOLEAN);
-        $maxComments = max(0, (int) config('services.apify.max_comments', 20));
+        try {
+            $actor = (string) config('services.apify.posts_actor');
+            $maxPosts = max(1, (int) config('services.apify.max_posts', 30));
+            $scrapeComments = filter_var(config('services.apify.scrape_comments', false), FILTER_VALIDATE_BOOLEAN);
+            $maxComments = max(0, (int) config('services.apify.max_comments', 5));
+            $maxReactions = max(0, (int) config('services.apify.max_reactions', 5));
+            $scrapeReactions = filter_var(config('services.apify.scrape_reactions', false), FILTER_VALIDATE_BOOLEAN);
 
-        $input = [
-            'targetUrls' => [$profile->linkedin_url],
-            'maxPosts' => $maxPosts,
-            'includeQuotePosts' => true,
-            'includeReposts' => false,
-        ];
+            $input = [
+                'targetUrls' => [$profile->linkedin_url],
+                'maxPosts' => $maxPosts,
+                'includeQuotePosts' => true,
+                'includeReposts' => true,
+                'scrapeComments' => $scrapeComments,
+                'scrapeReactions' => $scrapeReactions,
+                'maxComments' => $maxComments,
+                'maxReactions' => $maxReactions,
+                'postNestedComments' => false,
+                'postNestedReactions' => false,
+            ];
 
-        if ($scrapeComments && $maxComments > 0) {
-            $input['scrapeComments'] = true;
-            $input['maxComments'] = $maxComments;
-            $input['commentsPostedLimit'] = $maxComments;
+            $items = $this->apify->runActor($actor, $input);
+            $posts = $this->postsNormalizer->normalize($items, $maxPosts);
+            $engagers = $this->postsNormalizer->engagersSummary($posts);
+
+            $profile->refresh();
+            $profileData = is_array($profile->linkedin_profile) ? $profile->linkedin_profile : [];
+            $profileData['engagers'] = $engagers;
+            $profileData['captured_at'] = $profileData['captured_at'] ?? now()->toIso8601String();
+
+            $storedPosts = array_map(function (array $post): array {
+                unset($post['commenters']);
+
+                return $post;
+            }, $posts);
+
+            $profile->update([
+                'linkedin_posts' => $storedPosts,
+                'linkedin_profile' => $profileData,
+                'linkedin_synced_at' => now(),
+                'linkedin_posts_sync_status' => LinkedInPostsSyncStatus::Ready->value,
+            ]);
+
+            $mix = $this->audienceMix->fromEngagers($engagers);
+
+            if ($mix === [] && is_string($profileData['country_code'] ?? null) && $profileData['country_code'] !== '') {
+                $mix = ['geo' => [$profileData['country_code'] => 100]];
+            }
+
+            $this->syncAudienceSnapshot(
+                $profile->fresh() ?? $profile,
+                is_int($profileData['follower_count'] ?? null) ? $profileData['follower_count'] : null,
+                is_int($profileData['connections_count'] ?? null) ? $profileData['connections_count'] : null,
+                $mix !== [] ? $mix : null,
+            );
+        } catch (Throwable $e) {
+            $profile->update([
+                'linkedin_posts_sync_status' => LinkedInPostsSyncStatus::Failed->value,
+            ]);
+
+            throw $e;
         }
+    }
 
-        $items = $this->apify->runActor($actor, $input);
-        $posts = $this->postsNormalizer->normalize($items, $maxPosts);
-        $engagers = $this->postsNormalizer->engagersSummary($posts);
-
-        $profile->refresh();
-        $profileData = is_array($profile->linkedin_profile) ? $profile->linkedin_profile : [];
-        $profileData['engagers'] = $engagers;
-        $profileData['captured_at'] = $profileData['captured_at'] ?? now()->toIso8601String();
-
-        $storedPosts = array_map(function (array $post): array {
-            unset($post['commenters']);
-
-            return $post;
-        }, $posts);
-
+    public function markPostsSyncFailed(CreatorProfile $profile): void
+    {
         $profile->update([
-            'linkedin_posts' => $storedPosts,
-            'linkedin_profile' => $profileData,
-            'linkedin_synced_at' => now(),
+            'linkedin_posts_sync_status' => LinkedInPostsSyncStatus::Failed->value,
         ]);
+    }
 
-        $mix = $this->audienceMix->fromEngagers($engagers);
+    public function markPostsSyncing(CreatorProfile $profile): void
+    {
+        $profile->update([
+            'linkedin_posts_sync_status' => LinkedInPostsSyncStatus::Syncing->value,
+        ]);
+    }
 
-        if ($mix === [] && is_string($profileData['country_code'] ?? null) && $profileData['country_code'] !== '') {
-            $mix = ['geo' => [$profileData['country_code'] => 100]];
+    /**
+     * Run posts sync inline; on failure or empty result, queue a retry.
+     */
+    public function syncPostsOrQueue(CreatorProfile $profile): void
+    {
+        try {
+            $this->syncPosts($profile);
+        } catch (Throwable $e) {
+            Log::warning('LinkedIn posts sync failed', [
+                'creator_profile_id' => $profile->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            $this->markPostsSyncing($profile->fresh() ?? $profile);
+            SyncLinkedInPostsJob::dispatch($profile->id);
+
+            return;
         }
 
-        $this->syncAudienceSnapshot(
-            $profile->fresh() ?? $profile,
-            is_int($profileData['follower_count'] ?? null) ? $profileData['follower_count'] : null,
-            is_int($profileData['connections_count'] ?? null) ? $profileData['connections_count'] : null,
-            $mix !== [] ? $mix : null,
-        );
+        $fresh = $profile->fresh() ?? $profile;
+        $posts = is_array($fresh->linkedin_posts) ? $fresh->linkedin_posts : [];
+
+        if ($posts === []) {
+            $this->markPostsSyncing($fresh);
+            SyncLinkedInPostsJob::dispatch($fresh->id);
+        }
     }
 
     private function storeLinkedInPhoto(CreatorProfile $profile, ?string $pictureUrl): ?string
@@ -247,7 +320,7 @@ class LinkedInSyncService
             Storage::disk('public')->put($path, $body);
 
             return $path;
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }

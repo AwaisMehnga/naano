@@ -1,7 +1,10 @@
 <?php
 
 use App\Enums\PostStatus;
+use App\Models\NotificationPreference;
 use App\Models\User;
+use App\Notifications\CampaignUpdated;
+use Illuminate\Support\Facades\Notification;
 
 test('owners can approve a submitted post', function () {
     [$owner, $collaboration] = bookedDeal();
@@ -111,4 +114,50 @@ test('companies cannot review another workspace post', function () {
     $this->actingAs($other)
         ->getJson(route('api.company.posts.show', $post))
         ->assertNotFound();
+});
+
+test('submitting a post notifies the company in-app with a review deep link and no mail', function () {
+    Notification::fake();
+
+    [$owner, $collaboration, $creatorUser] = bookedDeal();
+    $post = $collaboration->posts()->first();
+    $post->update([
+        'body' => 'Ready for review.',
+        'status' => PostStatus::Draft,
+    ]);
+
+    NotificationPreference::factory()->create([
+        'user_id' => $owner->id,
+        'email_campaign_updates' => true,
+    ]);
+
+    $this->actingAs($creatorUser)
+        ->postJson(route('api.creator.posts.submit', $post))
+        ->assertOk()
+        ->assertJsonPath('data.status', 'in_review');
+
+    Notification::assertSentTo(
+        $owner,
+        CampaignUpdated::class,
+        function (CampaignUpdated $notification, array $channels) use ($post, $collaboration, $owner): bool {
+            $payload = $notification->toArray($owner);
+
+            return $channels === ['database']
+                && $notification->mailable === false
+                && $notification->postId === $post->id
+                && $payload['href'] === '/campaigns/'.$collaboration->campaign_id.'/posts/'.$post->id;
+        },
+    );
+});
+
+test('company post show includes the creator', function () {
+    [$owner, $collaboration] = bookedDeal();
+    $post = $collaboration->posts()->first();
+    $profile = $collaboration->creatorProfile;
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.posts.show', $post))
+        ->assertOk()
+        ->assertJsonPath('data.creator.id', $profile->id)
+        ->assertJsonPath('data.creator.display_name', $profile->display_name);
 });

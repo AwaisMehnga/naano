@@ -150,11 +150,11 @@ export default function CollaborationThread({
                                 <article
                                     key={message.clientId ?? message.id}
                                     className={cn(
-                                        'max-w-[80%] rounded-2xl px-3 py-2 text-sm',
+                                        'max-w-[80%] rounded-lg px-3 py-2 text-sm',
                                         stacked ? 'mt-0' : 'mt-2 first:mt-0',
                                         mine
-                                            ? 'bg-primary text-primary-foreground ml-auto rounded-br-md'
-                                            : 'bg-muted text-foreground mr-auto rounded-bl-md',
+                                            ? 'bg-primary text-primary-foreground ml-auto rounded-br-sm'
+                                            : 'bg-muted text-foreground mr-auto rounded-bl-sm',
                                     )}
                                 >
                                     {!mine && !stacked && (
@@ -197,7 +197,7 @@ export default function CollaborationThread({
                     className="border-border shrink-0 border-t p-3"
                     onSubmit={(event) => void send(event)}
                 >
-                    <div className="border-input focus-within:border-ring focus-within:ring-ring/50 flex items-end rounded-3xl border bg-card p-1 focus-within:ring-[3px]">
+                    <div className="border-input focus-within:border-ring focus-within:ring-ring/50 flex items-end rounded-xl border bg-card p-1 focus-within:ring-[3px]">
                         <textarea
                             value={body}
                             onChange={(event) => setBody(event.target.value)}
@@ -211,7 +211,7 @@ export default function CollaborationThread({
                             size="icon"
                             aria-label="Send"
                             disabled={body.trim() === ''}
-                            className="size-8 shrink-0 rounded-full"
+                            className="size-8 shrink-0 rounded-lg"
                         >
                             <Send className="size-3.5" />
                         </Button>

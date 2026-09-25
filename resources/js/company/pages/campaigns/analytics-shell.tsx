@@ -1,5 +1,8 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import { AppLink } from '@/components/app-link';
+import { LinkedInPostPreview } from '@/components/linkedin/linkedin-post-preview';
+import { postStatusBadgeVariant } from '@/components/linkedin/post-status';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -315,44 +318,40 @@ export default function CampaignAnalytics({
                         No posts on this campaign yet.
                     </p>
                 ) : (
-                    postRows.map((post) => (
-                        <article
-                            key={post.id}
-                            className="border-border rounded-xl border p-4"
-                        >
-                            <div className="flex items-center justify-between gap-3">
-                                <p className="font-medium">
-                                    {post.creator.display_name}
-                                </p>
-                                <Badge variant="outline">
-                                    {post.status.replace('_', ' ')}
-                                </Badge>
-                            </div>
-                            {post.body && (
-                                <p className="text-muted-foreground mt-2 text-sm whitespace-pre-wrap">
-                                    {post.body}
-                                </p>
-                            )}
-                            {post.metrics && (
-                                <p className="text-muted-foreground mt-2 text-sm">
-                                    {formatNumber(post.metrics.impressions)}{' '}
-                                    impressions ·{' '}
-                                    {formatNumber(post.metrics.unique_clicks)}{' '}
-                                    unique · CTR {pct(post.metrics.ctr)}
-                                </p>
-                            )}
-                            {post.published_url && (
-                                <a
-                                    href={post.published_url}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-primary mt-2 inline-block text-sm"
-                                >
-                                    View post
-                                </a>
-                            )}
-                        </article>
-                    ))
+                    <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+                        {postRows.map((post) => (
+                            <AppLink
+                                key={post.id}
+                                href={`/campaigns/${campaignId}/posts/${post.id}`}
+                                className="flex flex-col gap-3 transition-opacity hover:opacity-90"
+                            >
+                                <div className="flex items-center justify-between gap-2">
+                                    <p className="truncate text-xs font-medium text-muted-foreground">
+                                        {post.creator.display_name ?? 'Creator'}
+                                    </p>
+                                    <Badge
+                                        variant={postStatusBadgeVariant(
+                                            post.status,
+                                        )}
+                                    >
+                                        {post.status.replaceAll('_', ' ')}
+                                    </Badge>
+                                </div>
+                                <LinkedInPostPreview
+                                    author={{
+                                        name:
+                                            post.creator.display_name ??
+                                            'Creator',
+                                        avatarUrl: post.creator.photo_url,
+                                    }}
+                                    body={post.body ?? ''}
+                                    media={post.media ?? []}
+                                    publishedUrl={post.published_url}
+                                    variant="compact"
+                                />
+                            </AppLink>
+                        ))}
+                    </div>
                 )}
             </div>
             <div className="border-border bg-card grid gap-4 rounded-2xl border p-5">

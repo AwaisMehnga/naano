@@ -49,10 +49,14 @@ export type LinkedInEducation = {
     end: string | null;
 };
 
+export type LinkedInPostsStatus = 'idle' | 'syncing' | 'ready' | 'failed';
+
 export type LinkedInInsights = {
     verified: boolean;
     verified_at: string | null;
     synced_at: string | null;
+    posts_status: LinkedInPostsStatus;
+    posts_count: number;
     verify_code: string | null;
     linkedin_url: string | null;
     header: {

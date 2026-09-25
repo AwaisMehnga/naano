@@ -1,3 +1,5 @@
+import type { CampaignBrief } from '@/components/campaign-brief-dialog';
+
 export type OpportunityCompany = {
     id: number;
     name: string | null;
@@ -27,7 +29,7 @@ export type Opportunity = {
 };
 
 export type OpportunityDetail = Opportunity & {
-    brief: { context?: string; key_message?: string } | null;
+    brief: CampaignBrief | null;
     goal: string | null;
     key_messages: string[] | null;
     guidelines: string | null;

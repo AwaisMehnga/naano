@@ -19,6 +19,8 @@ class UpdateCreatorPostRequest extends FormRequest
     {
         return [
             'body' => ['required', 'string'],
+            'media_ids' => ['sometimes', 'array'],
+            'media_ids.*' => ['integer', 'exists:media,id'],
         ];
     }
 }

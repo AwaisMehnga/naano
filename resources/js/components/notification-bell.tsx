@@ -47,6 +47,33 @@ export function NotificationBell() {
         return () => window.removeEventListener('naano:user', sync);
     }, []);
 
+    useEffect(() => {
+        refresh();
+
+        const timer = window.setInterval(() => {
+            refresh();
+        }, 30000);
+
+        function onVisible(): void {
+            if (document.visibilityState === 'visible') {
+                refresh();
+            }
+        }
+
+        function onFocus(): void {
+            refresh();
+        }
+
+        document.addEventListener('visibilitychange', onVisible);
+        window.addEventListener('focus', onFocus);
+
+        return () => {
+            window.clearInterval(timer);
+            document.removeEventListener('visibilitychange', onVisible);
+            window.removeEventListener('focus', onFocus);
+        };
+    }, []);
+
     function refresh(): void {
         http.get<Inbox>(sharedApi.notifications)
             .then(({ data }) => {

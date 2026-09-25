@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { LinkedInInsightsPanel } from '@/components/linkedin/insights-panel';
 import type { LinkedInInsights } from '@/components/linkedin/types';
 import { SoftCard } from '@/components/ds/soft-card';
@@ -9,7 +9,10 @@ import { Spinner } from '@/components/ui/spinner';
 import { ApiError, creatorApi, http } from '@/lib/api';
 import { toast } from 'sonner';
 
-type BusyAction = 'start' | 'verify' | 'refresh' | null;
+type BusyAction = 'start' | 'verify' | 'refresh' | 'sync' | null;
+
+const POLL_MS = 5000;
+const POLL_MAX_MS = 120_000;
 
 export default function CreatorLinkedInPage() {
     const [insights, setInsights] = useState<LinkedInInsights | null>(null);
@@ -17,17 +20,22 @@ export default function CreatorLinkedInPage() {
     const [url, setUrl] = useState('');
     const [code, setCode] = useState<string | null>(null);
     const [busy, setBusy] = useState<BusyAction>(null);
+    const pollStartedAt = useRef<number | null>(null);
+
+    function applyInsights(data: LinkedInInsights) {
+        setInsights(data);
+        setError(null);
+        if (data.linkedin_url) {
+            setUrl(data.linkedin_url);
+        }
+        setCode(data.verify_code);
+    }
 
     function load() {
         return http
             .get<LinkedInInsights>(creatorApi.linkedinProfile)
             .then(({ data }) => {
-                setInsights(data);
-                setError(null);
-                if (data.linkedin_url) {
-                    setUrl(data.linkedin_url);
-                }
-                setCode(data.verify_code);
+                applyInsights(data);
             })
             .catch((caught: unknown) => {
                 setError(
@@ -41,6 +49,48 @@ export default function CreatorLinkedInPage() {
     useEffect(() => {
         void load();
     }, []);
+
+    useEffect(() => {
+        if (!insights?.verified) {
+            pollStartedAt.current = null;
+            return;
+        }
+
+        const shouldPoll =
+            insights.posts_status === 'syncing' ||
+            (insights.posts_count === 0 &&
+                insights.posts_status !== 'ready' &&
+                insights.posts_status !== 'failed');
+
+        if (!shouldPoll) {
+            pollStartedAt.current = null;
+            return;
+        }
+
+        if (pollStartedAt.current === null) {
+            pollStartedAt.current = Date.now();
+        }
+
+        const timer = window.setInterval(() => {
+            const started = pollStartedAt.current ?? Date.now();
+
+            if (Date.now() - started > POLL_MAX_MS) {
+                window.clearInterval(timer);
+                return;
+            }
+
+            void http
+                .get<LinkedInInsights>(creatorApi.linkedinProfile)
+                .then(({ data }) => applyInsights(data))
+                .catch(() => undefined);
+        }, POLL_MS);
+
+        return () => window.clearInterval(timer);
+    }, [
+        insights?.verified,
+        insights?.posts_status,
+        insights?.posts_count,
+    ]);
 
     async function startVerification() {
         setBusy('start');
@@ -71,12 +121,11 @@ export default function CreatorLinkedInPage() {
             const { data } = await http.post<LinkedInInsights>(
                 creatorApi.linkedinVerify,
             );
-            setInsights(data);
+            applyInsights(data);
             setCode(null);
             toast.success(
                 'LinkedIn verified. Posts and audience are syncing.',
             );
-            await load();
         } catch (caught) {
             toast.error(
                 caught instanceof ApiError
@@ -95,13 +144,34 @@ export default function CreatorLinkedInPage() {
             const { data } = await http.post<LinkedInInsights>(
                 creatorApi.linkedinRefresh,
             );
-            setInsights(data);
+            applyInsights(data);
             toast.success('LinkedIn posts and audience updated.');
         } catch (caught) {
             toast.error(
                 caught instanceof ApiError
                     ? caught.message
                     : 'Could not refresh LinkedIn.',
+            );
+        } finally {
+            setBusy(null);
+        }
+    }
+
+    async function syncPosts() {
+        setBusy('sync');
+        pollStartedAt.current = Date.now();
+
+        try {
+            const { data } = await http.post<LinkedInInsights>(
+                creatorApi.linkedinPostsSync,
+            );
+            applyInsights(data);
+            toast.success('Posts sync started.');
+        } catch (caught) {
+            toast.error(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not sync LinkedIn posts.',
             );
         } finally {
             setBusy(null);
@@ -163,7 +233,7 @@ export default function CreatorLinkedInPage() {
                             )}
                         </Button>
                         {code ? (
-                            <div className="rounded-xl bg-muted/50 p-4">
+                            <div className="rounded-2xl bg-muted p-5">
                                 <p className="text-sm text-muted-foreground">
                                     Add this code at the{' '}
                                     <span className="font-medium text-foreground">
@@ -178,7 +248,7 @@ export default function CreatorLinkedInPage() {
                                     Example: Your headline here {code}
                                 </p>
                                 {busy === 'verify' ? (
-                                    <div className="mt-4 flex items-start gap-3 rounded-xl border border-border bg-card p-3 text-sm">
+                                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-border bg-card p-4 text-sm">
                                         <Spinner className="mt-0.5 size-4 shrink-0" />
                                         <div className="space-y-1">
                                             <p className="font-medium">
@@ -228,25 +298,49 @@ export default function CreatorLinkedInPage() {
                         {insights.synced_at
                             ? new Date(insights.synced_at).toLocaleString()
                             : '—'}
+                        {insights.posts_count > 0
+                            ? ` · ${insights.posts_count} posts`
+                            : ''}
                     </p>
                 </div>
-                <Button
-                    type="button"
-                    variant="outline"
-                    disabled={busy !== null}
-                    onClick={() => void refresh()}
-                >
-                    {busy === 'refresh' ? (
-                        <>
-                            <Spinner />
-                            Refreshing…
-                        </>
-                    ) : (
-                        'Refresh data'
-                    )}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy !== null}
+                        onClick={() => void syncPosts()}
+                    >
+                        {busy === 'sync' ? (
+                            <>
+                                <Spinner />
+                                Syncing posts…
+                            </>
+                        ) : (
+                            'Sync posts'
+                        )}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        disabled={busy !== null}
+                        onClick={() => void refresh()}
+                    >
+                        {busy === 'refresh' ? (
+                            <>
+                                <Spinner />
+                                Refreshing…
+                            </>
+                        ) : (
+                            'Refresh profile'
+                        )}
+                    </Button>
+                </div>
             </div>
-            <LinkedInInsightsPanel insights={insights} />
+            <LinkedInInsightsPanel
+                insights={insights}
+                syncing={busy === 'sync' || insights.posts_status === 'syncing'}
+                onRetrySync={() => void syncPosts()}
+            />
         </div>
     );
 }

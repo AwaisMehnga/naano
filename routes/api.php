@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\Creator\ConnectController;
 use App\Http\Controllers\Api\Creator\CreatorAccountController;
 use App\Http\Controllers\Api\Creator\CreatorWalletController;
 use App\Http\Controllers\Api\Creator\LinkedInController as CreatorLinkedInController;
+use App\Http\Controllers\Api\Creator\MediaController as CreatorMediaController;
 use App\Http\Controllers\Api\Creator\NicheController as CreatorNicheController;
 use App\Http\Controllers\Api\Creator\OpportunityController;
 use App\Http\Controllers\Api\Creator\PayoutController;
@@ -132,6 +133,9 @@ Route::middleware('auth')->group(function () {
         Route::post('linkedin/refresh', [CreatorLinkedInController::class, 'refresh'])
             ->middleware('throttle:3,60')
             ->name('linkedin.refresh');
+        Route::post('linkedin/posts/sync', [CreatorLinkedInController::class, 'syncPosts'])
+            ->middleware('throttle:12,1')
+            ->name('linkedin.posts.sync');
         Route::get('linkedin/profile', [CreatorLinkedInController::class, 'profile'])
             ->name('linkedin.profile');
         Route::apiSingleton('niches', CreatorNicheController::class)->only(['update']);
@@ -157,6 +161,8 @@ Route::middleware('auth')->group(function () {
         Route::post('collaborations/{collaboration}/messages', [CreatorCollaborationMessageController::class, 'store'])->name('collaborations.messages.store');
         Route::post('collaborations/{collaboration}/messages/read', [CreatorCollaborationMessageController::class, 'read'])->name('collaborations.messages.read');
         Route::get('collaborations/{collaboration}/contract', [CreatorCollaborationController::class, 'contract'])->name('collaborations.contract');
+        Route::post('media', [CreatorMediaController::class, 'store'])->name('media.store');
+        Route::delete('media/{media}', [CreatorMediaController::class, 'destroy'])->name('media.destroy');
         Route::get('collaborations/{collaboration}/posts', [CreatorPostController::class, 'index'])->name('collaborations.posts.index');
         Route::post('collaborations/{collaboration}/posts', [CreatorPostController::class, 'store'])->name('collaborations.posts.store');
         Route::patch('posts/{post}', [CreatorPostController::class, 'update'])->name('posts.update');

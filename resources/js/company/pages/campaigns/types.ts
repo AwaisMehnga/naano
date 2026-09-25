@@ -97,6 +97,14 @@ export type CampaignPost = {
     body: string | null;
     published_url: string | null;
     submitted_at: string | null;
+    media?: {
+        id: number;
+        kind: 'image' | 'video';
+        mime_type: string;
+        size_bytes: number;
+        original_name: string | null;
+        url: string | null;
+    }[];
     creator: {
         id: number;
         display_name: string | null;

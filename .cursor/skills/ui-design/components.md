@@ -18,7 +18,9 @@ Prefer shared components. Do not paste their class strings into pages.
 | `SpendLineChart` | SoftCard line chart; `sideStats` are **horizontal** value+label pills |
 | `RevenueAreaChart` | SoftCard dual-series area |
 | `GlassPanel` | Frosted panel on lime-soft / media (border, no shadow) |
-| `CampaignOpportunityCard` | Soft-canvas media card: image hero + lime badge, company logo + website, 3 stats, outline + accent CTAs |
+| `LinkedInPostPreview` | LinkedIn-style feed card for draft/live post preview |
+| `LinkedInPostBuilder` | Compose + live preview; reusable creator/company |
+| `LinkedInPostBuilderDialog` | Dialog wrapper with Save / Submit for post drafting |
 | `NotchedCard` | Soft-canvas opportunity/deal card (`rounded-3xl bg-muted`). Neutral only — never accent-filled. Use chips for metadata. |
 | `InfoChip` | Outline pill for country / match / status on cards |
 | `SearchPill` | Pill search + circular primary search button |

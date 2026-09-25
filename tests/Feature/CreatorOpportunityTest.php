@@ -386,6 +386,61 @@ test('a creator cannot see another creators deal', function () {
         ->assertNotFound();
 });
 
+test('creators see the full campaign brief on a deal', function () {
+    $owner = User::factory()->company()->onboarded()->create();
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'brief' => [
+            'context' => 'Show the work before the call.',
+            'product' => 'Naano hiring workspace',
+            'differentiators' => ['Real repos', 'Case studies'],
+            'target' => 'Engineering managers in EU',
+            'pains' => ['Hard to verify skill from a CV'],
+            'trigger' => 'A team is hiring for a senior engineer',
+            'key_message' => 'See the work before you take the call.',
+            'audience' => [
+                'industries' => 'Developer Tools',
+                'geographies' => 'EU',
+                'tone' => 'Direct and concrete',
+            ],
+            'editorial' => [
+                'do' => ['Use concrete stack language'],
+                'avoid' => ['Invent testimonials'],
+            ],
+            'references' => [
+                [
+                    'quote' => 'Most portfolios show projects, not thinking.',
+                    'structure' => 'observation → proof → invite',
+                ],
+            ],
+            'angles' => [
+                [
+                    'title' => 'Technical proof over claims',
+                    'hook' => 'Anyone can say they are great. Not everyone can show receipts.',
+                    'format' => 'Thought leadership',
+                    'example' => 'Example post body.',
+                ],
+            ],
+        ],
+    ]);
+    $creator = marketplaceCreator();
+    $collaboration = Collaboration::factory()->create([
+        'campaign_id' => $campaign->id,
+        'creator_profile_id' => $creator->id,
+        'status' => CollaborationStatus::Booked,
+    ]);
+
+    $this->actingAs($creator->user)
+        ->getJson(route('api.creator.collaborations.show', $collaboration))
+        ->assertOk()
+        ->assertJsonPath('data.brief.key_message', 'See the work before you take the call.')
+        ->assertJsonPath('data.brief.product', 'Naano hiring workspace')
+        ->assertJsonPath('data.brief.audience.tone', 'Direct and concrete')
+        ->assertJsonPath('data.brief.editorial.do.0', 'Use concrete stack language')
+        ->assertJsonPath('data.brief.angles.0.hook', 'Anyone can say they are great. Not everyone can show receipts.');
+});
+
 test('creators can search deals by campaign name', function () {
     $owner = User::factory()->company()->onboarded()->create();
     $creator = marketplaceCreator();

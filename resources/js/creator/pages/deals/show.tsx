@@ -1,17 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, BookOpen, Copy, FileText, MessageSquare } from 'lucide-react';
 import { toast } from 'sonner';
-import { AppLink } from '@/components/app-link';
-import CollaborationChatSheet from '@/components/collaboration-chat-sheet';
+import {
+    CampaignBriefDialog,
+    type CampaignBrief,
+} from '@/components/campaign-brief-dialog';
+import CollaborationThread from '@/components/collaboration-thread';
+import ContractDocumentView from '@/components/contract-document';
+import { InfoChip } from '@/components/info-chip';
 import InputError from '@/components/input-error';
+import { LinkedInPostBuilderDialog } from '@/components/linkedin/linkedin-post-builder-dialog';
+import { LinkedInPostPreview } from '@/components/linkedin/linkedin-post-preview';
+import { postStatusBadgeVariant } from '@/components/linkedin/post-status';
+import type { MediaItem, PostReviewItem } from '@/components/media/types';
+import { IconButton, MetricStat, SoftCard } from '@/components/ds';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { euros } from '@/company/pages/creators/format';
 import { ApiError, creatorApi, http } from '@/lib/api';
+import type { ContractDocument } from '@/lib/contract';
+import { cn } from '@/lib/utils';
 
 type TrackingLink = {
     id: number;
@@ -26,6 +44,8 @@ type CreatorPost = {
     scheduled_at: string | null;
     published_url: string | null;
     tracking_links: TrackingLink[];
+    media?: MediaItem[];
+    reviews?: PostReviewItem[];
 };
 
 type DealDetail = {
@@ -35,7 +55,9 @@ type DealDetail = {
     booked_posts_count: number | null;
     campaign: { id: number; name: string };
     company: { name: string | null };
-    brief: { context?: string; key_message?: string } | null;
+    brief: CampaignBrief | null;
+    goal: string | null;
+    key_messages: string[] | null;
     guidelines: string | null;
 };
 
@@ -64,7 +86,20 @@ export default function CreatorDealShowPage() {
     const [scheduledAt, setScheduledAt] = useState<Record<number, string>>({});
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
-    const [threadOpen, setThreadOpen] = useState(false);
+    const [messagesOpen, setMessagesOpen] = useState(false);
+    const [briefOpen, setBriefOpen] = useState(false);
+    const [builderPostId, setBuilderPostId] = useState<number | null>(null);
+    const [contractOpen, setContractOpen] = useState(false);
+    const [contract, setContract] = useState<ContractDocument | null>(null);
+    const [contractError, setContractError] = useState<string | null>(null);
+    const [contractLoading, setContractLoading] = useState(false);
+    const [draftMedia, setDraftMedia] = useState<MediaItem[]>([]);
+
+    const author = {
+        name: window.Naano?.user?.name ?? 'You',
+        headline: 'Creator',
+        avatarUrl: window.Naano?.user?.avatar ?? null,
+    };
 
     async function act(action: 'accept' | 'decline') {
         setBusy(true);
@@ -80,8 +115,8 @@ export default function CreatorDealShowPage() {
                 action === 'accept'
                     ? 'Invite accepted'
                     : deal?.status === 'applied'
-                        ? 'Application withdrawn'
-                        : 'Invite declined',
+                      ? 'Application withdrawn'
+                      : 'Invite declined',
             );
             await load();
         } catch (caught) {
@@ -100,9 +135,7 @@ export default function CreatorDealShowPage() {
             await Promise.all([
                 http.get<DealDetail>(creatorApi.collaboration(dealId)),
                 http.get<CreatorPost[]>(creatorApi.collaborationPosts(dealId)),
-                http.get<DealMetrics>(
-                    creatorApi.collaborationMetrics(dealId),
-                ),
+                http.get<DealMetrics>(creatorApi.collaborationMetrics(dealId)),
             ]);
         setDeal(nextDeal);
         setMetrics(nextMetrics);
@@ -157,6 +190,7 @@ export default function CreatorDealShowPage() {
         try {
             await http.patch(creatorApi.post(post.id), {
                 body: bodies[post.id] ?? '',
+                media_ids: draftMedia.map((item) => item.id),
             });
             toast.success('Draft saved');
             await load();
@@ -171,29 +205,36 @@ export default function CreatorDealShowPage() {
         }
     }
 
-    async function submit(post: CreatorPost) {
+    async function submit(post: CreatorPost): Promise<boolean> {
         setBusy(true);
         setError(null);
 
         try {
             if (
                 ['draft', 'changes_requested'].includes(post.status) &&
-                bodies[post.id] !== post.body
+                (bodies[post.id] !== post.body ||
+                    JSON.stringify(draftMedia.map((item) => item.id)) !==
+                        JSON.stringify((post.media ?? []).map((item) => item.id)))
             ) {
                 await http.patch(creatorApi.post(post.id), {
                     body: bodies[post.id] ?? '',
+                    media_ids: draftMedia.map((item) => item.id),
                 });
             }
 
             await http.post(creatorApi.postSubmit(post.id));
             toast.success('Submitted for review');
             await load();
+
+            return true;
         } catch (caught) {
             setError(
                 caught instanceof ApiError
                     ? caught.message
                     : 'Could not submit this post.',
             );
+
+            return false;
         } finally {
             setBusy(false);
         }
@@ -246,8 +287,16 @@ export default function CreatorDealShowPage() {
         setError(null);
 
         try {
-            await http.post(creatorApi.collaborationPosts(dealId));
+            const { data } = await http.post<CreatorPost>(
+                creatorApi.collaborationPosts(dealId),
+            );
             await load();
+            setBodies((current) => ({
+                ...current,
+                [data.id]: data.body ?? '',
+            }));
+            setDraftMedia(data.media ?? []);
+            setBuilderPostId(data.id);
         } catch (caught) {
             setError(
                 caught instanceof ApiError
@@ -259,317 +308,548 @@ export default function CreatorDealShowPage() {
         }
     }
 
+    async function openContract() {
+        setContractOpen(true);
+        setContractLoading(true);
+        setContractError(null);
+
+        try {
+            const { data } = await http.get<ContractDocument>(
+                creatorApi.collaborationContract(dealId),
+            );
+            setContract(data);
+        } catch (caught) {
+            setContractError(
+                caught instanceof ApiError
+                    ? caught.message
+                    : 'Could not load the contract.',
+            );
+            setContract(null);
+        } finally {
+            setContractLoading(false);
+        }
+    }
+
+    const builderPost =
+        builderPostId === null
+            ? null
+            : (posts.find((post) => post.id === builderPostId) ?? null);
+    const canEditBuilder =
+        builderPost !== null &&
+        ['draft', 'changes_requested'].includes(builderPost.status);
+
     return (
         <div className="flex w-full flex-1 flex-col gap-6">
-            <Button
-                type="button"
-                variant="ghost"
-                className="w-fit px-0"
-                onClick={() => void navigate('/deals')}
-            >
-                <ArrowLeft className="size-4" />
-                Deals
-            </Button>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+                <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-fit rounded-pill px-3"
+                    onClick={() => void navigate('/deals')}
+                >
+                    <ArrowLeft className="size-4" />
+                    Deals
+                </Button>
+
+                {deal ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="rounded-pill lg:hidden"
+                        onClick={() => setMessagesOpen((open) => !open)}
+                    >
+                        <MessageSquare className="size-4" />
+                        {messagesOpen ? 'Hide messages' : 'Messages'}
+                    </Button>
+                ) : null}
+            </div>
+
             <InputError message={error ?? undefined} />
-            {deal && (
-                <>
-                    <div className="flex flex-wrap items-end justify-between gap-3">
-                        <div>
-                            <h1 className="text-2xl font-semibold tracking-tight">
-                                {deal.campaign.name}
-                            </h1>
-                            <p className="text-muted-foreground mt-1 text-sm">
-                                {deal.company.name} · {deal.status}
-                                {deal.booked_price_cents
-                                    ? ` · ${euros(deal.booked_price_cents)}`
-                                    : ''}
-                            </p>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {deal.status === 'invited' && (
-                                <>
+
+            {!deal && !error ? (
+                <p className="text-sm text-muted-foreground">Loading deal…</p>
+            ) : null}
+
+            {deal ? (
+                <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+                    <div className="flex min-w-0 flex-1 flex-col gap-6">
+                        <header className="flex flex-wrap items-start justify-between gap-5">
+                            <div className="min-w-0 space-y-3">
+                                <h1 className="text-heading font-medium tracking-tight text-balance">
+                                    {deal.campaign.name}
+                                </h1>
+                                <div className="flex flex-wrap items-center gap-2">
+                                    <InfoChip>
+                                        {deal.company.name ?? 'Company'}
+                                    </InfoChip>
+                                    <InfoChip>
+                                        {titleCase(deal.status)}
+                                    </InfoChip>
+                                    {deal.booked_price_cents != null ? (
+                                        <InfoChip>
+                                            {euros(deal.booked_price_cents)}
+                                        </InfoChip>
+                                    ) : null}
+                                    {deal.booked_posts_count != null ? (
+                                        <InfoChip>
+                                            {deal.booked_posts_count}{' '}
+                                            {deal.booked_posts_count === 1
+                                                ? 'post'
+                                                : 'posts'}
+                                        </InfoChip>
+                                    ) : null}
+                                </div>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    className="rounded-pill"
+                                    onClick={() => setBriefOpen(true)}
+                                >
+                                    <BookOpen className="size-4" />
+                                    Brief
+                                </Button>
+                                {deal.status === 'invited' ? (
+                                    <>
+                                        <Button
+                                            type="button"
+                                            variant="accent"
+                                            className="rounded-pill"
+                                            disabled={busy}
+                                            onClick={() => void act('accept')}
+                                        >
+                                            Accept
+                                        </Button>
+                                        <Button
+                                            type="button"
+                                            variant="outline"
+                                            className="rounded-pill"
+                                            disabled={busy}
+                                            onClick={() => void act('decline')}
+                                        >
+                                            Decline
+                                        </Button>
+                                    </>
+                                ) : null}
+                                {deal.status === 'applied' ? (
                                     <Button
                                         type="button"
-                                        disabled={busy}
-                                        onClick={() => void act('accept')}
-                                    >
-                                        Accept
-                                    </Button>
-                                    <Button
-                                        type="button"
-                                        variant="ghost"
+                                        variant="outline"
+                                        className="rounded-pill"
                                         disabled={busy}
                                         onClick={() => void act('decline')}
                                     >
-                                        Decline
+                                        Withdraw
                                     </Button>
-                                </>
-                            )}
-                            {deal.status === 'applied' && (
-                                <Button
-                                    type="button"
-                                    variant="ghost"
-                                    disabled={busy}
-                                    onClick={() => void act('decline')}
-                                >
-                                    Withdraw
-                                </Button>
-                            )}
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setThreadOpen(true)}
-                            >
-                                Message
-                            </Button>
-                        </div>
-                    </div>
-                    {deal.status === 'booked' && (
-                        <Button type="button" variant="outline" asChild>
-                            <AppLink href={`/collaborations/${deal.id}/contract`}>
-                                Contract
-                            </AppLink>
-                        </Button>
-                    )}
-                    {metrics && (
-                        <section className="grid gap-4 md:grid-cols-3">
-                            <div className="border-border bg-card rounded-2xl border p-5">
-                                <p className="text-muted-foreground text-sm">
-                                    Impressions
-                                </p>
-                                <p className="mt-2 text-2xl font-semibold">
-                                    {formatNumber(metrics.impressions)}
-                                </p>
+                                ) : null}
+                                {deal.status === 'booked' ? (
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        className="rounded-pill"
+                                        onClick={() => void openContract()}
+                                    >
+                                        <FileText className="size-4" />
+                                        Contract
+                                    </Button>
+                                ) : null}
                             </div>
-                            <div className="border-border bg-card rounded-2xl border p-5">
-                                <p className="text-muted-foreground text-sm">
-                                    Unique clicks
-                                </p>
-                                <p className="mt-2 text-2xl font-semibold">
-                                    {formatNumber(metrics.unique_clicks)}
-                                </p>
-                                <p className="text-muted-foreground mt-1 text-sm">
-                                    {formatNumber(metrics.clicks)} total · CTR{' '}
-                                    {pct(metrics.ctr)}
-                                </p>
-                            </div>
-                            <div className="border-border bg-card rounded-2xl border p-5">
-                                <p className="text-muted-foreground text-sm">
-                                    Qualified
-                                </p>
-                                <p className="mt-2 text-2xl font-semibold">
-                                    {formatNumber(metrics.qualified_clicks)}
-                                </p>
-                                <p className="text-muted-foreground mt-1 text-sm">
-                                    {formatNumber(metrics.leads_count)} leads
-                                </p>
-                            </div>
-                        </section>
-                    )}
-                    {(deal.brief?.context || deal.guidelines) && (
-                        <section className="border-border bg-card grid gap-3 rounded-2xl border p-5">
-                            <h2 className="font-medium">Brief</h2>
-                            {deal.brief?.key_message && (
-                                <p className="text-sm">{deal.brief.key_message}</p>
-                            )}
-                            {deal.brief?.context && (
-                                <p className="text-muted-foreground whitespace-pre-wrap text-sm">
-                                    {deal.brief.context}
-                                </p>
-                            )}
-                            {deal.guidelines && (
-                                <p className="text-muted-foreground whitespace-pre-wrap text-sm">
-                                    {deal.guidelines}
-                                </p>
-                            )}
-                        </section>
-                    )}
-                    {hireLink && (
-                        <section className="border-border bg-card grid gap-3 rounded-2xl border p-5">
-                            <h2 className="font-medium">LinkedIn CTA</h2>
-                            <p className="text-muted-foreground text-sm">
-                                Paste this unique link in the post CTA. Do not
-                                send visitors to the company website directly.
-                            </p>
-                            <div className="flex flex-wrap items-center justify-between gap-2">
-                                <p className="font-mono text-sm break-all">
-                                    {hireLink}
-                                </p>
-                                <Button
-                                    type="button"
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => void copy(hireLink)}
-                                >
-                                    Copy
-                                </Button>
-                            </div>
-                        </section>
-                    )}
-                    <div className="flex items-center justify-between gap-3">
-                        <h2 className="text-lg font-semibold">Posts</h2>
-                        {canCreate && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={busy}
-                                onClick={() => void createDraft()}
-                            >
-                                New draft
-                            </Button>
-                        )}
-                    </div>
-                    {posts.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">
-                            No drafts yet.
-                        </p>
-                    ) : (
-                        posts.map((post) => (
-                            <article
-                                key={post.id}
-                                className="border-border grid gap-4 rounded-2xl border p-5"
-                            >
-                                <div className="flex items-center justify-between gap-3">
-                                    <h3 className="font-medium">Post</h3>
-                                    <Badge variant="outline">
-                                        {post.status.replaceAll('_', ' ')}
-                                    </Badge>
+                        </header>
+
+                        {metrics ? (
+                            <section className="grid gap-5 sm:grid-cols-3">
+                                <SoftCard>
+                                    <MetricStat
+                                        value={formatNumber(
+                                            metrics.impressions,
+                                        )}
+                                        label="Impressions"
+                                    />
+                                </SoftCard>
+                                <SoftCard>
+                                    <MetricStat
+                                        value={formatNumber(
+                                            metrics.unique_clicks,
+                                        )}
+                                        label="Unique clicks"
+                                        hint={`${formatNumber(metrics.clicks)} total · CTR ${pct(metrics.ctr)}`}
+                                    />
+                                </SoftCard>
+                                <SoftCard>
+                                    <MetricStat
+                                        value={formatNumber(
+                                            metrics.qualified_clicks,
+                                        )}
+                                        label="Qualified"
+                                        hint={`${formatNumber(metrics.leads_count)} leads`}
+                                    />
+                                </SoftCard>
+                            </section>
+                        ) : null}
+
+                        {hireLink ? (
+                            <SoftCard title="LinkedIn CTA">
+                                <div className="space-y-4">
+                                    <p className="text-sm text-muted-foreground">
+                                        Paste this unique link in the post CTA.
+                                        Do not send visitors to the company
+                                        website directly.
+                                    </p>
+                                    <div className="flex flex-wrap items-center gap-3 rounded-2xl border border-border bg-muted px-4 py-3">
+                                        <p className="min-w-0 flex-1 font-mono text-sm break-all">
+                                            {hireLink}
+                                        </p>
+                                        <IconButton
+                                            type="button"
+                                            variant="outline"
+                                            size="sm"
+                                            aria-label="Copy CTA link"
+                                            onClick={() => void copy(hireLink)}
+                                        >
+                                            <Copy className="size-4" />
+                                        </IconButton>
+                                    </div>
                                 </div>
-                                {post.review_note && (
-                                    <p className="text-muted-foreground text-sm">
-                                        Reviewer: {post.review_note}
+                            </SoftCard>
+                        ) : null}
+
+                        <section className="space-y-5">
+                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                <div>
+                                    <h2 className="text-title font-medium tracking-tight">
+                                        Posts
+                                    </h2>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        Draft, submit, and publish deliverables
+                                        for this deal.
                                     </p>
-                                )}
-                                {['draft', 'changes_requested'].includes(
-                                    post.status,
-                                ) ? (
-                                    <>
-                                        <Textarea
-                                            value={bodies[post.id] ?? ''}
-                                            onChange={(event) =>
-                                                setBodies((current) => ({
-                                                    ...current,
-                                                    [post.id]: event.target.value,
-                                                }))
-                                            }
-                                        />
-                                        <div className="flex flex-wrap gap-2">
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                disabled={busy}
-                                                onClick={() => void save(post)}
-                                            >
-                                                Save
-                                            </Button>
-                                            <Button
-                                                type="button"
-                                                disabled={busy}
-                                                onClick={() => void submit(post)}
-                                            >
-                                                Submit
-                                            </Button>
-                                        </div>
-                                    </>
-                                ) : (
-                                    <p className="whitespace-pre-wrap text-sm">
-                                        {post.body}
+                                </div>
+                                {canCreate ? (
+                                    <Button
+                                        type="button"
+                                        variant="accent"
+                                        className="rounded-pill"
+                                        disabled={busy}
+                                        onClick={() => void createDraft()}
+                                    >
+                                        Write post
+                                    </Button>
+                                ) : null}
+                            </div>
+
+                            {posts.length === 0 ? (
+                                <SoftCard>
+                                    <p className="text-sm text-muted-foreground">
+                                        No drafts yet.
+                                        {canCreate
+                                            ? ' Write a post to get started.'
+                                            : ''}
                                     </p>
-                                )}
-                                {['approved', 'scheduled'].includes(
-                                    post.status,
-                                ) && (
-                                    <div className="grid gap-4">
-                                        {post.status === 'approved' && (
-                                            <div className="grid gap-2">
-                                                <Label
-                                                    htmlFor={`schedule-${post.id}`}
+                                </SoftCard>
+                            ) : (
+                                <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
+                                    {posts.map((post, index) => {
+                                        const publishable = [
+                                            'approved',
+                                            'scheduled',
+                                        ].includes(post.status);
+
+                                        return (
+                                            <div
+                                                key={post.id}
+                                                className="flex flex-col gap-3"
+                                            >
+                                                <button
+                                                    type="button"
+                                                    className="w-full rounded-2xl text-left transition-opacity hover:opacity-90"
+                                                    onClick={() => {
+                                                        setDraftMedia(
+                                                            post.media ?? [],
+                                                        );
+                                                        setBuilderPostId(
+                                                            post.id,
+                                                        );
+                                                    }}
                                                 >
-                                                    Schedule
-                                                </Label>
-                                                <div className="flex flex-wrap gap-2">
-                                                    <Input
-                                                        id={`schedule-${post.id}`}
-                                                        type="datetime-local"
-                                                        value={
-                                                            scheduledAt[post.id] ??
+                                                    <div className="mb-3 flex items-center justify-between gap-2">
+                                                        <p className="text-xs font-medium text-muted-foreground">
+                                                            Post {index + 1}
+                                                        </p>
+                                                        <Badge
+                                                            variant={postStatusBadgeVariant(
+                                                                post.status,
+                                                            )}
+                                                        >
+                                                            {titleCase(
+                                                                post.status,
+                                                            )}
+                                                        </Badge>
+                                                    </div>
+                                                    <LinkedInPostPreview
+                                                        author={author}
+                                                        body={
+                                                            bodies[post.id] ||
+                                                            post.body ||
                                                             ''
                                                         }
-                                                        onChange={(event) =>
-                                                            setScheduledAt(
-                                                                (current) => ({
-                                                                    ...current,
-                                                                    [post.id]:
-                                                                        event
-                                                                            .target
-                                                                            .value,
-                                                                }),
-                                                            )
+                                                        media={post.media ?? []}
+                                                        publishedUrl={
+                                                            post.published_url
                                                         }
+                                                        variant="compact"
                                                     />
-                                                    <Button
-                                                        type="button"
-                                                        variant="outline"
-                                                        disabled={
-                                                            busy ||
-                                                            !scheduledAt[post.id]
-                                                        }
-                                                        onClick={() =>
-                                                            void schedule(post)
-                                                        }
-                                                    >
-                                                        Schedule
-                                                    </Button>
-                                                </div>
+                                                </button>
+
+                                                {publishable ? (
+                                                    <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+                                                        {post.status ===
+                                                        'approved' ? (
+                                                            <div className="space-y-2">
+                                                                <Label
+                                                                    htmlFor={`schedule-${post.id}`}
+                                                                >
+                                                                    Schedule
+                                                                </Label>
+                                                                <Input
+                                                                    id={`schedule-${post.id}`}
+                                                                    type="datetime-local"
+                                                                    className="rounded-sm"
+                                                                    value={
+                                                                        scheduledAt[
+                                                                            post
+                                                                                .id
+                                                                        ] ?? ''
+                                                                    }
+                                                                    onChange={(
+                                                                        event,
+                                                                    ) =>
+                                                                        setScheduledAt(
+                                                                            (
+                                                                                current,
+                                                                            ) => ({
+                                                                                ...current,
+                                                                                [post.id]:
+                                                                                    event
+                                                                                        .target
+                                                                                        .value,
+                                                                            }),
+                                                                        )
+                                                                    }
+                                                                />
+                                                                <Button
+                                                                    type="button"
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    className="rounded-pill"
+                                                                    disabled={
+                                                                        busy ||
+                                                                        !scheduledAt[
+                                                                            post
+                                                                                .id
+                                                                        ]
+                                                                    }
+                                                                    onClick={() =>
+                                                                        void schedule(
+                                                                            post,
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    Schedule
+                                                                </Button>
+                                                            </div>
+                                                        ) : null}
+                                                        <div className="space-y-2">
+                                                            <Label
+                                                                htmlFor={`live-${post.id}`}
+                                                            >
+                                                                Live URL
+                                                            </Label>
+                                                            <Input
+                                                                id={`live-${post.id}`}
+                                                                className="rounded-sm"
+                                                                value={
+                                                                    publishedUrl[
+                                                                        post.id
+                                                                    ] ?? ''
+                                                                }
+                                                                onChange={(
+                                                                    event,
+                                                                ) =>
+                                                                    setPublishedUrl(
+                                                                        (
+                                                                            current,
+                                                                        ) => ({
+                                                                            ...current,
+                                                                            [post.id]:
+                                                                                event
+                                                                                    .target
+                                                                                    .value,
+                                                                        }),
+                                                                    )
+                                                                }
+                                                                placeholder="https://linkedin.com/posts/…"
+                                                            />
+                                                            <Button
+                                                                type="button"
+                                                                variant="accent"
+                                                                size="sm"
+                                                                className="rounded-pill"
+                                                                disabled={
+                                                                    busy ||
+                                                                    (publishedUrl[
+                                                                        post.id
+                                                                    ] ??
+                                                                        '') ===
+                                                                        ''
+                                                                }
+                                                                onClick={() =>
+                                                                    void publish(
+                                                                        post,
+                                                                    )
+                                                                }
+                                                            >
+                                                                Publish
+                                                            </Button>
+                                                        </div>
+                                                    </div>
+                                                ) : null}
                                             </div>
-                                        )}
-                                        <div className="grid gap-2">
-                                            <Label htmlFor={`live-${post.id}`}>
-                                                Live LinkedIn URL
-                                            </Label>
-                                            <Input
-                                                id={`live-${post.id}`}
-                                                value={
-                                                    publishedUrl[post.id] ?? ''
-                                                }
-                                                onChange={(event) =>
-                                                    setPublishedUrl(
-                                                        (current) => ({
-                                                            ...current,
-                                                            [post.id]:
-                                                                event.target
-                                                                    .value,
-                                                        }),
-                                                    )
-                                                }
-                                            />
-                                            <Button
-                                                type="button"
-                                                disabled={
-                                                    busy ||
-                                                    (publishedUrl[post.id] ??
-                                                        '') === ''
-                                                }
-                                                onClick={() => void publish(post)}
-                                            >
-                                                Publish
-                                            </Button>
-                                        </div>
-                                    </div>
-                                )}
-                            </article>
-                        ))
-                    )}
-                    <CollaborationChatSheet
-                        open={threadOpen}
-                        onOpenChange={setThreadOpen}
-                        collaborationId={deal.id}
-                        title={deal.company.name ?? 'Messages'}
-                        side="creator"
-                        canSend={deal.status !== 'cancelled'}
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </section>
+                    </div>
+
+                    <aside
+                        className={cn(
+                            'w-full shrink-0 lg:sticky lg:top-4 lg:block lg:w-88 lg:self-start',
+                            messagesOpen ? 'block' : 'hidden',
+                        )}
+                    >
+                        <SoftCard className="flex h-[min(36rem,70vh)] flex-col overflow-hidden rounded-2xl p-0 lg:h-[calc(100vh-10rem)]">
+                            <div className="shrink-0 border-b border-border px-5 py-4">
+                                <p className="text-sm font-medium">Messages</p>
+                                <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                                    {deal.company.name ?? 'Company'}
+                                </p>
+                            </div>
+                            <CollaborationThread
+                                collaborationId={deal.id}
+                                side="creator"
+                                canSend={deal.status !== 'cancelled'}
+                            />
+                        </SoftCard>
+                    </aside>
+
+                    <CampaignBriefDialog
+                        open={briefOpen}
+                        onOpenChange={setBriefOpen}
+                        title={deal.campaign.name}
+                        companyName={deal.company.name}
+                        brief={deal.brief}
                     />
-                </>
-            )}
+
+                    {builderPost ? (
+                        <LinkedInPostBuilderDialog
+                            open={builderPostId !== null}
+                            onOpenChange={(open) => {
+                                if (!open) {
+                                    setBuilderPostId(null);
+                                }
+                            }}
+                            title={
+                                canEditBuilder
+                                    ? 'Create a post'
+                                    : 'LinkedIn post'
+                            }
+                            statusLabel={titleCase(builderPost.status)}
+                            status={builderPost.status}
+                            description={
+                                canEditBuilder
+                                    ? 'Write your post, add media, and check the preview.'
+                                    : 'Read-only view with review history.'
+                            }
+                            author={author}
+                            value={
+                                bodies[builderPost.id] ?? builderPost.body ?? ''
+                            }
+                            onChange={
+                                canEditBuilder
+                                    ? (value) =>
+                                          setBodies((current) => ({
+                                              ...current,
+                                              [builderPost.id]: value,
+                                          }))
+                                    : undefined
+                            }
+                            media={draftMedia}
+                            onMediaChange={
+                                canEditBuilder ? setDraftMedia : undefined
+                            }
+                            reviews={builderPost.reviews ?? []}
+                            publishedUrl={builderPost.published_url}
+                            readOnly={!canEditBuilder}
+                            saving={busy}
+                            canSubmit={
+                                (
+                                    bodies[builderPost.id] ??
+                                    builderPost.body ??
+                                    ''
+                                ).trim() !== ''
+                            }
+                            onSave={
+                                canEditBuilder
+                                    ? () => void save(builderPost)
+                                    : undefined
+                            }
+                            onSubmit={
+                                canEditBuilder
+                                    ? () => {
+                                          void submit(builderPost).then(
+                                              (ok) => {
+                                                  if (ok) {
+                                                      setBuilderPostId(null);
+                                                  }
+                                              },
+                                          );
+                                      }
+                                    : undefined
+                            }
+                        />
+                    ) : null}
+
+                    <Dialog open={contractOpen} onOpenChange={setContractOpen}>
+                        <DialogContent className="flex max-h-[85vh] w-full flex-col gap-0 overflow-hidden rounded-sm border-border p-0 sm:max-w-2xl">
+                            <DialogHeader className="shrink-0 space-y-1 border-b border-border px-6 py-5 pr-12 text-left">
+                                <DialogTitle className="text-title font-medium tracking-tight">
+                                    Contract
+                                </DialogTitle>
+                                <DialogDescription>
+                                    {deal.campaign.name}
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+                                {contractLoading ? (
+                                    <p className="text-sm text-muted-foreground">
+                                        Loading contract…
+                                    </p>
+                                ) : null}
+                                {contractError ? (
+                                    <p className="text-sm text-destructive">
+                                        {contractError}
+                                    </p>
+                                ) : null}
+                                {contract ? (
+                                    <ContractDocumentView contract={contract} />
+                                ) : null}
+                            </div>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            ) : null}
         </div>
     );
 }
@@ -600,4 +880,10 @@ function pct(value: number | null): string {
     }
 
     return `${(value * 100).toFixed(1)}%`;
+}
+
+function titleCase(value: string): string {
+    return value
+        .replaceAll('_', ' ')
+        .replace(/^\w/, (letter) => letter.toUpperCase());
 }

@@ -85,44 +85,38 @@ export function CampaignOpportunityCard({
 
             <div className="flex flex-1 flex-col gap-5 p-5 pt-3">
                 <div className="space-y-3">
-                    {companyLogoUrl ? (
-                        <img
-                            src={companyLogoUrl}
-                            alt=""
-                            className="size-11 rounded-xl border border-border object-cover"
-                        />
-                    ) : (
-                        <div className="flex size-11 items-center justify-center rounded-xl border border-border bg-muted text-sm font-semibold">
-                            {initial}
-                        </div>
-                    )}
+                    
 
-                    <div className="flex items-center gap-1.5">
-                        <p className="text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
-                            {companyName}
-                        </p>
-                        {websiteHref ? (
-                            <a
-                                href={websiteHref}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="text-muted-foreground transition-colors hover:text-foreground"
-                                aria-label={`${companyName} website`}
-                            >
-                                <ExternalLink className="size-3.5" />
-                            </a>
-                        ) : null}
-                    </div>
+                    
 
                     <div className="space-y-1">
                         <h2 className="text-xl font-semibold tracking-tight text-balance">
                             {title}
                         </h2>
+
+                        <div className="flex justify-between">
                         {tagline ? (
                             <p className="text-sm text-muted-foreground text-balance">
                                 {tagline}
                             </p>
                         ) : null}
+                        <div>
+                        {websiteHref ? (
+                            <a
+                                href={websiteHref}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-muted-foreground transition-colors hover:text-foreground flex items-center justify-center gap-1.5"
+                                aria-label={`${companyName} website`}
+                            >
+                                <p className="text-xs font-medium tracking-[0.12em] text-muted-foreground uppercase">
+                                    {companyName}
+                                </p>
+                                <ExternalLink className="size-3.5" />
+                            </a>
+                        ) : null}
+                        </div>
+                    </div>
                     </div>
                 </div>
 

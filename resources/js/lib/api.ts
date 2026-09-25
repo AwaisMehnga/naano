@@ -169,6 +169,7 @@ export const creatorApi = {
     linkedinStart: '/api/creator/linkedin/start',
     linkedinVerify: '/api/creator/linkedin/verify',
     linkedinRefresh: '/api/creator/linkedin/refresh',
+    linkedinPostsSync: '/api/creator/linkedin/posts/sync',
     linkedinProfile: '/api/creator/linkedin/profile',
     niches: '/api/creator/niches',
     audience: '/api/creator/audience',
@@ -197,6 +198,8 @@ export const creatorApi = {
     postSubmit: (id: number) => `/api/creator/posts/${id}/submit`,
     postSchedule: (id: number) => `/api/creator/posts/${id}/schedule`,
     postPublish: (id: number) => `/api/creator/posts/${id}/publish`,
+    media: '/api/creator/media',
+    mediaDestroy: (id: number) => `/api/creator/media/${id}`,
     analyticsOverview: (
         query: Record<string, string | number | undefined> = {},
     ) => withQuery('/api/creator/analytics/overview', query),

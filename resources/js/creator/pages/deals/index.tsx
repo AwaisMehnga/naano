@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router';
 import { GitBranch, ListFilter } from 'lucide-react';
-import CollaborationChatSheet from '@/components/collaboration-chat-sheet';
 import InputError from '@/components/input-error';
 import { FilterDropdown, FilterDropdownGroup } from '@/components/filter-select';
 import { SearchPill } from '@/components/ds';
@@ -42,8 +41,6 @@ export default function CreatorDealsPage() {
     const [items, setItems] = useState<Deal[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
-    const [threadId, setThreadId] = useState<number | null>(null);
-    const threadRow = items.find((item) => item.id === threadId);
 
     const statusItems = useMemo(
         () => [
@@ -219,27 +216,10 @@ export default function CreatorDealsPage() {
             ) : (
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {items.map((item) => (
-                        <DealCard
-                            key={item.id}
-                            deal={item}
-                            onMessage={(deal) => setThreadId(deal.id)}
-                        />
+                        <DealCard key={item.id} deal={item} />
                     ))}
                 </div>
             )}
-
-            <CollaborationChatSheet
-                open={threadId !== null}
-                onOpenChange={(open) => {
-                    if (!open) {
-                        setThreadId(null);
-                    }
-                }}
-                collaborationId={threadId}
-                title={threadRow?.company.name ?? 'Messages'}
-                side="creator"
-                canSend={threadRow?.status !== 'cancelled'}
-            />
         </div>
     );
 }

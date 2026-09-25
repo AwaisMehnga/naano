@@ -2,12 +2,16 @@
 
 namespace App\Services;
 
+use App\Enums\PostReviewAction;
 use App\Enums\PostStatus;
 use App\Models\Collaboration;
 use App\Models\Company;
+use App\Models\Media;
 use App\Models\Post;
+use App\Models\PostReview;
 use App\Models\TrackingLink;
 use App\Models\User;
+use App\Support\PublicDisk;
 use Illuminate\Validation\ValidationException;
 
 class CompanyPostService
@@ -15,6 +19,7 @@ class CompanyPostService
     public function __construct(
         private TrackingLinkService $tracking,
         private CollaborationNotifier $notifier,
+        private MediaService $media,
     ) {}
 
     /**
@@ -54,6 +59,7 @@ class CompanyPostService
         $post->reviewed_by_user_id = $actor->id;
         $post->save();
 
+        $this->recordReview($post, $actor, PostReviewAction::Approved, null);
         $this->notifier->postApproved($post, $actor);
 
         return $this->payload($company, $post->fresh());
@@ -73,6 +79,7 @@ class CompanyPostService
         $post->reviewed_by_user_id = $actor->id;
         $post->save();
 
+        $this->recordReview($post, $actor, PostReviewAction::ChangesRequested, $reviewNote);
         $this->notifier->postChangesRequested($post, $actor);
 
         return $this->payload($company, $post->fresh());
@@ -92,6 +99,7 @@ class CompanyPostService
         $post->reviewed_by_user_id = $actor->id;
         $post->save();
 
+        $this->recordReview($post, $actor, PostReviewAction::Rejected, $reviewNote);
         $this->notifier->postRejected($post, $actor);
 
         return $this->payload($company, $post->fresh());
@@ -102,8 +110,15 @@ class CompanyPostService
      */
     private function payload(Company $company, Post $post): array
     {
-        $post->loadMissing(['collaboration.campaign', 'collaboration.trackingLinks']);
+        $post->loadMissing([
+            'collaboration.campaign',
+            'collaboration.trackingLinks',
+            'collaboration.creatorProfile',
+            'media',
+            'reviews.actor',
+        ]);
         $campaign = $post->collaboration->campaign;
+        $profile = $post->collaboration->creatorProfile;
 
         return [
             'id' => $post->id,
@@ -117,11 +132,46 @@ class CompanyPostService
             'linkedin_post_id' => $post->linkedin_post_id,
             'submitted_at' => $post->submitted_at?->toIso8601String(),
             'guidelines' => $campaign->guidelines,
+            'creator' => [
+                'id' => $profile->id,
+                'display_name' => $profile->display_name,
+                'headline' => $profile->headline,
+                'photo_url' => PublicDisk::url($profile->photo_path),
+            ],
+            'media' => $post->media
+                ->map(fn (Media $item): array => $this->media->payload($item))
+                ->values()
+                ->all(),
+            'reviews' => $post->reviews
+                ->map(fn (PostReview $review): array => [
+                    'id' => $review->id,
+                    'action' => $review->action->value,
+                    'note' => $review->note,
+                    'actor_name' => $review->actor->name,
+                    'created_at' => $review->created_at?->toIso8601String(),
+                ])
+                ->values()
+                ->all(),
             'tracking_links' => $post->collaboration->trackingLinks
                 ->map(fn (TrackingLink $link): array => $this->tracking->payload($link))
                 ->values()
                 ->all(),
         ];
+    }
+
+    private function recordReview(
+        Post $post,
+        User $actor,
+        PostReviewAction $action,
+        ?string $note,
+    ): void {
+        PostReview::query()->create([
+            'post_id' => $post->id,
+            'actor_user_id' => $actor->id,
+            'action' => $action,
+            'note' => $note,
+            'created_at' => now(),
+        ]);
     }
 
     private function assertInReview(Post $post): void

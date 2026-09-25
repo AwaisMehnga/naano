@@ -32,6 +32,8 @@ class LinkedInProfilePresenter
             'verified' => $profile->isLinkedInVerified(),
             'verified_at' => $profile->linkedin_verified_at?->toIso8601String(),
             'synced_at' => $profile->linkedin_synced_at?->toIso8601String(),
+            'posts_status' => $this->postsStatus($profile, $posts),
+            'posts_count' => count($posts),
             'verify_code' => $profile->isLinkedInVerified() ? null : $profile->linkedin_verify_code,
             'linkedin_url' => $profile->linkedin_url,
             'header' => [
@@ -55,6 +57,28 @@ class LinkedInProfilePresenter
                 'summary' => $linkedinProfile['summary'] ?? $profile->bio,
             ],
         ];
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $posts
+     */
+    private function postsStatus(CreatorProfile $profile, array $posts): string
+    {
+        $stored = $profile->linkedin_posts_sync_status;
+
+        if (is_string($stored) && $stored !== '') {
+            return $stored;
+        }
+
+        if ($posts !== []) {
+            return 'ready';
+        }
+
+        if ($profile->isLinkedInVerified()) {
+            return 'idle';
+        }
+
+        return 'idle';
     }
 
     /**
@@ -108,7 +132,7 @@ class LinkedInProfilePresenter
         $sorted = $this->sortedByDate($posts);
         $series = [];
 
-        foreach (array_slice($sorted, -24) as $index => $post) {
+        foreach ($sorted as $index => $post) {
             $label = '#'.($index + 1);
             $postedAt = $post['posted_at'] ?? null;
 

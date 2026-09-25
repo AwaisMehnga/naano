@@ -160,7 +160,7 @@ class CreatorOpportunityService
 
         return [
             ...$this->opportunityPayload($campaign, $score),
-            'brief' => $campaign->brief,
+            'brief' => $this->normalizeBrief($campaign->brief),
             'goal' => $campaign->goal,
             'key_messages' => $campaign->key_messages,
             'guidelines' => $campaign->guidelines,
@@ -258,7 +258,7 @@ class CreatorOpportunityService
 
         return [
             ...$this->dealPayload($collaboration),
-            'brief' => $campaign->brief,
+            'brief' => $this->normalizeBrief($campaign->brief),
             'goal' => $campaign->goal,
             'key_messages' => $campaign->key_messages,
             'guidelines' => $campaign->guidelines,
@@ -477,5 +477,88 @@ class CreatorOpportunityService
             ],
             'metrics' => $this->analytics->summary($collaboration),
         ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $brief
+     * @return array{
+     *     context: string,
+     *     product: string,
+     *     differentiators: list<string>,
+     *     target: string,
+     *     pains: list<string>,
+     *     trigger: string,
+     *     key_message: string,
+     *     audience: array{industries: string, geographies: string, tone: string},
+     *     editorial: array{do: list<string>, avoid: list<string>},
+     *     references: list<array{quote: string, structure: string}>,
+     *     angles: list<array{title: string, hook: string, format: string, example: string}>
+     * }|null
+     */
+    private function normalizeBrief(?array $brief): ?array
+    {
+        if ($brief === null || $brief === []) {
+            return null;
+        }
+
+        $audience = is_array($brief['audience'] ?? null) ? $brief['audience'] : [];
+        $editorial = is_array($brief['editorial'] ?? null) ? $brief['editorial'] : [];
+
+        return [
+            'context' => trim((string) ($brief['context'] ?? '')),
+            'product' => trim((string) ($brief['product'] ?? '')),
+            'differentiators' => $this->stringList($brief['differentiators'] ?? []),
+            'target' => trim((string) ($brief['target'] ?? '')),
+            'pains' => $this->stringList($brief['pains'] ?? []),
+            'trigger' => trim((string) ($brief['trigger'] ?? '')),
+            'key_message' => trim((string) ($brief['key_message'] ?? '')),
+            'audience' => [
+                'industries' => trim((string) ($audience['industries'] ?? '')),
+                'geographies' => trim((string) ($audience['geographies'] ?? '')),
+                'tone' => trim((string) ($audience['tone'] ?? '')),
+            ],
+            'editorial' => [
+                'do' => $this->stringList($editorial['do'] ?? []),
+                'avoid' => $this->stringList($editorial['avoid'] ?? []),
+            ],
+            'references' => collect($brief['references'] ?? [])
+                ->filter(fn (mixed $item): bool => is_array($item))
+                ->map(fn (array $item): array => [
+                    'quote' => trim((string) ($item['quote'] ?? '')),
+                    'structure' => trim((string) ($item['structure'] ?? '')),
+                ])
+                ->filter(fn (array $item): bool => $item['quote'] !== '' || $item['structure'] !== '')
+                ->values()
+                ->all(),
+            'angles' => collect($brief['angles'] ?? [])
+                ->filter(fn (mixed $item): bool => is_array($item))
+                ->map(fn (array $item): array => [
+                    'title' => trim((string) ($item['title'] ?? '')),
+                    'hook' => trim((string) ($item['hook'] ?? '')),
+                    'format' => trim((string) ($item['format'] ?? '')),
+                    'example' => trim((string) ($item['example'] ?? '')),
+                ])
+                ->filter(fn (array $item): bool => $item['title'] !== ''
+                    || $item['hook'] !== ''
+                    || $item['format'] !== ''
+                    || $item['example'] !== '')
+                ->values()
+                ->all(),
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function stringList(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            array_map(fn (mixed $item): string => trim((string) $item), $values),
+            fn (string $item): bool => $item !== '',
+        ));
     }
 }

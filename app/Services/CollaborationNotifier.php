@@ -82,6 +82,8 @@ class CollaborationNotifier
             $actor,
             'Draft submitted for review',
             'A draft is waiting on '.$this->campaignName($collaboration).'.',
+            $post->id,
+            mailable: false,
         );
     }
 
@@ -93,6 +95,8 @@ class CollaborationNotifier
             $actor,
             'Changes requested',
             'The brand requested changes on '.$this->campaignName($collaboration).'.',
+            $post->id,
+            mailable: false,
         );
     }
 
@@ -104,6 +108,8 @@ class CollaborationNotifier
             $actor,
             'Draft approved',
             'A draft was approved on '.$this->campaignName($collaboration).'.',
+            $post->id,
+            mailable: false,
         );
     }
 
@@ -115,6 +121,8 @@ class CollaborationNotifier
             $actor,
             'Draft rejected',
             'A draft was rejected on '.$this->campaignName($collaboration).'.',
+            $post->id,
+            mailable: false,
         );
     }
 
@@ -126,6 +134,8 @@ class CollaborationNotifier
             $actor,
             'Live URL submitted',
             'A live post URL was submitted on '.$this->campaignName($collaboration).'.',
+            $post->id,
+            mailable: false,
         );
     }
 
@@ -179,10 +189,22 @@ class CollaborationNotifier
             ->get();
     }
 
-    public function campaignUpdated(Collaboration $collaboration, User $actor, string $title, string $body): void
-    {
+    public function campaignUpdated(
+        Collaboration $collaboration,
+        User $actor,
+        string $title,
+        string $body,
+        ?int $postId = null,
+        bool $mailable = true,
+    ): void {
         $this->withContext($collaboration);
-        $make = fn (): CampaignUpdated => new CampaignUpdated($collaboration, $title, $body);
+        $make = fn (): CampaignUpdated => new CampaignUpdated(
+            $collaboration,
+            $title,
+            $body,
+            $postId,
+            $mailable,
+        );
 
         if ($this->isCreator($actor, $collaboration)) {
             $this->notifyCompany($collaboration, $actor, $make);

@@ -23,6 +23,7 @@ use Illuminate\Support\Carbon;
  * @property string|null $linkedin_verify_code
  * @property Carbon|null $linkedin_verified_at
  * @property Carbon|null $linkedin_synced_at
+ * @property string|null $linkedin_posts_sync_status
  * @property string|null $headline
  * @property string|null $photo_path
  * @property string|null $bio
@@ -44,6 +45,7 @@ use Illuminate\Support\Carbon;
     'linkedin_verify_code',
     'linkedin_verified_at',
     'linkedin_synced_at',
+    'linkedin_posts_sync_status',
     'headline',
     'photo_path',
     'bio',

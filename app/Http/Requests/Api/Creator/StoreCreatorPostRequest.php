@@ -19,6 +19,8 @@ class StoreCreatorPostRequest extends FormRequest
     {
         return [
             'body' => ['nullable', 'string'],
+            'media_ids' => ['sometimes', 'array'],
+            'media_ids.*' => ['integer', 'exists:media,id'],
         ];
     }
 }

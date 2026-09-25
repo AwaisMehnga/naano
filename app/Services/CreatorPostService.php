@@ -3,9 +3,12 @@
 namespace App\Services;
 
 use App\Enums\CollaborationStatus;
+use App\Enums\PostReviewAction;
 use App\Enums\PostStatus;
 use App\Models\Collaboration;
+use App\Models\Media;
 use App\Models\Post;
+use App\Models\PostReview;
 use App\Models\TrackingLink;
 use App\Models\User;
 use Illuminate\Support\Carbon;
@@ -17,6 +20,7 @@ class CreatorPostService
         private TrackingLinkService $tracking,
         private CompanyWalletService $wallets,
         private CollaborationNotifier $notifier,
+        private MediaService $media,
     ) {}
 
     /**
@@ -60,7 +64,11 @@ class CreatorPostService
             'body' => $data['body'] ?? null,
         ]);
 
-        return $this->payload($post);
+        if (array_key_exists('media_ids', $data)) {
+            $this->media->syncFor($user, $post, $data['media_ids'] ?? []);
+        }
+
+        return $this->payload($post->fresh());
     }
 
     /**
@@ -79,6 +87,10 @@ class CreatorPostService
 
         $post->body = $data['body'];
         $post->save();
+
+        if (array_key_exists('media_ids', $data)) {
+            $this->media->syncFor($user, $post, $data['media_ids'] ?? []);
+        }
 
         return $this->payload($post->fresh());
     }
@@ -105,6 +117,14 @@ class CreatorPostService
         $post->status = PostStatus::InReview;
         $post->submitted_at = now();
         $post->save();
+
+        PostReview::query()->create([
+            'post_id' => $post->id,
+            'actor_user_id' => $user->id,
+            'action' => PostReviewAction::Submitted,
+            'note' => null,
+            'created_at' => now(),
+        ]);
 
         $this->notifier->postSubmitted($post, $user);
 
@@ -175,7 +195,7 @@ class CreatorPostService
      */
     public function payload(Post $post): array
     {
-        $post->loadMissing('collaboration.trackingLinks');
+        $post->loadMissing(['collaboration.trackingLinks', 'media', 'reviews.actor']);
 
         return [
             'id' => $post->id,
@@ -188,6 +208,20 @@ class CreatorPostService
             'published_url' => $post->published_url,
             'linkedin_post_id' => $post->linkedin_post_id,
             'submitted_at' => $post->submitted_at?->toIso8601String(),
+            'media' => $post->media
+                ->map(fn (Media $item): array => $this->media->payload($item))
+                ->values()
+                ->all(),
+            'reviews' => $post->reviews
+                ->map(fn (PostReview $review): array => [
+                    'id' => $review->id,
+                    'action' => $review->action->value,
+                    'note' => $review->note,
+                    'actor_name' => $review->actor->name,
+                    'created_at' => $review->created_at?->toIso8601String(),
+                ])
+                ->values()
+                ->all(),
             'tracking_links' => $post->collaboration->trackingLinks
                 ->map(fn (TrackingLink $link): array => $this->tracking->payload($link))
                 ->values()

@@ -27,11 +27,22 @@ class SyncLinkedInPostsJob implements ShouldQueue
             return;
         }
 
-        $sync->syncPosts($profile);
+        try {
+            $sync->syncPosts($profile);
+        } catch (Throwable $exception) {
+            $sync->markPostsSyncFailed($profile);
+            throw $exception;
+        }
     }
 
     public function failed(?Throwable $exception): void
     {
+        $profile = CreatorProfile::query()->find($this->creatorProfileId);
+
+        if ($profile instanceof CreatorProfile) {
+            app(LinkedInSyncService::class)->markPostsSyncFailed($profile);
+        }
+
         Log::warning('SyncLinkedInPostsJob failed', [
             'creator_profile_id' => $this->creatorProfileId,
             'message' => $exception?->getMessage(),

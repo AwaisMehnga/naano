@@ -46,6 +46,14 @@ class LinkedInController extends Controller
         return AjaxResponse::success($payload, 'LinkedIn data refreshed.');
     }
 
+    public function syncPosts(Request $request): JsonResponse
+    {
+        $profile = $this->profiles->profile($this->actor($request));
+        $payload = $this->sync->syncPostsOnly($profile);
+
+        return AjaxResponse::success($payload, 'LinkedIn posts sync started.');
+    }
+
     public function profile(Request $request): JsonResponse
     {
         $profile = $this->profiles->profile($this->actor($request));

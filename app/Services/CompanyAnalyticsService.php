@@ -8,6 +8,7 @@ use App\Models\Campaign;
 use App\Models\Collaboration;
 use App\Models\Company;
 use App\Models\Lead;
+use App\Models\Media;
 use App\Models\Post;
 use App\Models\PostMetric;
 use App\Models\TrackingClick;
@@ -15,12 +16,14 @@ use App\Support\PublicDisk;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class CompanyAnalyticsService
 {
     public function __construct(
         private PostMetricIngestService $metrics,
         private CompanyLeadService $leads,
+        private MediaService $media,
     ) {}
 
     /**
@@ -51,7 +54,7 @@ class CompanyAnalyticsService
     {
         $this->ensureCampaignOwned($company, $campaign);
 
-        $posts = $campaign->posts()->with(['metrics', 'collaboration.creatorProfile'])->get();
+        $posts = $campaign->posts()->with(['metrics', 'media', 'collaboration.creatorProfile'])->get();
         $rollup = $this->metrics->rollup($posts->map->metrics->filter());
         $leads = $campaign->leads()->orderByDesc('id')->get();
 
@@ -63,8 +66,15 @@ class CompanyAnalyticsService
             'daily_clicks' => $this->dailyClicks($posts->pluck('id')->all()),
             'posts' => $posts->map(fn (Post $post): array => [
                 'id' => $post->id,
+                'collaboration_id' => $post->collaboration_id,
                 'status' => $post->status->value,
+                'body' => $post->body === null ? null : Str::limit($post->body, 180),
                 'published_url' => $post->published_url,
+                'submitted_at' => $post->submitted_at?->toIso8601String(),
+                'media' => $post->media
+                    ->map(fn (Media $item): array => $this->media->payload($item))
+                    ->values()
+                    ->all(),
                 'creator' => [
                     'id' => $post->collaboration->creatorProfile->id,
                     'display_name' => $post->collaboration->creatorProfile->display_name,

@@ -28,6 +28,7 @@ test('linkedin profile endpoint returns presenter aggregates', function () {
         'linkedin_url' => 'https://www.linkedin.com/in/ada',
         'linkedin_verified_at' => now(),
         'linkedin_synced_at' => now(),
+        'linkedin_posts_sync_status' => 'ready',
         'price_cents' => 25000,
         'linkedin_profile' => [
             'public_identifier' => 'ada',
@@ -80,7 +81,9 @@ test('linkedin profile endpoint returns presenter aggregates', function () {
         ->assertJsonPath('data.stats.avg_reactions', 20)
         ->assertJsonPath('data.stats.asking_rate_cents', 25000)
         ->assertJsonPath('data.top_posts.0.id', '2')
-        ->assertJsonCount(2, 'data.engagement_series');
+        ->assertJsonCount(2, 'data.engagement_series')
+        ->assertJsonPath('data.posts_status', 'ready')
+        ->assertJsonPath('data.posts_count', 2);
 });
 
 test('refresh is rejected when not verified', function () {

@@ -8,6 +8,7 @@ use App\Models\Campaign;
 use App\Models\Collaboration;
 use App\Models\Company;
 use App\Models\CompanyIcp;
+use App\Models\Media;
 use App\Models\Post;
 use App\Models\User;
 use App\Support\PublicDisk;
@@ -16,7 +17,10 @@ use Illuminate\Validation\ValidationException;
 
 class CompanyCampaignService
 {
-    public function __construct(private CompanyCollaborationService $collaborations) {}
+    public function __construct(
+        private CompanyCollaborationService $collaborations,
+        private MediaService $media,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $filters
@@ -107,6 +111,7 @@ class CompanyCampaignService
                 ->orderByDesc('captured_at')
                 ->orderByDesc('id'),
             'posts.collaboration.creatorProfile',
+            'posts.media',
         ]);
 
         $statusCounts = $campaign->collaborations()
@@ -387,6 +392,12 @@ class CompanyCampaignService
             'body' => $excerpt,
             'published_url' => $post->published_url,
             'submitted_at' => $post->submitted_at?->toIso8601String(),
+            'media' => $post->relationLoaded('media')
+                ? $post->media
+                    ->map(fn (Media $item): array => $this->media->payload($item))
+                    ->values()
+                    ->all()
+                : [],
             'creator' => [
                 'id' => $profile->id,
                 'display_name' => $profile->display_name,
