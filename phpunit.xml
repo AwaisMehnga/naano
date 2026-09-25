@@ -32,5 +32,8 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+        <env name="APIFY_API_TOKEN" value="test-apify-token"/>
+        <env name="APIFY_POLL_INTERVAL_MS" value="1"/>
+        <env name="APIFY_POLL_TIMEOUT_SECONDS" value="5"/>
     </php>
 </phpunit>

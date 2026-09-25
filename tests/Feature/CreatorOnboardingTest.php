@@ -27,10 +27,18 @@ test('creator can complete onboarding steps', function () {
     $this->actingAs($user)
         ->post(route('onboarding.creator.linkedin'), [
             'linkedin_url' => 'https://www.linkedin.com/in/ada',
-            'headline' => 'B2B writer for SaaS',
             'country' => 'FR',
         ])
         ->assertRedirect(route('onboarding.creator'));
+
+    $profile = $user->fresh()->creatorProfile;
+    expect($profile->linkedin_verify_code)->toHaveLength(8);
+
+    $profile->update([
+        'linkedin_verified_at' => now(),
+        'headline' => 'B2B writer for SaaS',
+        'display_name' => 'Ada Lovelace',
+    ]);
 
     $this->actingAs($user)
         ->post(route('onboarding.creator.industries'), [
@@ -54,6 +62,7 @@ test('creator can complete onboarding steps', function () {
     $profile = $user->fresh()->creatorProfile;
 
     expect($profile->linkedin_url)->toBe('https://www.linkedin.com/in/ada')
+        ->and($profile->linkedin_verified_at)->not->toBeNull()
         ->and($profile->headline)->toBe('B2B writer for SaaS')
         ->and($profile->country)->toBe('FR')
         ->and($profile->industries)->toBe(['SaaS', 'AI'])
@@ -70,7 +79,6 @@ test('creator linkedin url must be a public profile', function () {
         ->from(route('onboarding.creator'))
         ->post(route('onboarding.creator.linkedin'), [
             'linkedin_url' => 'https://example.com/ada',
-            'headline' => 'Writer',
             'country' => 'FR',
         ])
         ->assertRedirect(route('onboarding.creator'))

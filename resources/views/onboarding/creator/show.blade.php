@@ -7,7 +7,7 @@
     };
     $steps = ['LinkedIn', 'Industries', 'Price', 'Workspace'];
     $headings = [
-        'linkedin' => 'Add your LinkedIn',
+        'linkedin' => 'Verify your LinkedIn',
         'industries' => 'Your industries',
         'offer' => 'Set your price',
         'professional' => 'Enter your workspace',

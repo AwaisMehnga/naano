@@ -1,3 +1,5 @@
+import type { LinkedInInsights } from '@/components/linkedin/types';
+
 export type Niche = {
     id: number;
     name: string;
@@ -37,4 +39,5 @@ export type CreatorProfileCard = CreatorListItem & {
     captured_at: string | null;
     offers: Offer[];
     recent_metrics: unknown[];
+    linkedin_insights?: LinkedInInsights | null;
 };

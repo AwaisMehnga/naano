@@ -18,6 +18,11 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property string|null $display_name
  * @property string|null $linkedin_url
+ * @property array<string, mixed>|null $linkedin_profile
+ * @property list<array<string, mixed>>|null $linkedin_posts
+ * @property string|null $linkedin_verify_code
+ * @property Carbon|null $linkedin_verified_at
+ * @property Carbon|null $linkedin_synced_at
  * @property string|null $headline
  * @property string|null $photo_path
  * @property string|null $bio
@@ -34,6 +39,11 @@ use Illuminate\Support\Carbon;
     'user_id',
     'display_name',
     'linkedin_url',
+    'linkedin_profile',
+    'linkedin_posts',
+    'linkedin_verify_code',
+    'linkedin_verified_at',
+    'linkedin_synced_at',
     'headline',
     'photo_path',
     'bio',
@@ -59,10 +69,19 @@ class CreatorProfile extends Model
         return [
             'industries' => 'array',
             'bundles' => 'array',
+            'linkedin_profile' => 'array',
+            'linkedin_posts' => 'array',
+            'linkedin_verified_at' => 'datetime',
+            'linkedin_synced_at' => 'datetime',
             'vetting_status' => CreatorVettingStatus::class,
             'payouts_enabled' => 'boolean',
             'onboarded_at' => 'datetime',
         ];
+    }
+
+    public function isLinkedInVerified(): bool
+    {
+        return $this->linkedin_verified_at !== null;
     }
 
     /**

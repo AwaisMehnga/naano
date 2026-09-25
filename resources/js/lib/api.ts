@@ -166,6 +166,10 @@ export const companyApi = {
 
 export const creatorApi = {
     profile: '/api/creator/profile',
+    linkedinStart: '/api/creator/linkedin/start',
+    linkedinVerify: '/api/creator/linkedin/verify',
+    linkedinRefresh: '/api/creator/linkedin/refresh',
+    linkedinProfile: '/api/creator/linkedin/profile',
     niches: '/api/creator/niches',
     audience: '/api/creator/audience',
     billing: '/api/creator/billing',

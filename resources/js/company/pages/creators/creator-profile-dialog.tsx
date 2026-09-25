@@ -20,6 +20,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
+import { LinkedInInsightsPanel } from '@/components/linkedin/insights-panel';
 import CampaignSearchSelect, {
     type CampaignOption,
 } from '@/company/pages/creators/campaign-search-select';
@@ -37,7 +38,7 @@ import { canManageMoney } from '@/lib/current-user';
 import { api, ApiError, companyApi, http } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'audience' | 'content';
+type Tab = 'overview' | 'audience' | 'linkedin' | 'content';
 type Intent = 'book' | 'negotiate';
 
 export default function CreatorProfileDialog({
@@ -239,9 +240,16 @@ export default function CreatorProfileDialog({
                                     [
                                         ['overview', 'Overview'],
                                         ['audience', 'Audience'],
+                                        ['linkedin', 'LinkedIn'],
                                         ['content', 'Content'],
                                     ] as const
-                                ).map(([id, label]) => (
+                                )
+                                    .filter(
+                                        ([id]) =>
+                                            id !== 'linkedin' ||
+                                            Boolean(creator.linkedin_insights),
+                                    )
+                                    .map(([id, label]) => (
                                     <button
                                         key={id}
                                         type="button"
@@ -295,6 +303,13 @@ export default function CreatorProfileDialog({
                                         mix={creator.audience_mix}
                                     />
                                 )}
+                                {tab === 'linkedin' &&
+                                    creator.linkedin_insights && (
+                                        <LinkedInInsightsPanel
+                                            insights={creator.linkedin_insights}
+                                            compactHeader
+                                        />
+                                    )}
                                 {tab === 'content' && (
                                     <p className="text-muted-foreground text-sm">
                                         Recent post metrics show here after

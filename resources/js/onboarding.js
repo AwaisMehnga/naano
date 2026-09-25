@@ -107,11 +107,13 @@ document.addEventListener('submit', async (event) => {
     const submit = form.querySelector('[type="submit"]');
     const analyze = form.hasAttribute('data-analyze');
     const status = form.querySelector('[data-analyze-status]');
+    const loadingLabel = form.getAttribute('data-loading-label') || 'Working…';
     const originalLabel = submit instanceof HTMLButtonElement ? submit.textContent : '';
 
     if (submit instanceof HTMLButtonElement) {
         submit.disabled = true;
-        submit.textContent = 'Working…';
+        submit.setAttribute('aria-busy', 'true');
+        submit.textContent = loadingLabel;
     }
 
     if (analyze) {
@@ -137,6 +139,7 @@ document.addEventListener('submit', async (event) => {
 
             if (submit instanceof HTMLButtonElement) {
                 submit.disabled = false;
+                submit.removeAttribute('aria-busy');
                 submit.textContent = originalLabel;
             }
 
@@ -145,6 +148,13 @@ document.addEventListener('submit', async (event) => {
 
         if (data.data?.redirect) {
             window.location.href = data.data.redirect;
+            return;
+        }
+
+        if (submit instanceof HTMLButtonElement) {
+            submit.disabled = false;
+            submit.removeAttribute('aria-busy');
+            submit.textContent = originalLabel;
         }
     } catch {
         showErrors('Something went wrong. Try again.');
@@ -152,6 +162,7 @@ document.addEventListener('submit', async (event) => {
 
         if (submit instanceof HTMLButtonElement) {
             submit.disabled = false;
+            submit.removeAttribute('aria-busy');
             submit.textContent = originalLabel;
         }
     }

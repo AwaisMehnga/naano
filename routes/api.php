@@ -28,6 +28,7 @@ use App\Http\Controllers\Api\Creator\CollaborationMetricController;
 use App\Http\Controllers\Api\Creator\ConnectController;
 use App\Http\Controllers\Api\Creator\CreatorAccountController;
 use App\Http\Controllers\Api\Creator\CreatorWalletController;
+use App\Http\Controllers\Api\Creator\LinkedInController as CreatorLinkedInController;
 use App\Http\Controllers\Api\Creator\NicheController as CreatorNicheController;
 use App\Http\Controllers\Api\Creator\OpportunityController;
 use App\Http\Controllers\Api\Creator\PayoutController;
@@ -122,6 +123,17 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['verified', 'profile:creator', 'onboarded'])->prefix('creator')->name('creator.')->group(function () {
         Route::get('ping', [UserController::class, 'show'])->name('ping');
         Route::apiSingleton('profile', CreatorProfileController::class)->only(['show', 'update']);
+        Route::post('linkedin/start', [CreatorLinkedInController::class, 'start'])
+            ->middleware('throttle:10,1')
+            ->name('linkedin.start');
+        Route::post('linkedin/verify', [CreatorLinkedInController::class, 'verify'])
+            ->middleware('throttle:5,1')
+            ->name('linkedin.verify');
+        Route::post('linkedin/refresh', [CreatorLinkedInController::class, 'refresh'])
+            ->middleware('throttle:3,60')
+            ->name('linkedin.refresh');
+        Route::get('linkedin/profile', [CreatorLinkedInController::class, 'profile'])
+            ->name('linkedin.profile');
         Route::apiSingleton('niches', CreatorNicheController::class)->only(['update']);
         Route::apiSingleton('audience', CreatorAudienceController::class, ['creatable' => true])->only(['show', 'store']);
         Route::apiSingleton('billing', BillingController::class)->only(['show']);

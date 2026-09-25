@@ -11,6 +11,7 @@ import CreatorSettingLayout from './pages/setting';
 import CreatorAccountPage from './pages/setting/account';
 import CreatorAudiencePage from './pages/setting/audience';
 import CreatorBillingPage from './pages/setting/billing';
+import CreatorLinkedInPage from './pages/setting/linkedin';
 import CreatorProfilePage from './pages/setting/profile';
 import NotificationsPage from '@/pages/notifications';
 import NotificationSettingsPage from '@/pages/setting/notifications';
@@ -64,6 +65,10 @@ export const routes = [
                     {
                         path: 'profile',
                         element: <CreatorProfilePage />,
+                    },
+                    {
+                        path: 'linkedin',
+                        element: <CreatorLinkedInPage />,
                     },
                     {
                         path: 'audience',

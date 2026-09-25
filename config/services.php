@@ -44,4 +44,17 @@ return [
         'currency' => 'eur',
     ],
 
+    'apify' => [
+        'token' => env('APIFY_API_TOKEN'),
+        'base_url' => env('APIFY_BASE_URL', 'https://api.apify.com/v2'),
+        'profile_actor' => env('APIFY_LINKEDIN_PROFILE_ACTOR', 'supreme_coder~linkedin-profile-scraper'),
+        'posts_actor' => env('APIFY_LINKEDIN_POSTS_ACTOR', 'harvestapi~linkedin-profile-posts'),
+        'max_posts' => (int) env('APIFY_LINKEDIN_MAX_POSTS', 50),
+        'scrape_comments' => (bool) env('APIFY_LINKEDIN_SCRAPE_COMMENTS', false),
+        'max_comments' => (int) env('APIFY_LINKEDIN_MAX_COMMENTS', 20),
+        'poll_interval_ms' => (int) env('APIFY_POLL_INTERVAL_MS', 2000),
+        'poll_timeout_seconds' => (int) env('APIFY_POLL_TIMEOUT_SECONDS', 120),
+        'refresh_cooldown_minutes' => (int) env('APIFY_LINKEDIN_REFRESH_COOLDOWN_MINUTES', 60),
+    ],
+
 ];

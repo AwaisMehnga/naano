@@ -5,10 +5,13 @@ namespace App\Services;
 use App\Enums\CreatorVettingStatus;
 use App\Models\CreatorProfile;
 use App\Models\User;
+use App\Services\LinkedIn\LinkedInVerificationService;
 use Illuminate\Http\UploadedFile;
 
 class CreatorOnboardingService
 {
+    public function __construct(private LinkedInVerificationService $linkedin) {}
+
     public function profile(User $user): CreatorProfile
     {
         return $user->creatorProfile()->firstOrCreate([]);
@@ -16,7 +19,7 @@ class CreatorOnboardingService
 
     public function step(CreatorProfile $profile): string
     {
-        if ($profile->linkedin_url === null || $profile->headline === null || $profile->country === null) {
+        if (! $profile->isLinkedInVerified() || $profile->linkedin_url === null || $profile->country === null) {
             return 'linkedin';
         }
 
@@ -32,9 +35,10 @@ class CreatorOnboardingService
     }
 
     /**
-     * @param  array{linkedin_url: string, headline: string, country: string, photo?: UploadedFile|null}  $data
+     * @param  array{linkedin_url: string, country: string, photo?: UploadedFile|null}  $data
+     * @return array{verify_code: string, linkedin_url: string}
      */
-    public function saveLinkedIn(CreatorProfile $profile, array $data): void
+    public function startLinkedIn(CreatorProfile $profile, array $data): array
     {
         $photoPath = $profile->photo_path;
 
@@ -42,12 +46,22 @@ class CreatorOnboardingService
             $photoPath = $data['photo']->store('creator-photos', 'public');
         }
 
+        $result = $this->linkedin->start($profile, $data['linkedin_url']);
+
         $profile->update([
-            'linkedin_url' => $data['linkedin_url'],
-            'headline' => $data['headline'],
             'country' => $data['country'],
             'photo_path' => $photoPath,
         ]);
+
+        return $result;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function verifyLinkedIn(CreatorProfile $profile): array
+    {
+        return $this->linkedin->verify($profile);
     }
 
     /**

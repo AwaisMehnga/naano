@@ -7,6 +7,7 @@ use App\Models\CreatorAudienceProfile;
 use App\Models\CreatorOffer;
 use App\Models\CreatorProfile;
 use App\Models\Niche;
+use App\Services\LinkedIn\LinkedInProfilePresenter;
 use App\Support\PublicDisk;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -91,6 +92,9 @@ class CompanyCreatorDiscoveryService
                 ->values()
                 ->all(),
             'recent_metrics' => [],
+            'linkedin_insights' => $profile->isLinkedInVerified()
+                ? app(LinkedInProfilePresenter::class)->present($profile)
+                : null,
         ];
     }
 

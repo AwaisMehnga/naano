@@ -18,7 +18,7 @@ class CreatorAudienceService
         $profile = $this->profiles->profile($user);
         $snapshot = $this->latest($profile);
 
-        return $this->payload($snapshot);
+        return $this->payload($snapshot, $profile);
     }
 
     /**
@@ -27,21 +27,29 @@ class CreatorAudienceService
     public function refresh(User $user): array
     {
         $profile = $this->profiles->profile($user);
+        $followers = is_array($profile->linkedin_profile)
+            ? ($profile->linkedin_profile['follower_count'] ?? null)
+            : null;
+
         $snapshot = $this->latest($profile);
 
         if ($snapshot === null) {
             $snapshot = $profile->audienceProfiles()->create([
                 'network' => 'linkedin',
-                'followers_count' => null,
+                'followers_count' => is_int($followers) ? $followers : null,
                 'audience_mix' => [],
                 'captured_at' => now(),
             ]);
         } else {
+            if (is_int($followers)) {
+                $snapshot->followers_count = $followers;
+            }
+
             $snapshot->captured_at = now();
             $snapshot->save();
         }
 
-        return $this->payload($snapshot);
+        return $this->payload($snapshot, $profile);
     }
 
     private function latest(CreatorProfile $profile): ?CreatorAudienceProfile
@@ -55,10 +63,17 @@ class CreatorAudienceService
     /**
      * @return array<string, mixed>
      */
-    private function payload(?CreatorAudienceProfile $snapshot): array
+    private function payload(?CreatorAudienceProfile $snapshot, ?CreatorProfile $profile = null): array
     {
+        $followers = $snapshot?->followers_count;
+
+        if ($followers === null && is_array($profile?->linkedin_profile)) {
+            $fromProfile = $profile->linkedin_profile['follower_count'] ?? null;
+            $followers = is_int($fromProfile) ? $fromProfile : null;
+        }
+
         return [
-            'followers_count' => $snapshot?->followers_count,
+            'followers_count' => $followers,
             'network' => $snapshot?->network ?? 'linkedin',
             'audience_mix' => $snapshot?->audience_mix ?? [],
             'captured_at' => $snapshot?->captured_at?->toIso8601String(),

@@ -43,6 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['verified', 'profile:creator'])->group(function () {
         Route::get('onboarding/creator', [CreatorOnboardingController::class, 'show'])->name('onboarding.creator');
         Route::post('onboarding/creator/linkedin', [CreatorOnboardingController::class, 'linkedin'])->name('onboarding.creator.linkedin');
+        Route::post('onboarding/creator/linkedin/verify', [CreatorOnboardingController::class, 'linkedinVerify'])->name('onboarding.creator.linkedin.verify');
         Route::post('onboarding/creator/industries', [CreatorOnboardingController::class, 'industries'])->name('onboarding.creator.industries');
         Route::post('onboarding/creator/offer', [CreatorOnboardingController::class, 'offer'])->name('onboarding.creator.offer');
         Route::post('onboarding/creator/complete', [CreatorOnboardingController::class, 'complete'])->name('onboarding.creator.complete');

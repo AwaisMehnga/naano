@@ -1,17 +1,15 @@
 <?php
 
-namespace App\Http\Requests\Onboarding;
+namespace App\Http\Requests\Api\Creator;
 
-use App\Enums\ProfileType;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
-class StoreCreatorLinkedInRequest extends FormRequest
+class StartLinkedInVerificationRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return $this->user()?->ownsProfile(ProfileType::Creator) ?? false;
+        return $this->user() !== null;
     }
 
     /**
@@ -21,8 +19,6 @@ class StoreCreatorLinkedInRequest extends FormRequest
     {
         return [
             'linkedin_url' => ['required', 'url', 'max:255', 'regex:/^https?:\/\/(www\.)?linkedin\.com\/in\/.+/i'],
-            'country' => ['required', 'string', Rule::in(array_keys(config('onboarding.countries')))],
-            'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:2048'],
         ];
     }
 }

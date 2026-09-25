@@ -3,6 +3,7 @@ import { SettingsNav } from '@/components/settings-nav';
 
 const items = [
     { title: 'Profile', href: '/setting/profile' },
+    { title: 'LinkedIn', href: '/setting/linkedin' },
     { title: 'Audience', href: '/setting/audience' },
     { title: 'Billing', href: '/setting/billing' },
     { title: 'Account', href: '/setting/account' },

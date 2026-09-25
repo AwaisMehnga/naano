@@ -9,6 +9,7 @@ use App\Http\Requests\Onboarding\StoreCreatorLinkedInRequest;
 use App\Http\Requests\Onboarding\StoreCreatorOfferRequest;
 use App\Models\User;
 use App\Services\CreatorOnboardingService;
+use App\Support\AjaxResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -36,16 +37,39 @@ class CreatorOnboardingController extends Controller
     }
 
     /**
-     * Store LinkedIn URL and card fields.
+     * Save LinkedIn URL and issue an ownership challenge code.
      */
     public function linkedin(StoreCreatorLinkedInRequest $request): JsonResponse|RedirectResponse
     {
-        $this->onboarding->saveLinkedIn(
+        $result = $this->onboarding->startLinkedIn(
             $this->onboarding->profile($request->user()),
-            $request->safe()->only(['linkedin_url', 'headline', 'country', 'photo']),
+            $request->safe()->only(['linkedin_url', 'country', 'photo']),
         );
 
-        return $this->onboardingDone($request, route('onboarding.creator'));
+        if ($request->expectsJson()) {
+            return AjaxResponse::success([
+                'redirect' => route('onboarding.creator'),
+                'verify_code' => $result['verify_code'],
+            ], 'Add this code at the end of your LinkedIn headline.');
+        }
+
+        return redirect()->route('onboarding.creator');
+    }
+
+    /**
+     * Scrape LinkedIn and confirm the verify code is in the headline.
+     */
+    public function linkedinVerify(Request $request): JsonResponse|RedirectResponse
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User || ! $user->ownsProfile(ProfileType::Creator)) {
+            abort(403);
+        }
+
+        $this->onboarding->verifyLinkedIn($this->onboarding->profile($user));
+
+        return $this->onboardingDone($request, route('onboarding.creator'), 'LinkedIn verified.');
     }
 
     /**
