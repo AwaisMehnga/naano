@@ -30,15 +30,18 @@ class CompanyCampaignService
     {
         $q = isset($filters['q']) ? trim((string) $filters['q']) : '';
         $perPage = min(50, max(1, (int) ($filters['per_page'] ?? 25)));
+        $status = isset($filters['status']) ? (string) $filters['status'] : '';
 
         $query = $company->campaigns()
             ->withCount('collaborations')
             ->orderByDesc('id');
 
-        if (isset($filters['status']) && $filters['status'] !== '') {
-            $query->where('status', $filters['status']);
+        if ($status === 'all') {
+            // No status filter — include cancelled.
+        } elseif ($status !== '') {
+            $query->where('status', $status);
         } else {
-            $query->whereNot('status', CampaignStatus::Cancelled);
+            $query->where('status', CampaignStatus::Active);
         }
 
         if (isset($filters['type']) && $filters['type'] !== '') {

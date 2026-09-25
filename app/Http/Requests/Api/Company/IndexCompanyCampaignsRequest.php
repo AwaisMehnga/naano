@@ -31,7 +31,14 @@ class IndexCompanyCampaignsRequest extends FormRequest
     {
         return [
             'q' => ['sometimes', 'nullable', 'string', 'max:120'],
-            'status' => ['sometimes', 'nullable', Rule::enum(CampaignStatus::class)],
+            'status' => [
+                'sometimes',
+                'nullable',
+                Rule::in([
+                    'all',
+                    ...array_column(CampaignStatus::cases(), 'value'),
+                ]),
+            ],
             'type' => ['sometimes', 'nullable', Rule::enum(CampaignType::class)],
             'page' => ['sometimes', 'integer', 'min:1'],
             'per_page' => ['sometimes', 'integer', 'min:1', 'max:50'],

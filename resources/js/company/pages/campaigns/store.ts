@@ -16,7 +16,7 @@ import type {
 
 type CampaignsState = {
     list: CampaignList | null;
-    listStatus: CampaignStatus | '';
+    listStatus: CampaignStatus | 'all' | '';
     campaign: CampaignDetail | null;
     collaborations: CollaborationRow[];
     pipeline: PipelineTab;
@@ -24,7 +24,7 @@ type CampaignsState = {
     saving: boolean;
     error: string | null;
     fetchList: (query?: {
-        status?: CampaignStatus | '';
+        status?: CampaignStatus | 'all' | '';
         type?: CampaignType | '';
         page?: number;
         per_page?: number;

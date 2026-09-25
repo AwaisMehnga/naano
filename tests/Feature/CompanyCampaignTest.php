@@ -18,11 +18,13 @@ test('company users can search their campaigns by name', function () {
     $match = Campaign::factory()->create([
         'company_id' => $owner->company->id,
         'created_by_user_id' => $owner->id,
+        'status' => CampaignStatus::Active,
         'name' => 'Q4 Pipeline',
     ]);
     Campaign::factory()->create([
         'company_id' => $owner->company->id,
         'created_by_user_id' => $owner->id,
+        'status' => CampaignStatus::Active,
         'name' => 'Hiring brand',
     ]);
 
@@ -297,13 +299,19 @@ test('completed and cancelled campaigns can be reopened to active', function () 
         ->assertJsonPath('data.status', 'active');
 });
 
-test('cancelled campaigns are hidden from the default list', function () {
+test('campaign index defaults to active and can filter by status', function () {
     $owner = User::factory()->company()->onboarded()->create();
     $live = Campaign::factory()->create([
         'company_id' => $owner->company->id,
         'created_by_user_id' => $owner->id,
         'status' => CampaignStatus::Active,
         'name' => 'Live',
+    ]);
+    Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'status' => CampaignStatus::Draft,
+        'name' => 'Draft',
     ]);
     Campaign::factory()->create([
         'company_id' => $owner->company->id,
@@ -319,10 +327,21 @@ test('cancelled campaigns are hidden from the default list', function () {
         ->assertJsonPath('data.data.0.id', $live->id);
 
     $this->actingAs($owner)
+        ->getJson(route('api.company.campaigns.index', ['status' => 'draft']))
+        ->assertOk()
+        ->assertJsonCount(1, 'data.data')
+        ->assertJsonPath('data.data.0.name', 'Draft');
+
+    $this->actingAs($owner)
         ->getJson(route('api.company.campaigns.index', ['status' => 'cancelled']))
         ->assertOk()
         ->assertJsonCount(1, 'data.data')
         ->assertJsonPath('data.data.0.name', 'Dead');
+
+    $this->actingAs($owner)
+        ->getJson(route('api.company.campaigns.index', ['status' => 'all']))
+        ->assertOk()
+        ->assertJsonCount(3, 'data.data');
 });
 
 test('campaign index paginates and filters by type', function () {
@@ -330,12 +349,14 @@ test('campaign index paginates and filters by type', function () {
     Campaign::factory()->create([
         'company_id' => $owner->company->id,
         'created_by_user_id' => $owner->id,
+        'status' => CampaignStatus::Active,
         'type' => CampaignType::Product,
         'name' => 'Product A',
     ]);
     Campaign::factory()->create([
         'company_id' => $owner->company->id,
         'created_by_user_id' => $owner->id,
+        'status' => CampaignStatus::Active,
         'type' => CampaignType::Hiring,
         'name' => 'Hiring B',
     ]);
