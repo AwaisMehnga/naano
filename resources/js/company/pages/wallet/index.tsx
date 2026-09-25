@@ -42,10 +42,27 @@ const typeLabels: Record<string, string> = {
 
 const statusLabels: Record<string, string> = {
     pending: 'Pending',
-    completed: 'Completed',
+    posted: 'Posted',
     failed: 'Failed',
-    cancelled: 'Cancelled',
 };
+
+const PENDING_TOPUP_KEY = 'wallet_pending_topup_id';
+
+function readPendingTopupId(): number | null {
+    const raw = sessionStorage.getItem(PENDING_TOPUP_KEY);
+
+    if (!raw) {
+        return null;
+    }
+
+    const id = Number(raw);
+
+    return Number.isFinite(id) && id > 0 ? id : null;
+}
+
+function clearPendingTopupId(): void {
+    sessionStorage.removeItem(PENDING_TOPUP_KEY);
+}
 
 export default function CompanyWalletPage() {
     const [searchParams] = useSearchParams();
@@ -53,9 +70,13 @@ export default function CompanyWalletPage() {
     const [transactions, setTransactions] = useState<WalletTransaction[]>([]);
     const canManage = canManageMoney();
     const [amount, setAmount] = useState('50');
-    const [pendingId, setPendingId] = useState<number | null>(null);
+    const [pendingId, setPendingId] = useState<number | null>(() =>
+        readPendingTopupId(),
+    );
     const [waiting, setWaiting] = useState(
-        searchParams.get('topup') === 'success',
+        () =>
+            searchParams.get('topup') === 'success' ||
+            readPendingTopupId() !== null,
     );
     const [error, setError] = useState<string | null>(null);
     const [saving, setSaving] = useState(false);
@@ -82,24 +103,42 @@ export default function CompanyWalletPage() {
     }, []);
 
     useEffect(() => {
-        if (!waiting && pendingId === null) {
+        if (!waiting || wallet === null) {
             return;
         }
 
-        const id =
+        const pending =
             pendingId ??
-            transactions.find((row) => row.status === 'pending')?.id;
+            transactions.find(
+                (row) => row.type === 'topup' && row.status === 'pending',
+            )?.id;
 
-        if (!id) {
+        if (pending) {
+            if (pendingId !== pending) {
+                setPendingId(pending);
+            }
+
+            return;
+        }
+
+        // Returned from Stripe and the ledger already shows a posted top-up.
+        setWaiting(false);
+        setPendingId(null);
+        clearPendingTopupId();
+    }, [waiting, wallet, transactions, pendingId]);
+
+    useEffect(() => {
+        if (!waiting || pendingId === null) {
             return;
         }
 
         const timer = window.setInterval(() => {
-            http.get<WalletTransaction>(companyApi.walletTopup(id))
+            http.get<WalletTransaction>(companyApi.walletTopup(pendingId))
                 .then(({ data }) => {
                     if (data.status !== 'pending') {
                         setWaiting(false);
                         setPendingId(null);
+                        clearPendingTopupId();
                         void load();
                     }
                 })
@@ -107,7 +146,7 @@ export default function CompanyWalletPage() {
         }, 2000);
 
         return () => window.clearInterval(timer);
-    }, [waiting, pendingId, transactions]);
+    }, [waiting, pendingId]);
 
     async function topup() {
         const amountCents = centsFromEuros(amount);
@@ -126,6 +165,10 @@ export default function CompanyWalletPage() {
                 checkout_url: string;
                 wallet_transaction_id: number;
             }>(companyApi.walletTopups, { amount_cents: amountCents });
+            sessionStorage.setItem(
+                PENDING_TOPUP_KEY,
+                String(data.wallet_transaction_id),
+            );
             setPendingId(data.wallet_transaction_id);
             window.location.href = data.checkout_url;
         } catch (caught) {
