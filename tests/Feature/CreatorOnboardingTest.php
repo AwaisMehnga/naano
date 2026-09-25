@@ -12,6 +12,37 @@ test('creator onboarding starts on the linkedin step', function () {
         ->assertSee('Public LinkedIn URL');
 });
 
+test('creator onboarding panel shows linkedin profile details after verify', function () {
+    $user = User::factory()->creator()->create();
+    $user->creatorProfile->update([
+        'linkedin_url' => 'https://www.linkedin.com/in/ada',
+        'linkedin_verified_at' => now(),
+        'display_name' => 'Ada Lovelace',
+        'headline' => 'B2B writer for SaaS',
+        'country' => 'FR',
+        'linkedin_profile' => [
+            'first_name' => 'Ada',
+            'last_name' => 'Lovelace',
+            'headline' => 'B2B writer for SaaS',
+            'follower_count' => 1200,
+            'location' => 'Paris, France',
+            'current_company' => ['name' => 'Analytical Engines', 'url' => null],
+            'picture_url' => 'https://example.com/ada.jpg',
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('onboarding.creator'))
+        ->assertOk()
+        ->assertSee('Ada Lovelace', false)
+        ->assertSee('B2B writer for SaaS', false)
+        ->assertSee('Analytical Engines', false)
+        ->assertSee('Paris, France', false)
+        ->assertSee('1,200', false)
+        ->assertSee('LinkedIn verified', false)
+        ->assertSee('https://example.com/ada.jpg', false);
+});
+
 test('creator onboarding blocks skipping to the offer', function () {
     $user = User::factory()->creator()->create();
 

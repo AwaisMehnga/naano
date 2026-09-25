@@ -17,7 +17,7 @@ import {
 } from '@/components/ui/dialog';
 import { euros } from '@/company/pages/creators/format';
 import CampaignStatusSelect from './status-select';
-import CampaignTrackingCopy from './tracking-copy';
+import CampaignTracking from './tracking';
 import { useCampaigns } from './store';
 import {
     objectiveLabels,
@@ -136,7 +136,7 @@ export default function CompanyCampaignShowPage() {
                 <p className="text-sm text-muted-foreground">Loading…</p>
             ) : campaign ? (
                 <>
-                    <CampaignTrackingCopy campaignId={campaignId} />
+                    <CampaignTracking campaignId={campaignId} />
 
                     <section className="space-y-4">
                         <div>
