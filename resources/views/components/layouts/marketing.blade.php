@@ -14,13 +14,13 @@
         @vite(['resources/css/app.css', 'resources/js/landing.js'])
     </head>
     <body class="min-h-screen bg-background font-sans text-foreground antialiased">
-        <header class="sticky top-0 z-10 bg-background">
-            <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-5">
+        <header class="sticky top-0 z-10 border-b border-border/60 bg-background/95 backdrop-blur-sm">
+            <div class="flex w-full items-center justify-between gap-6 px-6 py-5 lg:px-12 xl:px-16">
                 <x-ui.logo />
-                <nav class="hidden items-center gap-8 text-sm md:flex">
+                <nav class="hidden items-center gap-8 text-sm lg:flex">
                     <a href="#how-it-works" class="text-foreground">How it works</a>
+                    <a href="#shortlist" class="text-foreground">Creators</a>
                     <a href="#companies" class="text-foreground">Companies</a>
-                    <a href="#creators" class="text-foreground">Creators</a>
                     <a href="#pricing" class="text-foreground">Pricing</a>
                 </nav>
                 <div class="flex items-center gap-2">
@@ -41,7 +41,7 @@
         </main>
 
         <footer class="bg-primary text-primary-foreground">
-            <div class="mx-auto grid max-w-6xl gap-10 px-6 py-16 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid w-full gap-10 px-6 py-16 sm:grid-cols-2 lg:grid-cols-4 lg:px-12 xl:px-16">
                 <div class="grid gap-3">
                     <x-ui.kicker tone="on-primary">Product</x-ui.kicker>
                     <a href="#how-it-works" class="text-sm text-primary-foreground">How it works</a>
@@ -64,8 +64,8 @@
                     <p class="text-sm text-primary-foreground/65">The B2B LinkedIn creator marketplace.</p>
                 </div>
             </div>
-            <div>
-                <p class="mx-auto max-w-6xl px-6 py-6 text-xs tracking-wide text-primary-foreground/65">
+            <div class="border-t border-primary-foreground/10">
+                <p class="w-full px-6 py-6 text-xs tracking-wide text-primary-foreground/65 lg:px-12 xl:px-16">
                     &copy; {{ now()->year }} {{ config('app.name') }}. The B2B LinkedIn creator marketplace.
                 </p>
             </div>

@@ -1,373 +1,377 @@
+@php
+    $creators = [
+        [
+            'name' => 'Eric',
+            'role' => 'VP Sales · EU SaaS',
+            'match' => '92%',
+            'followers' => '12.4K',
+            'engagement' => '410',
+            'rate' => '€1,400',
+            'image' => 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=800&h=1000&q=80',
+        ],
+        [
+            'name' => 'Robin',
+            'role' => 'Founder · Demand gen',
+            'match' => '88%',
+            'followers' => '28K',
+            'engagement' => '520',
+            'rate' => '€900',
+            'image' => 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=800&h=1000&q=80',
+        ],
+        [
+            'name' => 'Aya',
+            'role' => 'Operator · LinkedIn',
+            'match' => '84%',
+            'followers' => '9.1K',
+            'engagement' => '336',
+            'rate' => '€1,200',
+            'image' => 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&h=1000&q=80',
+        ],
+        [
+            'name' => 'Sam',
+            'role' => 'GTM Lead · SaaS',
+            'match' => '91%',
+            'followers' => '18K',
+            'engagement' => '480',
+            'rate' => '€1,100',
+            'image' => 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&w=800&h=1000&q=80',
+        ],
+    ];
+
+    $heroCreators = array_slice($creators, 0, 3);
+@endphp
+
 <x-layouts.marketing title="The B2B LinkedIn creator marketplace">
-    <section class="px-6 py-24 sm:py-32" data-hero>
-        <div class="mx-auto grid max-w-6xl items-center gap-16 lg:grid-cols-2">
-            <div>
-                <x-ui.kicker>B2B LinkedIn</x-ui.kicker>
-                <h1 class="mt-6 max-w-xl text-5xl font-normal leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
+    {{-- Hero --}}
+    <section class="relative overflow-hidden px-6 pb-14 pt-14 sm:pb-16 sm:pt-16 lg:px-12 lg:pt-20 xl:px-16" data-hero>
+        <div class="grid w-full items-center gap-12 lg:grid-cols-2 lg:gap-10">
+            <div class="max-w-2xl">
+                <h1 class="text-5xl font-normal leading-[0.95] tracking-tight sm:text-6xl lg:text-7xl">
                     The B2B LinkedIn
                     <x-ui.em>creator marketplace.</x-ui.em>
                 </h1>
-                <p class="mt-8 max-w-[36rem] text-xl leading-relaxed text-foreground">
-                    Find the creators your buyers already trust, launch campaigns in days, and track the clicks, leads, and pipeline from every post.
+                <p class="mt-6 max-w-md text-lg text-muted-foreground">
+                    Book creators your buyers already trust. Pay when the post is live.
                 </p>
-                <div class="mt-10 flex flex-wrap gap-3">
+                <div class="mt-8 flex flex-wrap gap-3">
                     <x-ui.button href="{{ route('register.company') }}" size="lg">Book creators</x-ui.button>
                     <x-ui.button href="{{ route('register.creator') }}" variant="secondary" size="lg">Get booked</x-ui.button>
                 </div>
             </div>
 
-            <x-ui.card flush>
-                <div class="grid gap-1 px-6 py-5">
-                    <x-ui.kicker>Campaign</x-ui.kicker>
-                    <p class="text-lg">Find creators your buyers trust</p>
+            <div class="relative mx-auto w-full max-w-lg lg:mx-0 lg:max-w-none" data-hero-visual>
+                <div class="relative mx-auto flex h-[22rem] w-full items-end justify-center sm:h-[24rem] lg:h-[26rem]">
+                    @foreach ($heroCreators as $index => $creator)
+                        @php
+                            $cardClass = match ($index) {
+                                0 => 'absolute bottom-2 left-[14%] z-0 w-[11rem] -rotate-6 sm:left-[18%] sm:w-[12.5rem] lg:w-[13.5rem]',
+                                1 => 'absolute bottom-0 left-1/2 z-20 w-[12rem] -translate-x-1/2 sm:w-[13.5rem] lg:w-[14.5rem]',
+                                default => 'absolute bottom-2 right-[14%] z-10 w-[11rem] rotate-6 sm:right-[18%] sm:w-[12.5rem] lg:w-[13.5rem]',
+                            };
+                        @endphp
+                        <article data-hero-card class="{{ $cardClass }} overflow-hidden rounded-3xl border border-border bg-card">
+                            <div class="relative">
+                                <span class="absolute left-3 top-3 z-10 rounded-pill bg-accent px-2.5 py-1 text-[11px] font-medium text-accent-foreground">
+                                    {{ $creator['match'] }} match
+                                </span>
+                                <img
+                                    src="{{ $creator['image'] }}"
+                                    alt="{{ $creator['name'] }}"
+                                    class="aspect-square w-full object-cover"
+                                    loading="{{ $index === 1 ? 'eager' : 'lazy' }}"
+                                    width="400"
+                                    height="400"
+                                >
+                            </div>
+                            <div class="grid gap-3 p-3.5">
+                                <div>
+                                    <p class="text-sm font-medium tracking-tight">{{ $creator['name'] }}</p>
+                                    <p class="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{{ $creator['role'] }}</p>
+                                </div>
+                                <div class="grid grid-cols-3 gap-1 border-t border-border pt-2.5 text-center">
+                                    <div>
+                                        <p class="text-xs font-medium">{{ $creator['followers'] }}</p>
+                                        <p class="text-[10px] text-muted-foreground">Followers</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-medium">{{ $creator['engagement'] }}</p>
+                                        <p class="text-[10px] text-muted-foreground">Engagement</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs font-medium">{{ $creator['rate'] }}</p>
+                                        <p class="text-[10px] text-muted-foreground">Per post</p>
+                                    </div>
+                                </div>
+                                <a href="{{ route('register.company') }}" class="inline-flex w-full items-center justify-center rounded-pill bg-accent py-2 text-xs font-medium text-accent-foreground">Shortlist</a>
+                            </div>
+                        </article>
+                    @endforeach
                 </div>
-                <div class="px-6 pb-5">
-                    <p class="rounded-lg bg-muted px-4 py-3 text-sm leading-relaxed text-foreground">
-                        Operators who already sell to VP Sales in EU SaaS. One post each, live this month.
-                    </p>
+            </div>
+        </div>
+
+        <div class="mt-14 flex flex-wrap gap-x-12 gap-y-6 border-t border-border pt-8" data-reveal>
+            <div>
+                <p class="text-3xl tracking-tight sm:text-4xl">3,000+</p>
+                <p class="mt-1 text-sm text-muted-foreground">Creators</p>
+            </div>
+            <div>
+                <p class="text-3xl tracking-tight sm:text-4xl">100</p>
+                <p class="mt-1 text-sm text-muted-foreground">Countries</p>
+            </div>
+            <div>
+                <p class="text-3xl tracking-tight sm:text-4xl">5M+</p>
+                <p class="mt-1 text-sm text-muted-foreground">Impressions</p>
+            </div>
+            <div>
+                <p class="text-3xl tracking-tight sm:text-4xl">30K+</p>
+                <p class="mt-1 text-sm text-muted-foreground">Leads</p>
+            </div>
+        </div>
+    </section>
+
+    {{-- How it works --}}
+    <section id="how-it-works" class="scroll-mt-24 bg-card px-6 py-20 lg:px-12 xl:px-16" data-reveal>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <h2 class="max-w-xl text-4xl font-normal tracking-tight sm:text-5xl">
+                Run campaigns
+                <x-ui.em>from one place.</x-ui.em>
+            </h2>
+        </div>
+
+        <div class="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            <article class="overflow-hidden rounded-3xl border border-border bg-background">
+                <div class="grid grid-cols-3 gap-2 p-4">
+                    @foreach (array_slice($creators, 0, 3) as $creator)
+                        <img
+                            src="{{ $creator['image'] }}"
+                            alt="{{ $creator['name'] }}"
+                            class="aspect-square w-full rounded-2xl object-cover"
+                            loading="lazy"
+                            width="120"
+                            height="120"
+                        >
+                    @endforeach
                 </div>
-                <ul class="grid gap-1 px-6">
-                    <li class="flex items-center justify-between py-2.5 text-sm">
-                        <span>Eric</span>
-                        <span class="text-primary">Fit 92%</span>
-                    </li>
-                    <li class="flex items-center justify-between py-2.5 text-sm">
-                        <span>Robin</span>
-                        <span class="text-primary">Fit 88%</span>
-                    </li>
-                    <li class="flex items-center justify-between py-2.5 text-sm">
-                        <span>Aya</span>
-                        <span class="text-primary">Fit 84%</span>
-                    </li>
-                </ul>
-                <div class="mt-2 grid grid-cols-2 gap-6 px-6 py-5">
-                    <div>
-                        <p class="text-xs text-muted-foreground">Attributed pipeline</p>
-                        <p class="mt-1 text-2xl">€48.2K</p>
+                <div class="border-t border-border px-5 py-4">
+                    <p class="text-xs tracking-[0.18em] text-muted-foreground">01</p>
+                    <h3 class="mt-2 text-lg">Find creators</h3>
+                </div>
+            </article>
+
+            <article class="overflow-hidden rounded-3xl border border-border bg-background">
+                <div class="p-4">
+                    <div class="rounded-2xl bg-muted p-4">
+                        <div class="h-2.5 w-2/3 rounded-pill bg-card"></div>
+                        <div class="mt-3 h-2.5 w-full rounded-pill bg-card"></div>
+                        <div class="mt-2 h-2.5 w-5/6 rounded-pill bg-card"></div>
+                        <div class="mt-6 flex gap-2">
+                            <span class="rounded-pill bg-accent px-3 py-1 text-xs text-accent-foreground">Brief</span>
+                            <span class="rounded-pill bg-card px-3 py-1 text-xs">Links</span>
+                        </div>
                     </div>
-                    <div>
-                        <p class="text-xs text-muted-foreground">Leads</p>
-                        <p class="mt-1 text-2xl">418</p>
+                </div>
+                <div class="border-t border-border px-5 py-4">
+                    <p class="text-xs tracking-[0.18em] text-muted-foreground">02</p>
+                    <h3 class="mt-2 text-lg">Write the brief</h3>
+                </div>
+            </article>
+
+            <article class="overflow-hidden rounded-3xl border border-border bg-background">
+                <div class="flex gap-2 p-4">
+                    <img
+                        src="{{ $creators[2]['image'] }}"
+                        alt="{{ $creators[2]['name'] }}"
+                        class="size-16 rounded-2xl object-cover"
+                        loading="lazy"
+                        width="64"
+                        height="64"
+                    >
+                    <div class="flex-1 rounded-2xl bg-muted p-3">
+                        <div class="h-2 w-3/4 rounded-pill bg-card"></div>
+                        <div class="mt-2 h-2 w-full rounded-pill bg-card"></div>
+                        <div class="mt-2 h-2 w-2/3 rounded-pill bg-card"></div>
                     </div>
                 </div>
-                <div class="px-6 pb-6">
-                    <x-ui.button href="{{ route('register.company') }}">Book this shortlist</x-ui.button>
+                <div class="border-t border-border px-5 py-4">
+                    <p class="text-xs tracking-[0.18em] text-muted-foreground">03</p>
+                    <h3 class="mt-2 text-lg">Approve drafts</h3>
+                </div>
+            </article>
+
+            <article class="overflow-hidden rounded-3xl border border-border bg-background">
+                <div class="p-4">
+                    <div class="rounded-2xl bg-muted p-5">
+                        <p class="text-3xl tracking-tight">€48.2K</p>
+                        <p class="mt-1 text-xs text-muted-foreground">Pipeline</p>
+                        <div class="mt-5 h-2 overflow-hidden rounded-pill bg-card">
+                            <div class="h-full w-3/4 rounded-pill bg-primary"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="border-t border-border px-5 py-4">
+                    <p class="text-xs tracking-[0.18em] text-muted-foreground">04</p>
+                    <h3 class="mt-2 text-lg">Track results</h3>
+                </div>
+            </article>
+        </div>
+    </section>
+
+    {{-- Shortlist --}}
+    <section id="shortlist" class="scroll-mt-24 px-6 py-20 lg:px-12 xl:px-16" data-reveal>
+        <div class="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+            <h2 class="max-w-xl text-4xl font-normal tracking-tight sm:text-5xl">
+                Build a shortlist
+                <x-ui.em>in minutes.</x-ui.em>
+            </h2>
+            <x-ui.button href="{{ route('register.company') }}">Book creators</x-ui.button>
+        </div>
+
+        <div class="mt-12 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
+            @foreach ($creators as $creator)
+                <a href="{{ route('register.company') }}" class="overflow-hidden rounded-3xl border border-border bg-card transition-opacity hover:opacity-90">
+                    <div class="relative">
+                        <span class="absolute left-3 top-3 z-10 rounded-pill bg-accent px-2.5 py-1 text-[11px] font-medium text-accent-foreground">
+                            {{ $creator['match'] }} match
+                        </span>
+                        <img
+                            src="{{ $creator['image'] }}"
+                            alt="{{ $creator['name'] }}"
+                            class="aspect-[4/5] w-full object-cover"
+                            loading="lazy"
+                            width="400"
+                            height="500"
+                        >
+                    </div>
+                    <div class="grid gap-3 p-4">
+                        <div>
+                            <p class="font-medium tracking-tight">{{ $creator['name'] }}</p>
+                            <p class="mt-0.5 text-sm text-muted-foreground">{{ $creator['role'] }}</p>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-muted-foreground">{{ $creator['followers'] }} followers</span>
+                            <span class="font-medium">{{ $creator['rate'] }}</span>
+                        </div>
+                        <span class="inline-flex w-full items-center justify-center rounded-pill bg-accent py-2 text-xs font-medium text-accent-foreground">Shortlist</span>
+                    </div>
+                </a>
+            @endforeach
+        </div>
+    </section>
+
+    {{-- Quote --}}
+    <section class="bg-card px-6 py-20 lg:px-12 xl:px-16" data-reveal>
+        <div class="grid w-full items-center gap-10 lg:grid-cols-[14rem_1fr]">
+            <img
+                src="https://images.unsplash.com/photo-1560250097-0b93528c311a?auto=format&fit=crop&w=400&h=400&q=80"
+                alt="David Zmirov"
+                class="size-40 rounded-3xl object-cover lg:size-52"
+                loading="lazy"
+                width="208"
+                height="208"
+            >
+            <div>
+                <blockquote class="max-w-3xl text-3xl font-normal leading-snug tracking-tight sm:text-4xl">
+                    “For B2B, Naano simply makes our life easier.”
+                </blockquote>
+                <p class="mt-6 text-sm">David Zmirov · CEO, Zmirov Communication</p>
+            </div>
+        </div>
+    </section>
+
+    {{-- Two sides --}}
+    <section class="bg-primary text-primary-foreground" data-reveal>
+        <div class="w-full px-6 py-20 lg:px-12 xl:px-16">
+            <h2 class="max-w-2xl text-4xl font-normal tracking-tight sm:text-5xl">
+                One marketplace.
+                <x-ui.em>Two sides.</x-ui.em>
+            </h2>
+
+            <div class="mt-12 grid gap-5 lg:grid-cols-2">
+                <div id="companies" class="scroll-mt-24 overflow-hidden rounded-3xl border border-primary-foreground/15 bg-primary">
+                    <div class="grid sm:grid-cols-2">
+                        <div class="flex flex-col justify-between gap-8 p-8 sm:p-10">
+                            <div>
+                                <x-ui.kicker tone="on-primary">Companies</x-ui.kicker>
+                                <p class="mt-4 text-3xl tracking-tight">Book creators</p>
+                            </div>
+                            <x-ui.button href="{{ route('register.company') }}" variant="inverted">Create a company account</x-ui.button>
+                        </div>
+                        <div class="relative min-h-56">
+                            <img
+                                src="{{ $creators[1]['image'] }}"
+                                alt=""
+                                class="absolute inset-0 size-full object-cover"
+                                loading="lazy"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <div id="creators" class="scroll-mt-24 overflow-hidden rounded-3xl border border-primary-foreground/15 bg-primary">
+                    <div class="grid sm:grid-cols-2">
+                        <div class="flex flex-col justify-between gap-8 p-8 sm:p-10">
+                            <div>
+                                <x-ui.kicker tone="on-primary">Creators</x-ui.kicker>
+                                <p class="mt-4 text-3xl tracking-tight">Get booked</p>
+                            </div>
+                            <x-ui.button href="{{ route('register.creator') }}" variant="inverted">Join as a creator</x-ui.button>
+                        </div>
+                        <div class="relative min-h-56">
+                            <img
+                                src="{{ $creators[0]['image'] }}"
+                                alt=""
+                                class="absolute inset-0 size-full object-cover"
+                                loading="lazy"
+                            >
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- Pricing --}}
+    <section id="pricing" class="scroll-mt-24 px-6 py-20 lg:px-12 xl:px-16" data-reveal>
+        <h2 class="max-w-xl text-4xl font-normal tracking-tight sm:text-5xl">
+            Two ways to
+            <x-ui.em>work with us.</x-ui.em>
+        </h2>
+        <div class="mt-12 grid gap-5 lg:grid-cols-2">
+            <x-ui.card flush class="rounded-3xl p-8">
+                <x-ui.kicker>Self-serve</x-ui.kicker>
+                <p class="mt-6 text-5xl tracking-tight">Free</p>
+                <p class="mt-3 text-xl">Run it yourself</p>
+                <div class="mt-8">
+                    <x-ui.button href="{{ route('register.company') }}">Start free</x-ui.button>
+                </div>
+            </x-ui.card>
+            <x-ui.card flush class="rounded-3xl p-8">
+                <x-ui.kicker>Managed</x-ui.kicker>
+                <p class="mt-6 text-5xl tracking-tight">Operated</p>
+                <p class="mt-3 text-xl">Get your time back</p>
+                <div class="mt-8">
+                    <x-ui.button href="{{ route('register.company') }}" variant="secondary">Talk to us</x-ui.button>
                 </div>
             </x-ui.card>
         </div>
     </section>
 
-    <section class="px-6 py-12" data-reveal>
-        <div class="mx-auto max-w-6xl">
-            <x-ui.kicker>Trusted by modern B2B teams</x-ui.kicker>
-            <p class="mt-6 flex flex-wrap gap-x-10 gap-y-3 text-sm text-muted-foreground">
-                <span>Demand gen</span>
-                <span>Product marketing</span>
-                <span>Agencies</span>
-                <span>Scale-ups</span>
-                <span>Operators</span>
-            </p>
-        </div>
-    </section>
-
-    <section class="px-6 py-24" data-reveal>
-        <div class="mx-auto max-w-6xl">
-            <x-ui.kicker>Case study</x-ui.kicker>
-            <blockquote class="mt-8 max-w-3xl text-3xl font-normal leading-snug tracking-tight sm:text-4xl lg:text-5xl">
-                “We manage €10M+ of influence budget every year. For B2B, Naano simply makes our life easier.”
-            </blockquote>
-            <p class="mt-8 text-sm">David Zmirov</p>
-            <p class="text-sm text-muted-foreground">CEO, Zmirov Communication</p>
-        </div>
-    </section>
-
-    <section class="px-6 py-24" data-reveal>
-        <div class="mx-auto max-w-6xl">
-            <h2 class="max-w-3xl text-4xl font-normal tracking-tight sm:text-5xl">
-                Work with all the
-                <x-ui.em>best creators.</x-ui.em>
-            </h2>
-            <p class="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-                Find the right B2B voices, compare audience fit, and book every collaboration from one place.
-            </p>
-            <div class="mt-16 grid gap-10 sm:grid-cols-3">
-                <div>
-                    <p class="text-4xl tracking-tight sm:text-5xl">3,000+</p>
-                    <p class="mt-3 text-sm text-muted-foreground">Vetted creators. Specialist B2B voices, ready to collaborate.</p>
-                </div>
-                <div>
-                    <p class="text-4xl tracking-tight sm:text-5xl">100</p>
-                    <p class="mt-3 text-sm text-muted-foreground">Countries. Local expertise with genuinely global reach.</p>
-                </div>
-                <div>
-                    <p class="text-4xl tracking-tight sm:text-5xl">Buyers first</p>
-                    <p class="mt-3 text-sm text-muted-foreground">Matched to your buyers. Audience fit comes before follower count.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="how-it-works" class="px-6 py-24" data-reveal>
-        <div class="mx-auto max-w-6xl">
-            <h2 class="max-w-3xl text-4xl font-normal tracking-tight sm:text-5xl">
-                Run creator campaigns
-                <x-ui.em>from one place.</x-ui.em>
-            </h2>
-            <p class="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-                Find the right voices, launch faster, and connect every post to measurable business results.
-            </p>
-            <ol class="mt-16 grid gap-12">
-                <li class="grid gap-4 sm:grid-cols-[4.5rem_1fr]">
-                    <p class="text-sm tracking-[0.18em] text-muted-foreground">01</p>
-                    <div>
-                        <p class="text-xl">Find creators your buyers trust</p>
-                        <p class="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">Compare audience fit, then shortlist the voices already in your buyers’ feed.</p>
-                    </div>
-                </li>
-                <li class="grid gap-4 sm:grid-cols-[4.5rem_1fr]">
-                    <p class="text-sm tracking-[0.18em] text-muted-foreground">02</p>
-                    <div>
-                        <p class="text-xl">Build a campaign brief in minutes</p>
-                        <p class="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">Objectives, key messages, and creator guidelines in one brief the whole campaign uses.</p>
-                    </div>
-                </li>
-                <li class="grid gap-4 sm:grid-cols-[4.5rem_1fr]">
-                    <p class="text-sm tracking-[0.18em] text-muted-foreground">03</p>
-                    <div>
-                        <p class="text-xl">Manage every collaboration</p>
-                        <p class="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">Drafts, schedules, and live posts stay on one thread until the work is done.</p>
-                    </div>
-                </li>
-                <li class="grid gap-4 sm:grid-cols-[4.5rem_1fr]">
-                    <p class="text-sm tracking-[0.18em] text-muted-foreground">04</p>
-                    <div>
-                        <p class="text-xl">Track reach, clicks, and leads</p>
-                        <p class="mt-2 max-w-xl text-sm leading-relaxed text-muted-foreground">Attributed pipeline sits next to the post, so you know what each creator brought in.</p>
-                    </div>
-                </li>
-            </ol>
-        </div>
-    </section>
-
-    <section class="bg-primary text-primary-foreground" data-reveal>
-        <div class="mx-auto max-w-6xl px-6 py-32 sm:py-40">
-            <div class="mb-16 grid max-w-3xl gap-5">
-                <x-ui.kicker tone="on-primary">The marketplace</x-ui.kicker>
-                <h2 class="text-4xl font-normal tracking-tight sm:text-5xl">
-                    One marketplace.
-                    <x-ui.em>Two sides.</x-ui.em>
-                </h2>
-                <p class="max-w-xl text-lg leading-relaxed text-primary-foreground/75">
-                    Companies book at a fixed price per post. Creators set a rate and get booked.
-                </p>
-            </div>
-
-            <div id="companies" class="scroll-mt-24 grid items-center gap-10 border border-primary-foreground/15 p-8 sm:p-12 lg:grid-cols-2">
-                <div class="grid gap-5">
-                    <x-ui.kicker tone="on-primary">Companies</x-ui.kicker>
-                    <p class="text-3xl font-normal tracking-tight sm:text-4xl">Book creators</p>
-                    <details class="group border-t border-primary-foreground/15" open>
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-sm font-medium marker:content-none [&::-webkit-details-marker]:hidden">
-                            Accept a short brief from your website
-                            <span class="text-primary-foreground/50 group-open:hidden">+</span>
-                            <span class="hidden text-primary-foreground/50 group-open:inline">−</span>
-                        </summary>
-                        <p class="max-w-md pb-3.5 text-sm leading-relaxed text-primary-foreground/75">
-                            A short brief from your website. Objectives and key messages stay on one campaign.
-                        </p>
-                    </details>
-                    <details class="group border-t border-primary-foreground/15">
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-sm font-medium marker:content-none [&::-webkit-details-marker]:hidden">
-                            Creators matched to your ICP
-                            <span class="text-primary-foreground/50 group-open:hidden">+</span>
-                            <span class="hidden text-primary-foreground/50 group-open:inline">−</span>
-                        </summary>
-                        <p class="max-w-md pb-3.5 text-sm leading-relaxed text-primary-foreground/75">
-                            Compare audience fit, then shortlist the voices already in your buyers’ feed.
-                        </p>
-                    </details>
-                    <details class="group border-t border-b border-primary-foreground/15">
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-sm font-medium marker:content-none [&::-webkit-details-marker]:hidden">
-                            Clicks, leads, and pipeline
-                            <span class="text-primary-foreground/50 group-open:hidden">+</span>
-                            <span class="hidden text-primary-foreground/50 group-open:inline">−</span>
-                        </summary>
-                        <p class="max-w-md pb-3.5 text-sm leading-relaxed text-primary-foreground/75">
-                            Clicks, leads, and pipeline on the same campaign, next to the post that earned them.
-                        </p>
-                    </details>
-                    <div class="pt-2">
-                        <x-ui.button href="{{ route('register.company') }}" variant="inverted">Create a company account</x-ui.button>
-                    </div>
-                </div>
-                <x-ui.card>
-                    <x-ui.kicker>Campaign</x-ui.kicker>
-                    <p class="mt-2 text-lg text-card-foreground">Find creators your buyers trust</p>
-                    <ul class="mt-6 grid gap-1">
-                        <li class="flex items-center justify-between py-2 text-sm">
-                            <span>Eric</span>
-                            <span class="text-primary">Fit 92%</span>
-                        </li>
-                        <li class="flex items-center justify-between py-2 text-sm">
-                            <span>Robin</span>
-                            <span class="text-primary">Fit 88%</span>
-                        </li>
-                        <li class="flex items-center justify-between py-2 text-sm">
-                            <span>Aya</span>
-                            <span class="text-primary">Fit 84%</span>
-                        </li>
-                    </ul>
-                    <div class="mt-4 grid grid-cols-2 gap-6">
-                        <div>
-                            <p class="text-xs text-muted-foreground">Attributed pipeline</p>
-                            <p class="mt-1 text-2xl">€48.2K</p>
-                        </div>
-                        <div>
-                            <p class="text-xs text-muted-foreground">Leads</p>
-                            <p class="mt-1 text-2xl">418</p>
-                        </div>
-                    </div>
-                </x-ui.card>
-            </div>
-
-            <div id="creators" class="mt-8 scroll-mt-24 grid items-center gap-10 border border-primary-foreground/15 p-8 sm:p-12 lg:grid-cols-2">
-                <div class="grid gap-5">
-                    <x-ui.kicker tone="on-primary">Creators</x-ui.kicker>
-                    <p class="text-3xl font-normal tracking-tight sm:text-4xl">Get booked</p>
-                    <details class="group border-t border-primary-foreground/15" open>
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-sm font-medium marker:content-none [&::-webkit-details-marker]:hidden">
-                            A marketplace card with your rate
-                            <span class="text-primary-foreground/50 group-open:hidden">+</span>
-                            <span class="hidden text-primary-foreground/50 group-open:inline">−</span>
-                        </summary>
-                        <p class="max-w-md pb-3.5 text-sm leading-relaxed text-primary-foreground/75">
-                            A marketplace card with your public LinkedIn and net price.
-                        </p>
-                    </details>
-                    <details class="group border-t border-primary-foreground/15">
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-sm font-medium marker:content-none [&::-webkit-details-marker]:hidden">
-                            Campaigns from B2B brands
-                            <span class="text-primary-foreground/50 group-open:hidden">+</span>
-                            <span class="hidden text-primary-foreground/50 group-open:inline">−</span>
-                        </summary>
-                        <p class="max-w-md pb-3.5 text-sm leading-relaxed text-primary-foreground/75">
-                            Campaigns from B2B brands your buyers already know.
-                        </p>
-                    </details>
-                    <details class="group border-t border-b border-primary-foreground/15">
-                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 py-3.5 text-sm font-medium marker:content-none [&::-webkit-details-marker]:hidden">
-                            Contract, invoice, and payout
-                            <span class="text-primary-foreground/50 group-open:hidden">+</span>
-                            <span class="hidden text-primary-foreground/50 group-open:inline">−</span>
-                        </summary>
-                        <p class="max-w-md pb-3.5 text-sm leading-relaxed text-primary-foreground/75">
-                            Contract, invoice, and payout handled in the workspace.
-                        </p>
-                    </details>
-                    <div class="pt-2">
-                        <x-ui.button href="{{ route('register.creator') }}" variant="inverted">Join as a creator</x-ui.button>
-                    </div>
-                </div>
-                <x-ui.card>
-                    <x-ui.kicker>Creator</x-ui.kicker>
-                    <p class="mt-2 text-lg text-card-foreground">Aya</p>
-                    <p class="mt-1 text-sm text-muted-foreground">LinkedIn · EU SaaS operators</p>
-                    <div class="mt-6">
-                        <p class="text-xs text-muted-foreground">Net price</p>
-                        <p class="mt-1 text-2xl">€1,200 / post</p>
-                    </div>
-                </x-ui.card>
-            </div>
-        </div>
-    </section>
-
-    <section class="px-6 py-24" data-reveal>
-        <div class="mx-auto max-w-6xl">
-            <h2 class="text-4xl font-normal tracking-tight sm:text-5xl">
-                Proven across thousands of
-                <x-ui.em>campaigns.</x-ui.em>
-            </h2>
-            <div class="mt-16 grid grid-cols-2 gap-10 lg:grid-cols-4">
-                <div>
-                    <p class="text-4xl tracking-tight sm:text-5xl">5M+</p>
-                    <p class="mt-3 text-sm text-muted-foreground">Impressions generated</p>
-                </div>
-                <div>
-                    <p class="text-4xl tracking-tight sm:text-5xl">30K+</p>
-                    <p class="mt-3 text-sm text-muted-foreground">Leads generated</p>
-                </div>
-                <div>
-                    <p class="text-4xl tracking-tight sm:text-5xl">2,000+</p>
-                    <p class="mt-3 text-sm text-muted-foreground">Creators on Naano</p>
-                </div>
-                <div>
-                    <p class="text-4xl tracking-tight sm:text-5xl">5K+</p>
-                    <p class="mt-3 text-sm text-muted-foreground">Posts published</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <section id="pricing" class="px-6 py-24" data-reveal>
-        <div class="mx-auto max-w-6xl">
-            <h2 class="text-4xl font-normal tracking-tight sm:text-5xl">
-                Start free.
-                <x-ui.em>Upgrade when you want time back.</x-ui.em>
-            </h2>
-            <p class="mt-6 max-w-xl text-lg text-muted-foreground">
-                Run creator campaigns in-house, or have Naano operate the channel end to end.
-            </p>
-            <div class="mt-16 grid gap-6 lg:grid-cols-2">
-                <x-ui.card>
-                    <x-ui.kicker>Run it yourself</x-ui.kicker>
-                    <p class="mt-6 text-5xl tracking-tight">Free</p>
-                    <h3 class="mt-4 text-2xl font-normal">For teams that want the infrastructure.</h3>
-                    <ul class="mt-8 grid gap-3 text-sm">
-                        <li>Discover and book vetted LinkedIn creators</li>
-                        <li>Brief, collaborate, and approve in one thread</li>
-                        <li>Track clicks, leads, and pipeline per post</li>
-                    </ul>
-                    <div class="mt-10">
-                        <x-ui.button href="{{ route('register.company') }}">Start free</x-ui.button>
-                    </div>
-                </x-ui.card>
-                <x-ui.card>
-                    <x-ui.kicker>Get your time back</x-ui.kicker>
-                    <p class="mt-6 text-5xl tracking-tight">Operated</p>
-                    <h3 class="mt-4 text-2xl font-normal">For teams that want Naano to operate the channel.</h3>
-                    <ul class="mt-8 grid gap-3 text-sm">
-                        <li>Campaign strategy and positioning</li>
-                        <li>Creator sourcing, briefing, and launch</li>
-                        <li>Reporting and optimisation</li>
-                    </ul>
-                    <div class="mt-10">
-                        <x-ui.button href="{{ route('register.company') }}" variant="secondary">Talk to us</x-ui.button>
-                    </div>
-                </x-ui.card>
-            </div>
-        </div>
-    </section>
-
+    {{-- FAQ --}}
     <section class="bg-foreground text-background" data-reveal>
-        <div class="mx-auto max-w-6xl px-6 py-24">
-            <x-ui.kicker tone="on-inverse">FAQ</x-ui.kicker>
-            <h2 class="mt-6 text-4xl font-normal tracking-tight sm:text-5xl">
-                Frequently asked
-                <x-ui.em>questions.</x-ui.em>
+        <div class="w-full px-6 py-20 lg:px-12 xl:px-16">
+            <h2 class="text-4xl font-normal tracking-tight sm:text-5xl">
+                FAQ
             </h2>
-            <p class="mt-6 text-background/65">Everything you need to know before getting started.</p>
-            <div class="mt-16">
+            <div class="mt-10 max-w-3xl">
                 <x-ui.accordion-item name="faq" tone="on-inverse" :open="true" question="What is Naano?">
-                    Naano is a B2B LinkedIn creator marketplace. Companies discover and book vetted creators for sponsored LinkedIn campaigns, each at a fixed price per post set by the creator.
+                    Naano is a B2B LinkedIn creator marketplace. Companies book vetted creators at a fixed price per post.
                 </x-ui.accordion-item>
                 <x-ui.accordion-item name="faq" tone="on-inverse" question="Who is this for?">
-                    B2B teams that want posts from operators their buyers already follow, and creators who already publish on LinkedIn.
+                    B2B teams that want posts from operators their buyers already follow, and creators who publish on LinkedIn.
                 </x-ui.accordion-item>
                 <x-ui.accordion-item name="faq" tone="on-inverse" question="How does pricing work?">
-                    The creator sets a net price per post. Companies book that rate. Start on the free workspace, then upgrade if you want Naano to run the channel.
-                </x-ui.accordion-item>
-                <x-ui.accordion-item name="faq" tone="on-inverse" question="What’s the difference between Run it yourself and Get your time back?">
-                    Run it yourself is the marketplace: you source, brief, and book. Get your time back is operated by Naano: strategy, sourcing, launch, and reporting.
+                    Creators set a net price per post. Companies book that rate. Upgrade later if you want Naano to run the channel.
                 </x-ui.accordion-item>
                 <x-ui.accordion-item name="faq" tone="on-inverse" question="What happens after signup?">
                     Verify your email, finish a short setup, then open your company or creator workspace.
@@ -376,18 +380,28 @@
         </div>
     </section>
 
-    <section class="px-6 py-24" data-reveal>
-        <div class="mx-auto max-w-6xl">
-            <h2 class="max-w-3xl text-4xl font-normal tracking-tight sm:text-5xl lg:text-6xl">
-                Your next creator campaign
-                <x-ui.em>starts here.</x-ui.em>
-            </h2>
-            <p class="mt-6 max-w-xl text-lg text-muted-foreground">
-                Get a creator strategy, a campaign format, and a workspace that can actually book the post.
-            </p>
-            <div class="mt-10 flex flex-wrap gap-3">
-                <x-ui.button href="{{ route('register.company') }}" size="lg">Get started</x-ui.button>
-                <x-ui.button href="{{ route('register.creator') }}" variant="secondary" size="lg">Join as a creator</x-ui.button>
+    {{-- Final CTA --}}
+    <section class="px-6 py-20 lg:px-12 xl:px-16" data-reveal>
+        <div class="relative w-full overflow-hidden rounded-3xl bg-accent">
+            <div class="grid items-center lg:grid-cols-2">
+                <div class="px-8 py-14 sm:px-12 sm:py-16 lg:px-16">
+                    <h2 class="max-w-md text-4xl font-normal tracking-tight sm:text-5xl">
+                        Your next campaign
+                        <x-ui.em>starts here.</x-ui.em>
+                    </h2>
+                    <div class="mt-8 flex flex-wrap gap-3">
+                        <x-ui.button href="{{ route('register.company') }}" size="lg">Get started</x-ui.button>
+                        <x-ui.button href="{{ route('register.creator') }}" variant="secondary" size="lg">Join as a creator</x-ui.button>
+                    </div>
+                </div>
+                <div class="relative hidden h-full min-h-72 lg:block">
+                    <img
+                        src="{{ $creators[3]['image'] }}"
+                        alt=""
+                        class="absolute inset-0 size-full object-cover"
+                        loading="lazy"
+                    >
+                </div>
             </div>
         </div>
     </section>
