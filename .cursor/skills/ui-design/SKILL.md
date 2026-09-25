@@ -1,77 +1,114 @@
 ---
 name: ui-design
 description: >-
-  Enforces Naano marketing, auth, onboarding, and Blade UI. Use when creating or
-  editing Blade views, layouts, landing, login, register, password, verification,
-  onboarding, buttons, forms, GSAP, Tailwind classes, or app.css tokens.
+  Enforces Naano's only product UI: roomy bento, clean minimal modern soft-canvas
+  design with semantic theme tokens from app.css. Use when creating or editing
+  React/Blade UI, dashboards, SPA pages, layouts, SoftCard, charts, buttons,
+  forms, className, Tailwind, marketing, auth, onboarding, or app.css.
 ---
 
 # Naano UI design
 
-This skill is mandatory. Visual language is the lime system: soft grey canvas, black ink CTAs, white soft cards, lime accent (`#C7F33C`). Content and IA follow naano.com. Do not invent a second look.
+This skill is mandatory. There is **one** visual language: roomy bento on a soft canvas, black ink, white cards, lime accent. Do not invent a second look.
+
+Theme control is centralized: change colors only in `resources/css/app.css`. Every surface must use semantic classes so the whole product restyles from that file.
+
+Also follow [semantic-theme](../semantic-theme/SKILL.md). Read [tokens.md](tokens.md) and [components.md](components.md) before writing markup.
+
+## Design principles (non-negotiable)
+
+1. **Soft canvas** — Page background is `bg-background`. Content floats as white `bg-card` surfaces. Never a flat white full-bleed app chrome.
+2. **Bento** — Dashboards use a spacious grid of SoftCards / chart cards with generous gaps (`gap-5`+). Unequal spans are fine; cramped equal tiles are not.
+3. **Roomy** — Prefer larger padding (`p-6`), taller pills (`h-11` default buttons), wider nav tabs (`px-6 py-2.5`), and breathing room between blocks (`gap-6`–`gap-8`). Compact SaaS density is wrong.
+4. **Clean / minimal** — One job per section. No decorative shadows. No expand/affordance clutter. No fake demo chrome (Shared avatars, Add widget, Pro upsell) unless the product feature is real.
+5. **Modern** — Pill controls (`rounded-pill`), large card radii (`rounded-3xl` SoftCard), Inter only, lime callouts sparingly.
+6. **Semantic colors only** — Never hardcode hex/rgb/oklch or palette utilities in TSX/Blade. See Forbidden below.
 
 ## Before any markup
 
-1. Read [tokens.md](tokens.md) and [components.md](components.md).
-2. Use only those layouts, components, tokens, and recipes.
-3. If a needed color does not exist, add a token in `resources/css/app.css` first, then use the semantic class. Never invent a one-off.
+1. Prefer existing components in `resources/js/components/ds` and `resources/js/components/ui` (SPA) or Blade `x-ui.*` (marketing/auth).
+2. If a color is missing, add a token in `resources/css/app.css` first, then use the semantic class.
+3. Copy is sentence case, active verbs, Naano product language — not generic “Product Sales Performance” mock copy.
 
 ## Hard rules
 
-1. Colors: only semantic classes from `app.css`. Forbidden: palette utilities (`bg-neutral-*`, `text-white`, `text-black`, `text-red-600`), arbitrary colors (`bg-[#171818]`, `text-[oklch(...)]`), new `--color-*` or `@theme` blocks outside `app.css`, `dark:` on dashboards.
-2. Every button, input, textarea, select, field error, card, alert, logo, stepper, kicker, emphasis, and nav CTA MUST use the Blade components in `components.md`. Duplicating their class strings in a page is a skill violation.
-3. Marketing pages use `x-layouts.marketing`. Auth pages use `x-layouts.auth` (full-height split: form + primary panel). Onboarding pages use `x-layouts.onboarding` (same). Never put the homepage in the auth layout.
-4. Copy: sentence case, active verbs, one job per control. Primary CTA labels: “Sign in”, “Create account”, “Continue”, “Verify”, “Analyze website”, “Go to workspace”, “Get started”, “Book creators”, “Get booked”. Errors name the field and the fix.
-5. Motion: GSAP only on landing section reveals and the first auth/onboarding paint. `prefers-reduced-motion: reduce` → opacity only. Never animate login submit, keyboard, or repeated controls. Duration 180–400ms, ease `cubic-bezier(0.23, 1, 0.32, 1)`. Enter from `opacity: 0; y: 16` (not `scale(0)`).
-6. Spacing: `gap-2` inside fields, `gap-5` inside forms, section `py-24` / `px-6`, content `max-w-6xl mx-auto`. Buttons `rounded-pill`. Soft cards `rounded-2xl` with soft shadow. No full-width hairline rules between landing sections.
+1. **Colors** — Only semantic Tailwind classes mapped from `app.css` `@theme` / `:root`. Forbidden in Blade/TSX/other CSS: `bg-neutral-*`, `text-white`, `text-black`, `text-red-600`, `bg-green-*`, arbitrary colors (`bg-[#…]`, `text-[oklch(…)]`), new `--color-*` or `@theme` outside `app.css`, `dark:` on dashboards/marketing/auth/onboarding.
+2. **Theme file** — `resources/css/app.css` is the only place colors live. Restyle the product by editing `:root` there.
+3. **No shadows** — Do not add `shadow-*`, `shadow-[…]`, or soft elevation. Separate surfaces with `border-border` and canvas vs card contrast. `--shadow-soft` stays `none`.
+4. **Reuse DS** — SPA metrics, charts, nav, pills, progress: use `SoftCard`, `MetricStat`, `SegmentedNav`, `IconButton`, `ProgressRow`, `DateRangePills`, `StatusPill`, `AvatarGroup`, chart components from `@/components/ds`. Do not re-implement their class strings.
+5. **Roomy buttons** — Default Button is tall and padded (`h-11 px-6`). Icon buttons default `size-11`. Do not shrink back to compact sizes unless the control is truly dense (tables).
+6. **Stats in a row** — Inline stats are one line: `value` + `label` in a horizontal pill row — never stacked “1 / Live posts” columns.
+7. **Progress contrast** — `ProgressRow` fill is `bg-primary` on a light track (`bg-card` / `bg-muted`). Do not use low-contrast fills.
+8. **Creator shell** — `CreatorShellLayout`: top pill nav only, no left icon rail. Soft canvas + roomy main padding (`px-6` / `lg:px-8`, `pb-10`).
+9. **Company shell** — Still `x-layouts.spa` + sidebar; same tokens, SoftCard language when building new company pages.
+10. **Light mode** — Dashboards stay light. Never `class="dark"` on SPA, marketing, auth, or onboarding layouts.
 
-## Marketing layout
+## Layout recipes
 
-Copy this structure. Do not replace it with a centered SaaS hero.
+### Creator dashboard (canonical bento)
 
-- Soft grey canvas, space between bands (no full-width hairline rules), soft white cards.
-- Masthead: logo left, text links in ink, one black (or lime accent) `Get started` on the right. No backdrop blur.
-- Display headline: large Inter sans; optional emphasis via `x-ui.em`.
-- Body under the hero: ~70ch, `text-lg` or `text-xl`, ink not muted for the lead sentence; muted for supporting lines.
-- Numbered process uses `01` `02` `03` in muted tracking, then a title. Numbers only when the content is a real sequence.
-- Two-up split (companies / creators, or two pricing paths): equal columns with gap, not a divider line.
-- Stats are a four-up grid: big number, small label. No hairline grid.
-- FAQ is a stacked list with spacing, not tiles or rules.
-- Footer is four link columns. No social icon soup. No full-width trim line.
+```
+Header: title + short support line | range filters (7/30/90) + DateRangePills
+Metric row: SoftCard + MetricStat (4-up)
+Bento grid: SoftCard / ActivityBarChart / RevenueAreaChart / SpendLineChart / ProgressRow cards
+```
 
-Landing section order (naano.com IA):
+- Page title: `text-heading font-medium tracking-tight`
+- Support: `text-sm text-muted-foreground`
+- Grid: `gap-5`, wide breakpoints with `xl:col-span-*`
+- Real API data and Naano copy only
 
-1. Hero + product card
-2. Trusted by
-3. Quote
-4. Creators (reach / fit)
-5. How campaigns run (`#how-it-works`)
-6. Companies vs creators (`#companies` `#creators`)
-7. Proof stats
-8. Pricing (`#pricing`)
-9. FAQ
-10. Closing CTA
+### Soft surface
 
-## Layouts
+```tsx
+<SoftCard title="Audience">…</SoftCard>
+// → rounded-3xl border border-border bg-card p-6
+```
 
-- `/` landing → `x-layouts.marketing`
-- login, register, password, verify, 2FA, confirm → `x-layouts.auth`
-- creator/company onboarding → `x-layouts.onboarding`
-- company/creator SPA → `x-layouts.spa` (Inter; `font-dashboard`)
-- local component gallery → `/components` (`APP_ENV=local` only)
+### Pill nav
 
-## Dashboards (company and creator SPA)
+```tsx
+<SegmentedNav items={…} value={…} onChange={…} />
+// → bordered white pill track; active = bg-primary text-primary-foreground
+```
 
-- Layout: creator SPA uses `CreatorShellLayout` (icon rail + pill top nav + soft canvas). Company SPA still uses `x-layouts.spa` + sidebar. Breadcrumbs in company header from the route.
-- React UI: `resources/js/components/ui` + `resources/js/components/ds`. Pill buttons, soft cards, lime accents, no `dark:`.
-- Colors stay the semantic tokens in `app.css`. Chart series use `chart-1` … `chart-5` or `var(--chart-1)`.
-- Preview kit: local `/components` gallery.
+## Typography & radius
+
+| Use | Class |
+| --- | --- |
+| Page title | `text-heading` |
+| Section / metric value | `text-title` or MetricStat |
+| Body | `text-body` / default |
+| Buttons / pills | `rounded-pill` |
+| Soft cards | `rounded-3xl` |
+| Smaller cards | `rounded-2xl` |
+
+Font: Inter via `font-sans` / `font-dashboard` only.
+
+## Charts
+
+- Series colors: `var(--chart-1)` … `var(--chart-5)` or `chart-*` utilities — never raw lime hex in TSX.
+- Callouts: `Badge variant="accent"`.
+- Keep charts inside SoftCard; roomy chart height (`h-44`–`h-48`).
+
+## Marketing / auth / onboarding (Blade)
+
+Still use `x-layouts.marketing`, `x-layouts.auth`, `x-layouts.onboarding` and Blade `x-ui.*` from [components.md](components.md). Same semantic tokens, same lime system, no shadows. Auth split: form + `bg-primary` panel. Do not put the homepage in the auth layout.
 
 ## Do not
 
-- Restyle dashboard React pages unless the task is explicitly the SPA.
+- Add a second visual system (purple gradients, cream+serif, newspaper, glassmorphism soup).
+- Use blue as brand primary (primary is black; accent is lime).
+- Paste mock dashboard chrome or placeholder sales metrics when real APIs exist.
+- Reintroduce left creator icon rail or SoftCard expand buttons.
 - Add fonts beyond Inter for product surfaces.
-- Add `class="dark"` to marketing, auth, onboarding, or SPA layouts.
-- Call `redirect()->intended()` after login or email verify. Use `HomeRedirect::afterAuth()`.
-- Use blue as the brand primary. Primary is black; accent is lime.
-- Clone newspaper mastheads or pixel fonts. Keep Naano copy.
+- Duplicate DS class strings instead of importing components.
+
+## Checklist before finishing UI work
+
+- [ ] Only semantic color classes; theme editable from `app.css`
+- [ ] No shadows
+- [ ] Roomy spacing and pill/button sizes
+- [ ] SoftCards / DS components reused
+- [ ] Bento / soft-canvas layout (not compact table-first chrome)
+- [ ] Real copy and real data where available

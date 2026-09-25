@@ -1,8 +1,41 @@
 # Components
 
-Use these Blade components. Do not paste their class strings into pages.
+Prefer shared components. Do not paste their class strings into pages.
 
-## `x-ui.button`
+## React SPA — Design system (`@/components/ds`)
+
+| Component | Role |
+| --- | --- |
+| `SoftCard` | Primary surface: `rounded-3xl border border-border bg-card p-6`. Optional `title` / `action`. No expand control. |
+| `MetricStat` | Large value + muted label/hint |
+| `SegmentedNav` | Pill top nav; active = primary fill |
+| `IconButton` | Round icon control; default outline, `size` sm/default/lg |
+| `StatusPill` | Avatar + label + chevron menu trigger |
+| `AvatarGroup` | Stacked avatars |
+| `DateRangePills` | From → to date chips |
+| `ProgressRow` | Label + high-contrast primary fill bar + `%` (value and label stay readable in one row) |
+| `ActivityBarChart` | SoftCard bar chart |
+| `SpendLineChart` | SoftCard line chart; `sideStats` are **horizontal** value+label pills |
+| `RevenueAreaChart` | SoftCard dual-series area |
+| `GlassPanel` | Frosted panel on lime-soft / media (border, no shadow) |
+| `ScheduleCard` | Booking-style card |
+
+Import from `@/components/ds`.
+
+Primitives: `@/components/ui` (`Button`, `Badge`, `Input`, `Avatar`, …). Button sizes are roomy (`default` ≈ `h-11 px-6`). Badge default accent is lime.
+
+## React SPA — Shells
+
+- Creator: `resources/js/layouts/creator-shell.tsx` + `CreatorTopBar` (pill `SegmentedNav`, notifications, user StatusPill). **No left icon rail.**
+- Company: Blade `x-layouts.spa` + sidebar; breadcrumbs from route.
+
+Local gallery: `/components` (`APP_ENV=local`).
+
+## Blade — `x-ui.*` (marketing / auth / onboarding)
+
+Use these instead of duplicating classes on marketing/auth pages.
+
+### `x-ui.button`
 
 ```php
 @props([
@@ -13,88 +46,34 @@ Use these Blade components. Do not paste their class strings into pages.
 ])
 ```
 
-If `$href` is set, render `<a>`. Else `<button type="{{ $type }}">`. Merge `$attributes`. Pass `data-test` through the attribute bag.
+Primary = black pill. Accent = lime pill. Sizes are roomy (`sm` still `h-10`, not tiny).
 
-- Primary: black pill CTA (`rounded-pill bg-primary text-primary-foreground`)
-- Secondary: bordered white pill
-- Accent: lime pill (`bg-accent`)
-- Ghost / link: text actions
-- Size `sm`: compact; `lg`: larger padding
+### `x-ui.card`
 
-`:active` scale lives in `app.css` (`scale(0.97)`).
+`rounded-2xl border border-border bg-card p-6` — **no shadow**.
 
-## `x-ui.kicker`
+### `x-ui.input` / `x-ui.textarea` / `x-ui.select`
 
-Uppercase tracking label: `text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground`
+Pill fields: `rounded-pill border border-input bg-card`.
 
-`tone="on-primary"`: `text-primary-foreground/65` for kickers on a `bg-primary` band.
+### `x-ui.field`
 
-`tone="on-inverse"`: `text-background/65` for kickers on a `bg-foreground` band.
+Label + control + hint + `@error`. Errors: `text-destructive`.
 
-## `x-ui.accordion-item`
+### `x-ui.alert`
 
-```php
-@props([
-    'question',
-    'name' => null,
-    'open' => false,
-    'tone' => null, // on-primary|on-inverse
-])
-```
+`info` | `success` | `danger` — semantic text colors only.
 
-Native `<details>` row. Shared `name` keeps one item open. Slot is the answer.
+### `x-ui.kicker` / `x-ui.em` / `x-ui.favicon` / `x-ui.logo` / `x-ui.stepper`
 
-## `x-ui.em`
-
-Italic emphasis inside a display headline: `font-serif italic font-normal`. One emphasized word per headline.
-
-## `x-ui.input` / `x-ui.textarea` / `x-ui.select`
-
-Pill inputs: `w-full rounded-pill border border-input bg-card px-4 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30`
-
-## `x-ui.field`
-
-```php
-@props(['label', 'name' => null, 'hint' => null])
-```
-
-Slot is the control. Label: `text-sm font-medium`. Hint: `text-sm text-muted-foreground`. Error: `text-sm text-destructive`. If `$name` is set, render `@error($name)` and a `data-error-for="{{ $name }}"` element for AJAX field errors.
-
-## `x-ui.card`
-
-Default: `rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]`
-
-`flush` (bool): drop padding. `href` (string|null): block link. `selectable` (bool): lime selected state via `has-[:checked]:border-accent has-[:checked]:bg-lime-soft`.
-
-## `x-ui.alert`
-
-Variants: `info` | `success` | `danger`.
-
-- info: `text-sm text-foreground`
-- success: `text-sm font-medium text-accent`
-- danger: `text-sm text-destructive`
-
-Onboarding top errors use `id="form-errors"`.
-
-## `x-ui.favicon`
-
-Head icons via `asset()` plus a filemtime query so Cloudflare/browser caches miss after a change.
-
-## `x-ui.logo`
-
-`text-lg font-semibold tracking-tight text-foreground` linking to `route('home')`. Text: `config('app.name')`.
-
-## `x-ui.stepper`
-
-Props: `step` (int, 1-based), `steps` (list of labels).
-
-- current: `bg-primary text-primary-foreground`
-- done: `bg-primary/80 text-primary-foreground`
-- upcoming: `bg-muted text-muted-foreground`
+Keep existing marketing patterns; colors stay semantic.
 
 ## Layouts
 
-- `x-layouts.marketing` — paper masthead, landing Vite entry. No backdrop blur.
-- `x-layouts.auth` — full-height split screen: form column + `bg-primary` info panel. Top bar with logo + CTA. Short copy; lime accent on panel steps/dots.
-- `x-layouts.onboarding` — same split screen; stepper above the form; primary preview panel.
-- company/creator SPA → `x-layouts.spa` (Inter; `font-dashboard`)
+| Surface | Layout |
+| --- | --- |
+| Landing `/` | `x-layouts.marketing` |
+| Login, register, password, verify | `x-layouts.auth` |
+| Creator/company onboarding | `x-layouts.onboarding` |
+| Company SPA | `x-layouts.spa` |
+| Creator SPA | `CreatorShellLayout` |

@@ -1,41 +1,62 @@
 # Tokens
 
-`resources/css/app.css` is the only file that may define colors. Lime system: black CTAs, white cards, lime accent.
+`resources/css/app.css` is the **only** file that may define colors. Edit `:root` there to restyle the whole product. Never paste these hex values into Blade or TSX — use semantic classes.
 
-## Hex source
+## Hex source (documentation only)
 
-- Ink / foreground / primary: `#000000`
-- Canvas / background: `#F5F5F7`
-- Card / surfaces: `#FFFFFF`
-- Accent (lime): `#C7F33C`
-- Soft lime: `#E1F2AE`
-- Muted text: `#6B7280`
+| Role | Hex | Semantic use |
+| --- | --- | --- |
+| Ink / primary CTAs | `#000000` | `bg-primary` `text-foreground` |
+| Canvas | `#F5F5F7` | `bg-background` |
+| Card / white | `#FFFFFF` | `bg-card` |
+| Accent lime | `#C7F33C` | `bg-accent` |
+| Soft lime | `#E1F2AE` | `bg-lime-soft` |
+| Muted text | `#6B7280` | `text-muted-foreground` |
+| Border | `#E5E5E8` | `border-border` |
 
-Primary is black for filled pills and active nav. Accent is lime for highlights, badges, and chart callouts. Soft lime is for soft fills (`bg-lime-soft`).
+Primary is black for filled pills and active nav. Accent is lime for badges, chart callouts, and highlights. Soft lime is for soft fills only.
 
-## `:root` (must match `app.css`)
+## Allowed semantic color classes
 
-```css
-:root {
-    --background: #f5f5f7;
-    --foreground: #000000;
-    --card: #ffffff;
-    --card-foreground: #000000;
-    --primary: #000000;
-    --primary-foreground: #ffffff;
-    --muted-foreground: #6b7280;
-    --accent: #c7f33c;
-    --accent-foreground: #000000;
-    --lime-soft: #e1f2ae;
-    --border: #e5e5e8;
-    --radius: 1.5rem;
-}
-```
+`bg-background` `text-foreground`  
+`bg-card` `text-card-foreground`  
+`bg-popover` `text-popover-foreground`  
+`bg-primary` `text-primary-foreground`  
+`bg-secondary` `text-secondary-foreground`  
+`bg-muted` `text-muted-foreground`  
+`bg-accent` `text-accent-foreground`  
+`bg-lime-soft` `text-lime-soft-foreground`  
+`bg-destructive` `text-destructive` `text-destructive-foreground`  
+`border-border` `border-input` `ring-ring`  
+`bg-chart-1` … `bg-chart-5` (or `var(--chart-1)` in chart SVG/Recharts)  
+Sidebar tokens: `bg-sidebar` `text-sidebar-foreground` `bg-sidebar-primary` `bg-sidebar-accent` `border-sidebar-border` `ring-sidebar-ring`
 
-Fonts: Inter (`font-sans` / `font-dashboard`) for the whole product. Type scale: `text-heading` 34px, `text-title` 28px, `text-body` 16px.
+Opacity modifiers on tokens are fine: `bg-primary/90`, `text-foreground/20`.
 
-`.dark` inverts canvas/ink and keeps lime accent. Do not add `class="dark"` to marketing, auth, onboarding, or SPA layouts.
+## Type & radius (from `@theme`)
 
-## Allowed classes
+| Token | Value / class |
+| --- | --- |
+| Heading | `text-heading` (34px) |
+| Title | `text-title` (28px) |
+| Body | `text-body` (16px) |
+| Pill | `rounded-pill` |
+| Soft card | `rounded-3xl` |
+| Card | `rounded-2xl` |
 
-`bg-background` `text-foreground` `bg-card` `text-card-foreground` `bg-primary` `text-primary-foreground` `bg-secondary` `text-secondary-foreground` `bg-muted` `text-muted-foreground` `bg-accent` `text-accent-foreground` `bg-lime-soft` `text-lime-soft-foreground` `text-destructive` `border-border` `border-input` `ring-ring` plus sidebar and chart tokens. Opacity modifiers are allowed (`bg-primary/80`).
+Fonts: Inter (`font-sans` / `font-dashboard`) only.
+
+## Elevation
+
+`--shadow-soft: none`. Do not use `shadow-*`. Separate layers with `border-border` and canvas vs card.
+
+## Dark
+
+`.dark` exists in `app.css` but product surfaces stay light. Do not add `class="dark"` to marketing, auth, onboarding, or SPA layouts.
+
+## Forbidden
+
+- Palette utilities: `bg-neutral-*`, `text-white`, `text-black`, `text-red-600`, `bg-green-*`
+- Arbitrary colors: `bg-[#…]`, `text-[oklch(…)]`, `border-[rgb(…)]`
+- New `--color-*` / `@theme` blocks outside `app.css`
+- Hardcoded hex/rgb/oklch in `className` or `style` (except non-color layout like width %)

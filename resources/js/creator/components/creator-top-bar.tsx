@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { AppLink } from '@/components/app-link';
-import AppLogoIcon from '@/components/app-logo-icon';
+import AppLogo from '@/components/app-logo';
 import { NotificationBell } from '@/components/notification-bell';
 import { UserMenuContent } from '@/components/user-menu-content';
-import { AvatarGroup, IconButton, SegmentedNav, StatusPill } from '@/components/ds';
+import { SegmentedNav, StatusPill } from '@/components/ds';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -61,18 +61,15 @@ export function CreatorTopBar() {
         return () => window.removeEventListener('naano:user', sync);
     }, []);
 
-    const profiles = user?.profiles ?? [];
     const activeNav =
         topNav.find((item) => item.match(pathname))?.href ?? '/';
 
     return (
         <header className="flex items-center justify-between gap-6 px-6 py-5 lg:px-8">
             <div className="flex min-w-0 items-center gap-6 lg:gap-10">
-                <IconButton variant="default" size="default" asChild>
-                    <AppLink href="/" aria-label="Naano home">
-                        <AppLogoIcon className="size-5 fill-current" />
-                    </AppLink>
-                </IconButton>
+                <AppLink href="/" aria-label="Naano home">
+                    <AppLogo />
+                </AppLink>
 
                 <SegmentedNav
                     className="hidden overflow-x-auto sm:inline-flex"
@@ -86,23 +83,6 @@ export function CreatorTopBar() {
             </div>
 
             <div className="flex shrink-0 items-center gap-3">
-                {profiles.length > 1 ? (
-                    <AppLink
-                        href="/setting/profiles"
-                        className="hidden items-center gap-2 rounded-pill border border-border bg-card py-1 pr-3 pl-1 text-sm font-medium sm:inline-flex"
-                    >
-                        <AvatarGroup
-                            items={profiles.map((profile) => ({
-                                fallback: profile.label.slice(0, 2),
-                                alt: profile.label,
-                            }))}
-                            max={3}
-                            size="sm"
-                        />
-                        <span>Profiles</span>
-                    </AppLink>
-                ) : null}
-
                 <NotificationBell />
 
                 {user ? (
@@ -116,8 +96,9 @@ export function CreatorTopBar() {
                             />
                         </DropdownMenuTrigger>
                         <DropdownMenuContent
-                            className="min-w-56 rounded-3xl"
+                            className="w-72 rounded-3xl border-border p-2"
                             align="end"
+                            sideOffset={8}
                         >
                             <UserMenuContent user={user} />
                         </DropdownMenuContent>

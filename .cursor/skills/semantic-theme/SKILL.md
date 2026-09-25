@@ -43,9 +43,11 @@ Use the Tailwind utilities mapped from `@theme` in `app.css`:
 
 Opacity modifiers on those tokens are fine: `bg-primary/90`, `text-foreground/20`.
 
-Typography: `text-heading` (34px), `text-title` (28px), `text-body` (16px). Radius: `rounded-pill`, `rounded-2xl`.
+Typography: `text-heading` (34px), `text-title` (28px), `text-body` (16px). Radius: `rounded-pill`, `rounded-3xl` (SoftCard), `rounded-2xl`.
 
-Layout, spacing, typography, and radius utilities (`flex`, `gap-4`, `text-sm`, `rounded-md`) are not colors. Use them freely.
+No shadows: do not use `shadow-*`. Surfaces use `border-border` and canvas vs card. `--shadow-soft` is `none`.
+
+Layout, spacing, typography, and radius utilities (`flex`, `gap-4`, `text-sm`, `rounded-md`) are not colors. Use them freely. Prefer roomy spacing on dashboards (`gap-5`+, SoftCard `p-6`, tall pills).
 
 ## Forbidden in Blade, TSX, and other CSS
 

@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { cn } from '@/lib/utils';
 import type { User } from '@/types';
 
 function initials(name: string): string {
@@ -21,22 +22,31 @@ function initials(name: string): string {
 export function UserInfo({
     user,
     showEmail = false,
+    size = 'default',
 }: {
     user: User;
     showEmail?: boolean;
+    size?: 'default' | 'lg';
 }) {
     return (
         <>
-            <Avatar className="h-8 w-8 overflow-hidden rounded-full">
+            <Avatar
+                className={cn(
+                    'overflow-hidden rounded-full',
+                    size === 'lg' ? 'size-10' : 'size-8',
+                )}
+            >
                 <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
-                <AvatarFallback className="rounded-lg bg-muted text-foreground">
+                <AvatarFallback className="rounded-full bg-primary text-sm text-primary-foreground">
                     {initials(user.name)}
                 </AvatarFallback>
             </Avatar>
-            <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+            <div className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium text-foreground">
+                    {user.name}
+                </span>
                 {showEmail && (
-                    <span className="text-muted-foreground truncate text-xs">
+                    <span className="truncate text-xs text-muted-foreground">
                         {user.email}
                     </span>
                 )}
