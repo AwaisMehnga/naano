@@ -10,7 +10,7 @@ type MetricStatProps = {
 
 export function MetricStat({ value, label, hint, className }: MetricStatProps) {
     return (
-        <div className={cn('flex flex-col gap-1', className)}>
+        <div className={cn('flex flex-col gap-1.5', className)}>
             <p className="text-heading font-medium tracking-tight">{value}</p>
             {label ? (
                 <p className="text-sm text-muted-foreground">{label}</p>

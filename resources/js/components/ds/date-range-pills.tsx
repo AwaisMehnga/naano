@@ -9,11 +9,11 @@ type DateRangePillsProps = {
 export function DateRangePills({ start, end, className }: DateRangePillsProps) {
     return (
         <div className={cn('flex items-center gap-2', className)}>
-            <span className="rounded-pill border border-border bg-card px-3 py-1.5 text-sm tabular-nums">
+            <span className="rounded-pill border border-border bg-card px-5 py-2.5 text-sm tabular-nums">
                 {start}
             </span>
-            <span className="text-muted-foreground text-xs">→</span>
-            <span className="rounded-pill border border-border bg-card px-3 py-1.5 text-sm tabular-nums">
+            <span className="text-xs text-muted-foreground">→</span>
+            <span className="rounded-pill border border-border bg-card px-5 py-2.5 text-sm tabular-nums">
                 {end}
             </span>
         </div>

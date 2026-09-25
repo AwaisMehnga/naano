@@ -36,23 +36,45 @@ export function ActivityBarChart({
     className,
 }: ActivityBarChartProps) {
     return (
-        <SoftCard title={title} showExpand className={cn(className)}>
-            <MetricStat value={metric} label={metricLabel} />
-            <div className="relative mt-4 h-40">
-                {callout ? (
-                    <Badge
-                        variant="accent"
-                        className="absolute top-0 left-1/2 z-10 -translate-x-1/2"
-                    >
-                        {callout}
-                    </Badge>
-                ) : null}
+        <SoftCard title={title} className={cn('h-full', className)}>
+            <div className="relative">
+                <MetricStat
+                    value={metric}
+                    label={metricLabel}
+                    hint={
+                        callout ? (
+                            <Badge variant="accent" className="mt-2">
+                                {callout}
+                            </Badge>
+                        ) : null
+                    }
+                />
+            </div>
+            <div className="mt-6 h-48">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} barCategoryGap="28%">
+                    <BarChart data={data} barCategoryGap="32%">
+                        <defs>
+                            <pattern
+                                id="activity-hatch"
+                                width="6"
+                                height="6"
+                                patternUnits="userSpaceOnUse"
+                                patternTransform="rotate(45)"
+                            >
+                                <line
+                                    x1="0"
+                                    y1="0"
+                                    x2="0"
+                                    y2="6"
+                                    stroke="var(--chart-2)"
+                                    strokeWidth="1.5"
+                                />
+                            </pattern>
+                        </defs>
                         <CartesianGrid
                             vertical={false}
                             stroke="var(--border)"
-                            strokeDasharray="3 3"
+                            strokeDasharray="4 4"
                         />
                         <XAxis
                             dataKey="day"
@@ -66,18 +88,18 @@ export function ActivityBarChart({
                         <Tooltip
                             cursor={{ fill: 'var(--muted)' }}
                             contentStyle={{
-                                borderRadius: 12,
+                                borderRadius: 16,
                                 border: '1px solid var(--border)',
                                 background: 'var(--card)',
                             }}
                         />
-                        <Bar dataKey="value" radius={[8, 8, 8, 8]}>
+                        <Bar dataKey="value" radius={[10, 10, 10, 10]}>
                             {data.map((entry) => (
                                 <Cell
                                     key={entry.day}
                                     fill={
                                         entry.highlight
-                                            ? 'var(--chart-1)'
+                                            ? 'url(#activity-hatch)'
                                             : 'var(--chart-5)'
                                     }
                                 />

@@ -197,7 +197,7 @@ export default function CompanyCreatorsPage() {
             <InputError message={error ?? undefined} />
             <form
                 onSubmit={search}
-                className="border-border bg-card flex flex-col gap-3 rounded-2xl border p-3 shadow-sm"
+                className="border-border bg-card flex flex-col gap-3 rounded-2xl border p-3"
             >
                 <div className="flex flex-col gap-3 lg:flex-row">
                     <div className="relative min-w-0 flex-1">

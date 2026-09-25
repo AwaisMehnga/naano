@@ -21,7 +21,7 @@ export function SegmentedNav({
     return (
         <div
             className={cn(
-                'inline-flex items-center gap-1 rounded-pill bg-muted p-1',
+                'inline-flex items-center gap-2 rounded-pill border border-border bg-card p-2',
                 className,
             )}
             role="tablist"
@@ -37,10 +37,10 @@ export function SegmentedNav({
                         aria-selected={active}
                         onClick={() => onChange?.(item.id)}
                         className={cn(
-                            'rounded-pill px-4 py-1.5 text-sm font-medium transition-colors',
+                            'rounded-pill px-6 py-2.5 text-sm font-medium transition-colors',
                             active
                                 ? 'bg-primary text-primary-foreground'
-                                : 'text-muted-foreground hover:text-foreground',
+                                : 'text-muted-foreground hover:bg-muted hover:text-foreground',
                         )}
                     >
                         {item.label}

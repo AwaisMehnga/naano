@@ -10,19 +10,22 @@ export function ProgressRow({ label, value, className }: ProgressRowProps) {
     const clamped = Math.max(0, Math.min(100, value));
 
     return (
-        <div className={cn('grid grid-cols-[1fr_auto] items-center gap-3', className)}>
-            <div className="min-w-0">
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                    <span className="truncate text-sm font-medium">{label}</span>
-                </div>
-                <div className="h-2 overflow-hidden rounded-pill bg-muted">
-                    <div
-                        className="h-full rounded-pill bg-foreground/70"
-                        style={{ width: `${clamped}%` }}
-                    />
-                </div>
+        <div
+            className={cn(
+                'flex items-center gap-4 rounded-pill bg-muted px-4 py-3',
+                className,
+            )}
+        >
+            <span className="min-w-16 shrink-0 text-sm font-medium text-foreground">
+                {label}
+            </span>
+            <div className="h-2.5 min-w-0 flex-1 overflow-hidden rounded-pill bg-card">
+                <div
+                    className="h-full rounded-pill bg-primary"
+                    style={{ width: `${clamped}%` }}
+                />
             </div>
-            <span className="text-sm text-muted-foreground tabular-nums">
+            <span className="shrink-0 text-sm font-medium tabular-nums text-foreground">
                 {clamped}%
             </span>
         </div>

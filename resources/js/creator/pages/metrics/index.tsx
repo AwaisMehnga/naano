@@ -44,7 +44,7 @@ export default function CreatorMetricsPage() {
         let cancelled = false;
 
         Promise.all([
-            http.get<Overview>(creatorApi.analyticsOverview),
+            http.get<Overview>(creatorApi.analyticsOverview()),
             http.get<DealRow[]>(creatorApi.collaborations()),
         ])
             .then(([{ data: overview }, { data: collaborations }]) => {

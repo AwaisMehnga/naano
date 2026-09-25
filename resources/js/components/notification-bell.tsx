@@ -2,7 +2,7 @@ import { Bell } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { AppLink } from '@/components/app-link';
-import { Button } from '@/components/ui/button';
+import { IconButton } from '@/components/ds';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -89,20 +89,19 @@ export function NotificationBell() {
     return (
         <DropdownMenu onOpenChange={(open) => open && refresh()}>
             <DropdownMenuTrigger asChild>
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
+                <IconButton
+                    variant="outline"
+                    size="default"
                     className="relative"
                     aria-label="Notifications"
                 >
-                    <Bell className="size-4" />
+                    <Bell />
                     {count > 0 && (
-                        <span className="bg-primary text-primary-foreground absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full px-1 text-[10px] leading-4">
+                        <span className="absolute -top-0.5 -right-0.5 flex min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] leading-4 text-accent-foreground">
                             {count > 99 ? '99+' : count}
                         </span>
                     )}
-                </Button>
+                </IconButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
                 {latest.length === 0 ? (

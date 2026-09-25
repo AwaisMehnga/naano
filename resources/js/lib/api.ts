@@ -197,7 +197,9 @@ export const creatorApi = {
     postSubmit: (id: number) => `/api/creator/posts/${id}/submit`,
     postSchedule: (id: number) => `/api/creator/posts/${id}/schedule`,
     postPublish: (id: number) => `/api/creator/posts/${id}/publish`,
-    analyticsOverview: '/api/creator/analytics/overview',
+    analyticsOverview: (
+        query: Record<string, string | number | undefined> = {},
+    ) => withQuery('/api/creator/analytics/overview', query),
     collaborationMetrics: (id: number) =>
         `/api/creator/collaborations/${id}/metrics`,
     postMetrics: (id: number) => `/api/creator/posts/${id}/metrics`,

@@ -76,7 +76,7 @@ function Swatch({
     return (
         <div
             className={cn(
-                'flex h-28 flex-col justify-between rounded-2xl p-4 shadow-[var(--shadow-soft)]',
+                'flex h-28 flex-col justify-between rounded-2xl p-4',
                 className,
                 foregroundClassName,
             )}
@@ -338,7 +338,7 @@ export default function ComponentsGalleryPage() {
 
                     <Section id="cards" title="Soft cards">
                         <div className="grid gap-4 md:grid-cols-2">
-                            <SoftCard title="Activity" showExpand>
+                            <SoftCard title="Activity">
                                 <p className="text-sm text-muted-foreground">
                                     Soft white surface, large radius, optional
                                     expand control.

@@ -39,7 +39,7 @@ export function ScheduleCard({
         <div className={cn('relative pt-2 pr-2', className)}>
             <div
                 className={cn(
-                    'flex flex-col gap-5 rounded-2xl p-5 shadow-[var(--shadow-soft)]',
+                    'flex flex-col gap-5 rounded-2xl border border-border p-5',
                     accent
                         ? 'bg-accent text-accent-foreground'
                         : 'bg-card text-card-foreground',
@@ -134,7 +134,6 @@ export function ScheduleCard({
                     variant={accent ? 'default' : 'outline'}
                     size="sm"
                     aria-label="Open"
-                    className="shadow-[var(--shadow-soft)]"
                 >
                     <ArrowUpRight />
                 </IconButton>

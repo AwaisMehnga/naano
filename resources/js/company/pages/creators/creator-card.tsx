@@ -28,7 +28,7 @@ export default function CreatorCard({
     const cpm = estimatedCpm(creator.from_price_cents, creator.followers_count);
 
     return (
-        <article className="border-border bg-card flex h-full flex-col overflow-hidden rounded-2xl border shadow-sm">
+        <article className="border-border bg-card flex h-full flex-col overflow-hidden rounded-2xl border">
             <div className="bg-muted relative h-24">
                 <div className="absolute top-3 left-3 flex items-center gap-2">
                     {creator.linkedin_url ? (

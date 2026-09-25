@@ -1,245 +1,464 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { AppLink } from '@/components/app-link';
+import {
+    ActivityBarChart,
+    DateRangePills,
+    MetricStat,
+    ProgressRow,
+    RevenueAreaChart,
+    SoftCard,
+    SpendLineChart,
+} from '@/components/ds';
 import InputError from '@/components/input-error';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { compact, euros } from '@/company/pages/creators/format';
-import DashboardCreatorCard, {
-    type DashboardCreator,
-} from '@/creator/pages/dashboard/creator-card';
-import OpportunityCard from '@/creator/pages/opportunities/opportunity-card';
-import type { Opportunity } from '@/creator/pages/opportunities/types';
 import { ApiError, creatorApi, http } from '@/lib/api';
 
-type Overview = {
-    impressions: number;
-    engagement: number;
-    public_posts_count: number;
-    followers_count: number | null;
+type RangeDays = 7 | 30 | 90;
+
+type SeriesPoint = {
+    day: string;
+    clicks: number;
+    unique_clicks: number;
     earnings_cents: number;
 };
 
-type Profile = {
-    display_name: string | null;
-    linkedin_url: string | null;
-    headline: string | null;
-    photo_url: string | null;
-    country: string | null;
-    niches: Array<{ id: number; name: string }>;
+type ComparisonPoint = {
+    day: string;
+    current: number;
+    previous: number;
 };
 
-type Deal = {
-    id: number;
-    status: string;
-    campaign: { name: string };
-    company: { name: string | null };
+type AudienceSegment = {
+    label: string;
+    value: number;
 };
 
-const activeStatuses = new Set(['booked', 'selected']);
+type Overview = {
+    impressions: number;
+    likes: number;
+    comments: number;
+    clicks: number;
+    unique_clicks: number;
+    qualified_clicks: number;
+    leads_count: number;
+    ctr: number | null;
+    engagement: number;
+    public_posts_count: number;
+    followers_count: number | null;
+    connections_count: number | null;
+    earnings_cents: number;
+    active_deals_count: number;
+    completed_deals_count: number;
+    from: string;
+    to: string;
+    series: SeriesPoint[];
+    comparison: ComparisonPoint[];
+    audience_segments: AudienceSegment[];
+    growth: {
+        clicks: number | null;
+        earnings: number | null;
+    };
+    period: {
+        clicks: number;
+        unique_clicks: number;
+        earnings_cents: number;
+    };
+};
+
+const ranges: Array<{ days: RangeDays; label: string }> = [
+    { days: 7, label: '7 days' },
+    { days: 30, label: '30 days' },
+    { days: 90, label: '90 days' },
+];
+
+function formatNumber(value: number | undefined | null): string {
+    if (value === undefined || value === null) {
+        return '—';
+    }
+
+    return new Intl.NumberFormat('en-GB', {
+        notation: value >= 10_000 ? 'compact' : 'standard',
+        maximumFractionDigits: 1,
+    }).format(value);
+}
+
+function formatDayLabel(day: string, spanDays: number): string {
+    const date = new Date(`${day}T12:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+        return day;
+    }
+
+    if (spanDays <= 7) {
+        return date.toLocaleDateString('en-GB', { weekday: 'short' });
+    }
+
+    return date.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'short',
+    });
+}
+
+function formatPillDate(day: string): string {
+    const date = new Date(`${day}T12:00:00`);
+
+    if (Number.isNaN(date.getTime())) {
+        return day;
+    }
+
+    return date.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'numeric',
+        year: 'numeric',
+    }).replace(/\//g, ' ');
+}
+
+function growthLabel(value: number | null): string | undefined {
+    if (value === null) {
+        return undefined;
+    }
+
+    const prefix = value > 0 ? '+' : '';
+
+    return `${prefix}${value}%`;
+}
+
+function shareOf(part: number, whole: number): number {
+    if (whole < 1) {
+        return 0;
+    }
+
+    return Math.round((part / whole) * 100);
+}
+
+function dateRange(days: RangeDays): { from: string; to: string } {
+    const to = new Date();
+    const from = new Date();
+    from.setDate(to.getDate() - (days - 1));
+
+    return {
+        from: from.toISOString().slice(0, 10),
+        to: to.toISOString().slice(0, 10),
+    };
+}
 
 export default function CreatorDashboardPage() {
+    const [days, setDays] = useState<RangeDays>(30);
     const [overview, setOverview] = useState<Overview | null>(null);
-    const [creator, setCreator] = useState<DashboardCreator | null>(null);
-    const [recommended, setRecommended] = useState<Opportunity[]>([]);
-    const [deals, setDeals] = useState<Deal[]>([]);
     const [error, setError] = useState<string | null>(null);
+
+    const query = useMemo(() => dateRange(days), [days]);
 
     useEffect(() => {
         let cancelled = false;
 
-        Promise.allSettled([
-            http.get<Overview>(creatorApi.analyticsOverview),
-            http.get<Profile>(creatorApi.profile),
-            http.get<Opportunity[]>(creatorApi.opportunities({ limit: 3 })),
-            http.get<Deal[]>(creatorApi.collaborations()),
-        ]).then(([overviewResult, profileResult, opportunityResult, dealResult]) => {
-            if (cancelled) {
-                return;
-            }
-
-            const overview =
-                overviewResult.status === 'fulfilled'
-                    ? overviewResult.value.data
-                    : null;
-            const profile =
-                profileResult.status === 'fulfilled'
-                    ? profileResult.value.data
-                    : null;
-            const opportunities =
-                opportunityResult.status === 'fulfilled' &&
-                Array.isArray(opportunityResult.value.data)
-                    ? opportunityResult.value.data
-                    : [];
-            const collaborations =
-                dealResult.status === 'fulfilled' &&
-                Array.isArray(dealResult.value.data)
-                    ? dealResult.value.data
-                    : [];
-
-            if (overview) {
-                setOverview(overview);
-            }
-
-            if (profile) {
-                setCreator({
-                    display_name: profile.display_name,
-                    linkedin_url: profile.linkedin_url,
-                    headline: profile.headline,
-                    photo_url: profile.photo_url,
-                    country: profile.country,
-                    niches: profile.niches ?? [],
-                    followers_count: overview?.followers_count ?? null,
-                    jobs_done: collaborations.filter(
-                        (deal) => deal.status === 'completed',
-                    ).length,
-                });
-            }
-
-            setRecommended(opportunities);
-            setDeals(
-                collaborations.filter((deal) => activeStatuses.has(deal.status)),
-            );
-
-            const firstFailure = [
-                overviewResult,
-                profileResult,
-                opportunityResult,
-                dealResult,
-            ].find((result) => result.status === 'rejected');
-
-            if (firstFailure && firstFailure.status === 'rejected') {
-                setError(
-                    firstFailure.reason instanceof ApiError
-                        ? firstFailure.reason.message
-                        : 'Could not load your dashboard.',
-                );
-
-                return;
-            }
-
-            setError(null);
-        });
+        http.get<Overview>(creatorApi.analyticsOverview(query))
+            .then(({ data }) => {
+                if (!cancelled) {
+                    setOverview(data);
+                    setError(null);
+                }
+            })
+            .catch((reason) => {
+                if (!cancelled) {
+                    setError(
+                        reason instanceof ApiError
+                            ? reason.message
+                            : 'Could not load your dashboard.',
+                    );
+                }
+            });
 
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [query]);
+
+    const series = overview?.series ?? [];
+    const maxClicks = Math.max(0, ...series.map((point) => point.clicks));
+
+    const activityData = series.map((point) => ({
+        day: formatDayLabel(point.day, days),
+        value: point.clicks,
+        highlight: point.clicks > 0 && point.clicks === maxClicks,
+    }));
+
+    const earningsData = series.map((point) => ({
+        day: formatDayLabel(point.day, days),
+        value: point.earnings_cents / 100,
+    }));
+
+    const comparisonData = (overview?.comparison ?? []).map((point) => ({
+        day: formatDayLabel(point.day, days),
+        current: point.current,
+        previous: point.previous,
+    }));
+
+    const impressions = overview?.impressions ?? 0;
+    const conversionRows = overview
+        ? [
+              {
+                  label: 'Unique clicks',
+                  value: shareOf(overview.unique_clicks, impressions),
+              },
+              {
+                  label: 'Qualified',
+                  value: shareOf(overview.qualified_clicks, impressions),
+              },
+              {
+                  label: 'Leads',
+                  value: shareOf(overview.leads_count, impressions),
+              },
+          ]
+        : [];
 
     return (
         <div className="flex w-full flex-1 flex-col gap-8">
-            <div>
-                <h1 className="text-2xl font-semibold tracking-tight">
-                    Dashboard
-                </h1>
-                <p className="text-muted-foreground mt-1 text-sm">
-                    Public LinkedIn posts, reach, and booked work.
-                </p>
-            </div>
-            <InputError message={error ?? undefined} />
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-                <Stat
-                    label="Public posts"
-                    value={formatNumber(overview?.public_posts_count)}
-                />
-                <Stat
-                    label="Reach"
-                    value={formatNumber(overview?.impressions)}
-                />
-                <Stat
-                    label="Public engagement"
-                    value={formatNumber(overview?.engagement)}
-                />
-                <Stat
-                    label="Followers"
-                    value={compact(overview?.followers_count)}
-                />
-                <Stat
-                    label="Earnings"
-                    value={
-                        overview
-                            ? euros(overview.earnings_cents)
-                            : '—'
-                    }
-                />
-            </div>
-            <div className="grid gap-6 xl:grid-cols-[minmax(16rem,20rem)_1fr]">
-                {creator && <DashboardCreatorCard creator={creator} />}
-                <section className="flex min-w-0 flex-col gap-4">
-                    <div className="flex items-end justify-between gap-3">
-                        <div>
-                            <h2 className="text-lg font-semibold">
-                                Recommended
-                            </h2>
-                            <p className="text-muted-foreground text-sm">
-                                Top matches for your profile.
-                            </p>
-                        </div>
-                        <Button variant="ghost" size="sm" asChild>
-                            <AppLink href="/opportunities">See all</AppLink>
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
+                <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Creator</p>
+                    <h1 className="text-heading font-medium tracking-tight">
+                        Dashboard
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Reach, bookings, and earnings from your live posts.
+                    </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    {ranges.map((range) => (
+                        <Button
+                            key={range.days}
+                            type="button"
+                            size="sm"
+                            variant={days === range.days ? 'default' : 'outline'}
+                            className="rounded-pill"
+                            onClick={() => setDays(range.days)}
+                        >
+                            {range.label}
                         </Button>
-                    </div>
-                    {recommended.length === 0 ? (
-                        <p className="text-muted-foreground text-sm">
-                            No matching campaigns yet.
-                        </p>
-                    ) : (
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            {recommended.map((item) => (
-                                <OpportunityCard
-                                    key={item.id}
-                                    opportunity={item}
+                    ))}
+                    {/* {overview ? (
+                        <DateRangePills
+                            start={formatPillDate(overview.from)}
+                            end={formatPillDate(overview.to)}
+                        />
+                    ) : null} */}
+                </div>
+            </div>
+
+            <InputError message={error ?? undefined} />
+
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <SoftCard>
+                    <MetricStat
+                        value={formatNumber(overview?.impressions)}
+                        label="Reach"
+                    />
+                </SoftCard>
+                <SoftCard>
+                    <MetricStat
+                        value={formatNumber(overview?.engagement)}
+                        label="Engagement"
+                    />
+                </SoftCard>
+                <SoftCard>
+                    <MetricStat
+                        value={
+                            overview
+                                ? euros(overview.earnings_cents)
+                                : '—'
+                        }
+                        label="Earnings"
+                    />
+                </SoftCard>
+                <SoftCard>
+                    <MetricStat
+                        value={compact(overview?.followers_count)}
+                        label="Followers"
+                    />
+                </SoftCard>
+            </div>
+
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
+                <div className="xl:col-span-4">
+                    <ActivityBarChart
+                        title="Clicks"
+                        metric={formatNumber(overview?.period.clicks)}
+                        metricLabel="In selected range"
+                        data={activityData}
+                        callout={
+                            overview
+                                ? formatNumber(overview.period.unique_clicks)
+                                : undefined
+                        }
+                    />
+                </div>
+
+                <div className="xl:col-span-5">
+                    <RevenueAreaChart
+                        title="Clicks vs last period"
+                        metric={formatNumber(overview?.period.clicks)}
+                        metricLabel="This range"
+                        data={comparisonData}
+                        growth={growthLabel(overview?.growth.clicks ?? null)}
+                    />
+                </div>
+
+                <div className="xl:col-span-3">
+                    <SoftCard title="Audience" className="h-full">
+                        <MetricStat
+                            value={compact(overview?.followers_count)}
+                            label="Followers"
+                            hint={
+                                <span>
+                                    {compact(overview?.connections_count)}{' '}
+                                    connections
+                                </span>
+                            }
+                            className="mb-5"
+                        />
+                        {overview && overview.audience_segments.length > 0 ? (
+                            <div className="space-y-3">
+                                {overview.audience_segments.map((segment) => (
+                                    <ProgressRow
+                                        key={segment.label}
+                                        label={segment.label}
+                                        value={segment.value}
+                                    />
+                                ))}
+                            </div>
+                        ) : (
+                            <p className="text-sm text-muted-foreground">
+                                Audience mix appears after LinkedIn sync.
+                            </p>
+                        )}
+                        <div className="mt-5">
+                            <Button variant="ghost" size="sm" asChild>
+                                <AppLink href="/setting/audience">
+                                    Open audience →
+                                </AppLink>
+                            </Button>
+                        </div>
+                    </SoftCard>
+                </div>
+
+                <div className="xl:col-span-5">
+                    <SpendLineChart
+                        title="Earnings"
+                        metric={
+                            overview
+                                ? euros(overview.period.earnings_cents)
+                                : '—'
+                        }
+                        compare={
+                            overview
+                                ? `${euros(overview.earnings_cents)} all time`
+                                : undefined
+                        }
+                        sideStats={[
+                            {
+                                value: formatNumber(
+                                    overview?.public_posts_count,
+                                ),
+                                label: 'Live posts',
+                            },
+                            {
+                                value: formatNumber(
+                                    overview?.active_deals_count,
+                                ),
+                                label: 'Active deals',
+                            },
+                        ]}
+                        data={earningsData}
+                        callout={growthLabel(overview?.growth.earnings ?? null)}
+                    />
+                </div>
+
+                <div className="xl:col-span-4">
+                    <SoftCard title="Conversion" className="h-full">
+                        <MetricStat
+                            value={
+                                overview?.ctr != null
+                                    ? `${(overview.ctr * 100).toFixed(1)}%`
+                                    : '—'
+                            }
+                            label="CTR"
+                            hint={
+                                <span>
+                                    {formatNumber(overview?.leads_count)} leads
+                                    from {formatNumber(overview?.impressions)}{' '}
+                                    reach
+                                </span>
+                            }
+                            className="mb-5"
+                        />
+                        <div className="space-y-3">
+                            {conversionRows.map((row) => (
+                                <ProgressRow
+                                    key={row.label}
+                                    label={row.label}
+                                    value={row.value}
                                 />
                             ))}
                         </div>
-                    )}
-                </section>
+                        <div className="mt-5">
+                            <Button variant="ghost" size="sm" asChild>
+                                <AppLink href="/metrics">
+                                    Open metrics →
+                                </AppLink>
+                            </Button>
+                        </div>
+                    </SoftCard>
+                </div>
+
+                <div className="xl:col-span-3">
+                    <SoftCard title="Bookings" className="h-full">
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-muted-foreground">
+                                    Active
+                                </p>
+                                <Badge variant="accent">
+                                    {formatNumber(overview?.active_deals_count)}
+                                </Badge>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-muted-foreground">
+                                    Completed
+                                </p>
+                                <span className="text-sm font-medium tabular-nums">
+                                    {formatNumber(
+                                        overview?.completed_deals_count,
+                                    )}
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                                <p className="text-sm text-muted-foreground">
+                                    Live posts
+                                </p>
+                                <span className="text-sm font-medium tabular-nums">
+                                    {formatNumber(
+                                        overview?.public_posts_count,
+                                    )}
+                                </span>
+                            </div>
+                        </div>
+                        <div className="mt-6 flex flex-col gap-2">
+                            <Button variant="default" size="sm" asChild>
+                                <AppLink href="/opportunities">
+                                    Find campaigns
+                                </AppLink>
+                            </Button>
+                            <Button variant="outline" size="sm" asChild>
+                                <AppLink href="/deals">Open deals</AppLink>
+                            </Button>
+                        </div>
+                    </SoftCard>
+                </div>
             </div>
-            <section className="flex flex-col gap-4">
-                <h2 className="text-lg font-semibold">
-                    Active collaborations
-                </h2>
-                {deals.length === 0 ? (
-                    <p className="text-muted-foreground text-sm">
-                        No booked or selected deals yet.
-                    </p>
-                ) : (
-                    <div className="grid gap-2">
-                        {deals.map((deal) => (
-                            <AppLink
-                                key={deal.id}
-                                href={`/deals/${deal.id}`}
-                                className="border-border hover:bg-muted/40 flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3"
-                            >
-                                <div>
-                                    <p className="font-medium">
-                                        {deal.campaign.name}
-                                    </p>
-                                    <p className="text-muted-foreground text-sm capitalize">
-                                        {deal.company.name} · {deal.status}
-                                    </p>
-                                </div>
-                                <span className="text-sm">Open</span>
-                            </AppLink>
-                        ))}
-                    </div>
-                )}
-            </section>
         </div>
     );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-    return (
-        <div className="border-border bg-card rounded-lg border p-5">
-            <p className="text-muted-foreground text-sm">{label}</p>
-            <p className="mt-2 text-2xl font-semibold">{value}</p>
-        </div>
-    );
-}
-
-function formatNumber(value: number | undefined): string {
-    if (value === undefined) {
-        return '—';
-    }
-
-    return new Intl.NumberFormat('en-GB').format(value);
 }

@@ -35,12 +35,12 @@ export function RevenueAreaChart({
     className,
 }: RevenueAreaChartProps) {
     return (
-        <SoftCard title={title} showExpand className={cn(className)}>
+        <SoftCard title={title} className={cn('h-full', className)}>
             <div className="flex items-start justify-between gap-3">
                 <MetricStat value={metric} label={metricLabel} />
                 {growth ? <Badge variant="accent">{growth}</Badge> : null}
             </div>
-            <div className="mt-4 h-40">
+            <div className="mt-6 h-48">
                 <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={data}>
                         <defs>
@@ -64,7 +64,7 @@ export function RevenueAreaChart({
                         <CartesianGrid
                             vertical={false}
                             stroke="var(--border)"
-                            strokeDasharray="3 3"
+                            strokeDasharray="4 4"
                         />
                         <XAxis
                             dataKey="day"
@@ -77,7 +77,7 @@ export function RevenueAreaChart({
                         />
                         <Tooltip
                             contentStyle={{
-                                borderRadius: 12,
+                                borderRadius: 16,
                                 border: '1px solid var(--border)',
                                 background: 'var(--card)',
                             }}
@@ -94,7 +94,7 @@ export function RevenueAreaChart({
                             dataKey="current"
                             stroke="var(--chart-2)"
                             fill="var(--lime-soft)"
-                            fillOpacity={0.35}
+                            fillOpacity={0.4}
                             strokeWidth={2}
                         />
                     </AreaChart>

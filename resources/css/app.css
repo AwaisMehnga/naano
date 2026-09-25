@@ -26,8 +26,9 @@
     --radius-lg: var(--radius);
     --radius-md: calc(var(--radius) - 4px);
     --radius-sm: calc(var(--radius) - 8px);
-    --radius-xl: 1.5rem;
-    --radius-2xl: 1.75rem;
+    --radius-xl: 1.75rem;
+    --radius-2xl: 2rem;
+    --radius-3xl: 2.25rem;
     --radius-pill: 9999px;
 
     --color-background: var(--background);
@@ -76,7 +77,7 @@
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
 
-    --shadow-soft: 0 8px 30px rgb(0 0 0 / 0.06);
+    --shadow-soft: none;
 }
 
 :root {

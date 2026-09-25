@@ -62,7 +62,7 @@ Landing section order (naano.com IA):
 
 ## Dashboards (company and creator SPA)
 
-- Layout: `x-layouts.spa` + `font-dashboard` (Inter). Full-width main. Breadcrumbs in the header from the route.
+- Layout: creator SPA uses `CreatorShellLayout` (icon rail + pill top nav + soft canvas). Company SPA still uses `x-layouts.spa` + sidebar. Breadcrumbs in company header from the route.
 - React UI: `resources/js/components/ui` + `resources/js/components/ds`. Pill buttons, soft cards, lime accents, no `dark:`.
 - Colors stay the semantic tokens in `app.css`. Chart series use `chart-1` … `chart-5` or `var(--chart-1)`.
 - Preview kit: local `/components` gallery.

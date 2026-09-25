@@ -8,7 +8,7 @@
 
         <div class="grid gap-2">
             <label for="name" class="text-sm font-medium">Name</label>
-            <input id="name" name="name" value="{{ old('name', $user->name) }}" required autocomplete="name" class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30">
+            <input id="name" name="name" value="{{ old('name', $user->name) }}" required autocomplete="name" class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30">
             @error('name')
                 <p class="text-sm text-destructive">{{ $message }}</p>
             @enderror
@@ -16,7 +16,7 @@
 
         <div class="grid gap-2">
             <label for="email" class="text-sm font-medium">Email address</label>
-            <input id="email" type="email" name="email" value="{{ old('email', $user->email) }}" required autocomplete="username" class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30">
+            <input id="email" type="email" name="email" value="{{ old('email', $user->email) }}" required autocomplete="username" class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30">
             @error('email')
                 <p class="text-sm text-destructive">{{ $message }}</p>
             @enderror
@@ -51,7 +51,7 @@
         <form method="POST" action="{{ route('profile.destroy') }}" class="grid gap-3">
             @csrf
             @method('DELETE')
-            <input type="password" name="password" required placeholder="Password" autocomplete="current-password" class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30">
+            <input type="password" name="password" required placeholder="Password" autocomplete="current-password" class="w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30">
             @error('password')
                 <p class="text-sm text-destructive">{{ $message }}</p>
             @enderror

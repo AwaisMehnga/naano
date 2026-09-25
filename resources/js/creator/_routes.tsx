@@ -1,4 +1,4 @@
-import DashboardLayout from '@/layouts/dashboard';
+import CreatorShellLayout from '@/layouts/creator-shell';
 import { Navigate } from 'react-router';
 import CreatorDashboardPage from './pages/dashboard';
 import CreatorDealsPage from './pages/deals';
@@ -20,7 +20,7 @@ import ProfilesPage from '@/pages/setting/profiles';
 export const routes = [
     {
         path: '/',
-        element: <DashboardLayout />,
+        element: <CreatorShellLayout />,
         children: [
             {
                 index: true,

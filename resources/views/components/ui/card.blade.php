@@ -6,8 +6,8 @@
 
 @php
     $base = $flush
-        ? 'block overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-[var(--shadow-soft)]'
-        : 'block rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-[var(--shadow-soft)]';
+        ? 'block overflow-hidden rounded-2xl border border-border bg-card text-card-foreground'
+        : 'block rounded-2xl border border-border bg-card p-6 text-card-foreground';
 
     if ($selectable) {
         $base .= ' transition-[border-color,background-color] has-[:checked]:border-accent has-[:checked]:bg-lime-soft';
