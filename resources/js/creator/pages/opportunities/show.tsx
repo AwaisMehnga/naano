@@ -103,13 +103,6 @@ export default function CreatorOpportunityShowPage() {
                             </Badge>
                         </div>
                     </div>
-                    {item.reasons.length > 0 && (
-                        <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
-                            {item.reasons.map((reason) => (
-                                <li key={reason}>{reason}</li>
-                            ))}
-                        </ul>
-                    )}
                     <section className="space-y-2">
                         <h2 className="text-sm font-medium">Brief</h2>
                         <p className="text-sm leading-7 whitespace-pre-wrap">

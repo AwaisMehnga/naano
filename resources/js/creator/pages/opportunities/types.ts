@@ -2,6 +2,7 @@ export type OpportunityCompany = {
     id: number;
     name: string | null;
     logo_url: string | null;
+    website: string | null;
 };
 
 export type Opportunity = {
@@ -15,7 +16,9 @@ export type Opportunity = {
     deadline: string | null;
     match_score: number;
     audience_relevance: number | null;
-    reasons: string[];
+    budget_cents: number | null;
+    deliverables: string;
+    tagline: string | null;
     location: {
         country: string | null;
         regions: string[];
@@ -24,7 +27,7 @@ export type Opportunity = {
 };
 
 export type OpportunityDetail = Opportunity & {
-    brief: { context?: string } | null;
+    brief: { context?: string; key_message?: string } | null;
     goal: string | null;
     key_messages: string[] | null;
     guidelines: string | null;

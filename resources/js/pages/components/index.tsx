@@ -9,12 +9,13 @@ import {
     MetricStat,
     ProgressRow,
     RevenueAreaChart,
-    ScheduleCard,
     SegmentedNav,
     SoftCard,
     SpendLineChart,
     StatusPill,
 } from '@/components/ds';
+import { InfoChip } from '@/components/info-chip';
+import { NotchedCard } from '@/components/notched-card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,7 +36,7 @@ const sections = [
     { id: 'metrics', label: 'Metrics' },
     { id: 'cards', label: 'Cards' },
     { id: 'charts', label: 'Charts' },
-    { id: 'schedule', label: 'Schedule' },
+    { id: 'notched', label: 'Notched' },
     { id: 'glass', label: 'Glass' },
 ] as const;
 
@@ -89,9 +90,6 @@ function Swatch({
 
 export default function ComponentsGalleryPage() {
     const [nav, setNav] = useState('dashboard');
-    const [scheduleVariant, setScheduleVariant] = useState<'default' | 'accent'>(
-        'accent',
-    );
 
     const activityData = useMemo(
         () => [
@@ -381,49 +379,55 @@ export default function ComponentsGalleryPage() {
                         </div>
                     </Section>
 
-                    <Section id="schedule" title="Schedule cards">
-                        <div className="mb-4 flex gap-2">
-                            <Button
-                                size="sm"
-                                variant={
-                                    scheduleVariant === 'accent'
-                                        ? 'accent'
-                                        : 'outline'
-                                }
-                                onClick={() => setScheduleVariant('accent')}
-                            >
-                                Accent
-                            </Button>
-                            <Button
-                                size="sm"
-                                variant={
-                                    scheduleVariant === 'default'
-                                        ? 'default'
-                                        : 'outline'
-                                }
-                                onClick={() => setScheduleVariant('default')}
-                            >
-                                Default
-                            </Button>
-                        </div>
-                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                            <ScheduleCard
-                                variant={scheduleVariant}
+                    <Section id="notched" title="Notched cards">
+                        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+                            <NotchedCard
                                 name="Jane Doe"
                                 role="Marketing Director at Marosft"
                                 avatarFallback="JD"
-                                eventTitle="Schedule Discovery Call"
-                                eventMeta="28 03 2025 01 2 pm"
-                                participants={demoAvatars.slice(0, 2)}
+                                title="Schedule Discovery Call"
+                                chips={
+                                    <>
+                                        <InfoChip>France</InfoChip>
+                                        <InfoChip>Match 82%</InfoChip>
+                                    </>
+                                }
+                                meta={
+                                    <AvatarGroup
+                                        items={demoAvatars.slice(0, 2)}
+                                        max={3}
+                                        size="sm"
+                                    />
+                                }
+                                footer={
+                                    <Button size="sm" className="rounded-pill">
+                                        Apply
+                                    </Button>
+                                }
                             />
-                            <ScheduleCard
-                                variant="default"
+                            <NotchedCard
                                 name="Alexander"
                                 role="Product Lead at Helio"
                                 avatarFallback="AL"
-                                eventTitle="Schedule Discovery Call"
-                                eventMeta="28 03 2025 01 2 pm"
-                                participants={demoAvatars.slice(1, 3)}
+                                title="Schedule Discovery Call"
+                                chips={
+                                    <>
+                                        <InfoChip>Germany</InfoChip>
+                                        <InfoChip>Match 64%</InfoChip>
+                                    </>
+                                }
+                                meta={
+                                    <AvatarGroup
+                                        items={demoAvatars.slice(1, 3)}
+                                        max={3}
+                                        size="sm"
+                                    />
+                                }
+                                footer={
+                                    <Button size="sm" className="rounded-pill">
+                                        Apply
+                                    </Button>
+                                }
                             />
                         </div>
                     </Section>

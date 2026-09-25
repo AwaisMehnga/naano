@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\CampaignObjective;
 use App\Enums\CampaignStatus;
 use App\Enums\CollaborationEventType;
 use App\Enums\CollaborationSource;
@@ -52,9 +53,44 @@ class CreatorOpportunityService
         $q = trim((string) ($filters['q'] ?? ''));
 
         if ($q !== '') {
-            $query->where(function ($builder) use ($q): void {
-                $builder->where('name', 'like', '%'.$q.'%')
-                    ->orWhereHas('company', fn ($company) => $company->where('name', 'like', '%'.$q.'%'));
+            $like = $query->getConnection()->getDriverName() === 'pgsql' ? 'ilike' : 'like';
+            $term = '%'.$q.'%';
+
+            $query->where(function ($builder) use ($like, $term): void {
+                $builder->where('name', $like, $term)
+                    ->orWhere('goal', $like, $term)
+                    ->orWhereHas(
+                        'company',
+                        fn ($company) => $company
+                            ->where('name', $like, $term)
+                            ->orWhere('website', $like, $term),
+                    );
+            });
+        }
+
+        $objective = $filters['objective'] ?? null;
+
+        if ($objective instanceof CampaignObjective) {
+            $query->where('objective', $objective);
+        } elseif (is_string($objective) && $objective !== '') {
+            $query->where('objective', $objective);
+        }
+
+        $country = $filters['country'] ?? null;
+
+        if (is_string($country) && $country !== '') {
+            $country = Str::upper($country);
+
+            $query->where(function ($builder) use ($country): void {
+                $builder
+                    ->whereHas(
+                        'company',
+                        fn ($company) => $company->where('country', $country),
+                    )
+                    ->orWhereHas(
+                        'companyIcp',
+                        fn ($icp) => $icp->whereJsonContains('regions', $country),
+                    );
             });
         }
 
@@ -62,6 +98,8 @@ class CreatorOpportunityService
 
         $campaigns = $query->get();
         $scores = $this->matches->cachedByCampaign($profile, $campaigns);
+
+        $matchMin = isset($filters['match']) ? (int) $filters['match'] : 0;
 
         $items = $campaigns
             ->map(function (Campaign $campaign) use ($profile, $scores): ?array {
@@ -78,8 +116,28 @@ class CreatorOpportunityService
                 return $this->opportunityPayload($campaign, $score);
             })
             ->filter()
-            ->sortByDesc('match_score')
+            ->when(
+                $matchMin > 0,
+                fn ($collection) => $collection->filter(
+                    fn (array $item): bool => (int) $item['match_score'] >= $matchMin,
+                ),
+            )
             ->values();
+
+        $sort = is_string($filters['sort'] ?? null) ? $filters['sort'] : 'match';
+
+        $items = match ($sort) {
+            'name' => $items->sortBy(
+                fn (array $item): string => Str::lower((string) $item['name']),
+                SORT_NATURAL,
+            )->values(),
+            'deadline' => $items->sortBy(
+                fn (array $item): int => $item['deadline']
+                    ? strtotime((string) $item['deadline'])
+                    : PHP_INT_MAX,
+            )->values(),
+            default => $items->sortByDesc('match_score')->values(),
+        };
 
         $limit = isset($filters['limit']) ? (int) $filters['limit'] : 0;
 
@@ -372,7 +430,10 @@ class CreatorOpportunityService
             'deadline' => $campaign->end_at?->toIso8601String(),
             'match_score' => $score->fit_score,
             'audience_relevance' => $score->audience_relevance,
-            'reasons' => $score->reasons ?? [],
+            'budget_cents' => $campaign->budget_cents,
+            'deliverables' => '1 post',
+            'tagline' => $campaign->goal
+                ?? (is_array($campaign->brief) ? ($campaign->brief['key_message'] ?? null) : null),
             'location' => [
                 'country' => $company->country,
                 'regions' => $icp?->regions ?? [],
@@ -381,6 +442,7 @@ class CreatorOpportunityService
                 'id' => $company->id,
                 'name' => $company->name,
                 'logo_url' => PublicDisk::url($company->logo_path),
+                'website' => $company->website,
             ],
         ];
     }
@@ -411,6 +473,7 @@ class CreatorOpportunityService
                 'id' => $company->id,
                 'name' => $company->name,
                 'logo_url' => PublicDisk::url($company->logo_path),
+                'website' => $company->website,
             ],
             'metrics' => $this->analytics->summary($collaboration),
         ];

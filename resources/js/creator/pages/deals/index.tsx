@@ -1,15 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react';
-import { Search } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router';
+import { GitBranch, ListFilter } from 'lucide-react';
 import CollaborationChatSheet from '@/components/collaboration-chat-sheet';
 import InputError from '@/components/input-error';
-import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
+import { FilterDropdown, FilterDropdownGroup } from '@/components/filter-select';
+import { SearchPill } from '@/components/ds';
+import { AppLink } from '@/components/app-link';
+import { Button } from '@/components/ui/button';
 import DealCard from '@/creator/pages/deals/deal-card';
 import type { Deal } from '@/creator/pages/deals/types';
 import { ApiError, creatorApi, http } from '@/lib/api';
@@ -26,32 +23,81 @@ const statuses = [
 
 const sources = ['invite', 'apply', 'sourced'] as const;
 
+function readParam(
+    params: URLSearchParams,
+    key: string,
+    fallback: string,
+): string {
+    return params.get(key)?.trim() || fallback;
+}
+
 export default function CreatorDealsPage() {
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const q = readParam(searchParams, 'q', '');
+    const status = readParam(searchParams, 'status', 'all');
+    const source = readParam(searchParams, 'source', 'all');
+
+    const [draftQuery, setDraftQuery] = useState(q);
     const [items, setItems] = useState<Deal[]>([]);
-    const [query, setQuery] = useState('');
-    const [applied, setApplied] = useState('');
-    const [status, setStatus] = useState('all');
-    const [source, setSource] = useState('all');
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
     const [threadId, setThreadId] = useState<number | null>(null);
     const threadRow = items.find((item) => item.id === threadId);
 
+    const statusItems = useMemo(
+        () => [
+            { value: 'all', label: 'All statuses' },
+            ...statuses.map((value) => ({
+                value,
+                label: titleCase(value),
+            })),
+        ],
+        [],
+    );
+
+    const sourceItems = useMemo(
+        () => [
+            { value: 'all', label: 'All sources' },
+            ...sources.map((value) => ({
+                value,
+                label: titleCase(value),
+            })),
+        ],
+        [],
+    );
+
+    useEffect(() => {
+        setDraftQuery(q);
+    }, [q]);
+
     useEffect(() => {
         setLoading(true);
 
+        const controller = new AbortController();
+
         http.get<Deal[]>(
             creatorApi.collaborations({
-                q: applied || undefined,
+                q: q || undefined,
                 status: status === 'all' ? undefined : status,
                 source: source === 'all' ? undefined : source,
             }),
+            { signal: controller.signal },
         )
             .then(({ data }) => {
                 setItems(data);
                 setError(null);
             })
             .catch((caught: unknown) => {
+                if (
+                    typeof caught === 'object' &&
+                    caught !== null &&
+                    'code' in caught &&
+                    (caught as { code?: string }).code === 'ERR_CANCELED'
+                ) {
+                    return;
+                }
+
                 setError(
                     caught instanceof ApiError
                         ? caught.message
@@ -59,65 +105,119 @@ export default function CreatorDealsPage() {
                 );
             })
             .finally(() => setLoading(false));
-    }, [applied, status, source]);
 
-    function search(event: FormEvent<HTMLFormElement>) {
-        event.preventDefault();
-        setApplied(query.trim());
+        return () => controller.abort();
+    }, [q, status, source]);
+
+    function patchParams(patch: Record<string, string | null>) {
+        setSearchParams(
+            (current) => {
+                const next = new URLSearchParams(current);
+
+                for (const [key, value] of Object.entries(patch)) {
+                    if (value === null || value === '' || value === 'all') {
+                        next.delete(key);
+                    } else {
+                        next.set(key, value);
+                    }
+                }
+
+                return next;
+            },
+            { replace: true },
+        );
     }
 
+    function clearFilters() {
+        setDraftQuery('');
+        setSearchParams({}, { replace: true });
+    }
+
+    const filtersActive = q !== '' || status !== 'all' || source !== 'all';
+
     return (
-        <div className="flex w-full flex-1 flex-col gap-6">
-            <div>
-                <h1 className="text-2xl font-semibold tracking-tight">Deals</h1>
-                <p className="text-muted-foreground mt-1 text-sm">
-                    Invites, applications, and booked collaborations.
-                </p>
+        <div className="flex w-full flex-1 flex-col gap-8">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Creator</p>
+                    <h1 className="text-heading font-medium tracking-tight">
+                        Deals
+                    </h1>
+                    <p className="max-w-xl text-sm text-muted-foreground">
+                        Invites, applications, and booked collaborations in one
+                        place.
+                    </p>
+                </div>
+                {!loading ? (
+                    <p className="text-sm text-muted-foreground">
+                        <span className="font-medium text-foreground">
+                            {items.length}
+                        </span>{' '}
+                        {items.length === 1 ? 'deal' : 'deals'}
+                    </p>
+                ) : null}
             </div>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <form onSubmit={search} className="relative min-w-0 flex-1">
-                    <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
-                    <Input
-                        value={query}
-                        onChange={(event) => setQuery(event.target.value)}
-                        placeholder="Search campaigns or companies"
-                        className="h-10 pl-9"
+
+            <div className="flex flex-wrap items-center gap-3">
+                <SearchPill
+                    value={draftQuery}
+                    onChange={setDraftQuery}
+                    onSubmit={() =>
+                        patchParams({ q: draftQuery.trim() || null })
+                    }
+                    placeholder="Search and filter…"
+                    className="min-w-[16rem] max-w-md flex-1"
+                />
+
+                <FilterDropdownGroup className="contents">
+                    <FilterDropdown
+                        label="Status"
+                        icon={<ListFilter />}
+                        value={status}
+                        onChange={(value) => patchParams({ status: value })}
+                        items={statusItems}
                     />
-                </form>
-                <Select value={status} onValueChange={setStatus}>
-                    <SelectTrigger className="h-10 w-full sm:w-40" size="default">
-                        <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All statuses</SelectItem>
-                        {statuses.map((value) => (
-                            <SelectItem key={value} value={value}>
-                                {label(value)}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={source} onValueChange={setSource}>
-                    <SelectTrigger className="h-10 w-full sm:w-40" size="default">
-                        <SelectValue placeholder="Source" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All sources</SelectItem>
-                        {sources.map((value) => (
-                            <SelectItem key={value} value={value}>
-                                {label(value)}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+
+                    <FilterDropdown
+                        label="Source"
+                        icon={<GitBranch />}
+                        value={source}
+                        onChange={(value) => patchParams({ source: value })}
+                        items={sourceItems}
+                    />
+                </FilterDropdownGroup>
+
+                {filtersActive ? (
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="h-14 rounded-pill bg-card px-5"
+                        onClick={clearFilters}
+                    >
+                        Clear
+                    </Button>
+                ) : null}
             </div>
+
             <InputError message={error ?? undefined} />
+
             {loading ? (
-                <p className="text-muted-foreground text-sm">Loading…</p>
+                <p className="text-sm text-muted-foreground">Loading deals…</p>
             ) : items.length === 0 ? (
-                <p className="text-muted-foreground text-sm">No deals yet.</p>
+                <div className="space-y-3 rounded-3xl bg-muted p-6">
+                    <h2 className="text-lg font-medium">No deals yet</h2>
+                    <p className="text-sm text-muted-foreground">
+                        Apply to an opportunity or wait for an invite.
+                    </p>
+                    <Button className="rounded-pill" asChild>
+                        <AppLink href="/opportunities">
+                            Browse opportunities
+                        </AppLink>
+                    </Button>
+                </div>
             ) : (
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                     {items.map((item) => (
                         <DealCard
                             key={item.id}
@@ -127,6 +227,7 @@ export default function CreatorDealsPage() {
                     ))}
                 </div>
             )}
+
             <CollaborationChatSheet
                 open={threadId !== null}
                 onOpenChange={(open) => {
@@ -143,6 +244,8 @@ export default function CreatorDealsPage() {
     );
 }
 
-function label(value: string): string {
-    return value.replaceAll('_', ' ').replace(/^\w/, (letter) => letter.toUpperCase());
+function titleCase(value: string): string {
+    return value
+        .replaceAll('_', ' ')
+        .replace(/^\w/, (letter) => letter.toUpperCase());
 }

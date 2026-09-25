@@ -41,11 +41,12 @@ export function IconButton({
     className,
     variant = 'outline',
     size = 'default',
+    type = 'button',
     ...props
 }: IconButtonProps) {
     return (
         <Button
-            type="button"
+            type={type}
             variant={variantMap[variant ?? 'outline']}
             size={sizeMap[size ?? 'default']}
             className={cn(iconButtonVariants({ variant, size }), className)}

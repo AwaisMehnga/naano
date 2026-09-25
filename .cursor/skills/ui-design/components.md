@@ -18,9 +18,14 @@ Prefer shared components. Do not paste their class strings into pages.
 | `SpendLineChart` | SoftCard line chart; `sideStats` are **horizontal** value+label pills |
 | `RevenueAreaChart` | SoftCard dual-series area |
 | `GlassPanel` | Frosted panel on lime-soft / media (border, no shadow) |
-| `ScheduleCard` | Booking-style card |
+| `CampaignOpportunityCard` | Soft-canvas media card: image hero + lime badge, company logo + website, 3 stats, outline + accent CTAs |
+| `NotchedCard` | Soft-canvas opportunity/deal card (`rounded-3xl bg-muted`). Neutral only — never accent-filled. Use chips for metadata. |
+| `InfoChip` | Outline pill for country / match / status on cards |
+| `SearchPill` | Pill search + circular primary search button |
+| `FilterToolbar` | Flex row for **separate** filter pills — never one bundled filter dropdown |
+| `ScheduleCard` | Thin wrapper around `NotchedCard` (prefer `NotchedCard`) |
 
-Import from `@/components/ds`.
+Import DS pieces from `@/components/ds`. Import `NotchedCard` / `InfoChip` from `@/components/notched-card` and `@/components/info-chip`.
 
 Primitives: `@/components/ui` (`Button`, `Badge`, `Input`, `Avatar`, …). Button sizes are roomy (`default` ≈ `h-11 px-6`). Badge default accent is lime.
 

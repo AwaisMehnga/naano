@@ -7,6 +7,7 @@ export { MetricStat } from '@/components/ds/metric-stat';
 export { ProgressRow } from '@/components/ds/progress-row';
 export { RevenueAreaChart } from '@/components/ds/revenue-area-chart';
 export { ScheduleCard } from '@/components/ds/schedule-card';
+export { SearchPill, FilterToolbar } from '@/components/ds/search-pill';
 export { SegmentedNav } from '@/components/ds/segmented-nav';
 export { SoftCard } from '@/components/ds/soft-card';
 export { SpendLineChart } from '@/components/ds/spend-line-chart';

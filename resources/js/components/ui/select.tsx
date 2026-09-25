@@ -55,6 +55,7 @@ function SelectContent({
   side = "bottom",
   sideOffset = 4,
   align = "center",
+  avoidCollisions = true,
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Content>) {
   return (
@@ -70,7 +71,7 @@ function SelectContent({
         position={position}
         side={side}
         sideOffset={sideOffset}
-        avoidCollisions={false}
+        avoidCollisions={avoidCollisions}
         align={align}
         {...props}
       >

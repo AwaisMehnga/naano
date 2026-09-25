@@ -36,13 +36,17 @@ test('vetted creators can list and apply to a related active campaign', function
         ->assertJsonPath('data.0.match_score', 82)
         ->assertJsonPath('data.0.audience_relevance', 74)
         ->assertJsonPath('data.0.location.country', 'FR')
-        ->assertJsonPath('data.0.deadline', $deadline->toIso8601String());
+        ->assertJsonPath('data.0.deadline', $deadline->toIso8601String())
+        ->assertJsonPath('data.0.company.website', $owner->company->website)
+        ->assertJsonPath('data.0.company.logo_url', null)
+        ->assertJsonMissingPath('data.0.reasons');
 
     $this->actingAs($creator->user)
         ->getJson(route('api.creator.opportunities.show', $campaign))
         ->assertOk()
         ->assertJsonPath('data.brief.context', 'Ship a LinkedIn post.')
-        ->assertJsonPath('data.match_score', 82);
+        ->assertJsonPath('data.match_score', 82)
+        ->assertJsonMissingPath('data.reasons');
 
     $this->actingAs($creator->user)
         ->postJson(route('api.creator.opportunities.apply', $campaign))
@@ -186,12 +190,83 @@ test('creators can search related opportunities by name', function () {
         'name' => 'Launch week',
     ]);
     $creator = marketplaceCreator();
+    creatorMatchScore($visible, $creator);
+    creatorMatchScore(
+        Campaign::query()->where('name', 'Keep hidden')->firstOrFail(),
+        $creator,
+    );
 
     $this->actingAs($creator->user)
-        ->getJson(route('api.creator.opportunities.index', ['q' => 'Launch']))
+        ->getJson(route('api.creator.opportunities.index', ['q' => 'launch']))
         ->assertOk()
         ->assertJsonCount(1, 'data')
         ->assertJsonPath('data.0.id', $visible->id);
+});
+
+test('creators can filter opportunities by objective country match and sort', function () {
+    CampaignFitAgent::fake()->preventStrayPrompts();
+
+    $owner = User::factory()->company()->onboarded()->create();
+    $owner->company->update(['country' => 'FR', 'name' => 'Paris Co']);
+    $usOwner = User::factory()->company()->onboarded()->create();
+    $usOwner->company->update(['country' => 'US', 'name' => 'US Co']);
+
+    $fr = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'status' => CampaignStatus::Active,
+        'objective' => 'awareness',
+        'name' => 'Alpha FR',
+        'end_at' => now()->addDays(30),
+    ]);
+    $us = Campaign::factory()->create([
+        'company_id' => $usOwner->company->id,
+        'created_by_user_id' => $usOwner->id,
+        'status' => CampaignStatus::Active,
+        'objective' => 'pipeline',
+        'name' => 'Beta US',
+        'end_at' => now()->addDays(5),
+    ]);
+    $creator = marketplaceCreator();
+    creatorMatchScore($fr, $creator, 90);
+    creatorMatchScore($us, $creator, 55);
+
+    $this->actingAs($creator->user)
+        ->getJson(route('api.creator.opportunities.index', [
+            'objective' => 'awareness',
+            'country' => 'FR',
+            'match' => 70,
+            'sort' => 'name',
+        ]))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $fr->id);
+});
+
+test('country filter also matches icp regions', function () {
+    CampaignFitAgent::fake()->preventStrayPrompts();
+
+    $owner = User::factory()->company()->onboarded()->create();
+    $owner->company->update(['country' => 'US']);
+    $icp = CompanyIcp::factory()->create([
+        'company_id' => $owner->company->id,
+        'regions' => ['FR', 'DE'],
+    ]);
+    $campaign = Campaign::factory()->create([
+        'company_id' => $owner->company->id,
+        'created_by_user_id' => $owner->id,
+        'company_icp_id' => $icp->id,
+        'status' => CampaignStatus::Active,
+        'name' => 'EU reach',
+    ]);
+    $creator = marketplaceCreator();
+    creatorMatchScore($campaign, $creator);
+
+    $this->actingAs($creator->user)
+        ->getJson(route('api.creator.opportunities.index', ['country' => 'fr']))
+        ->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $campaign->id);
 });
 
 test('matching niche icps are scored and returned', function () {

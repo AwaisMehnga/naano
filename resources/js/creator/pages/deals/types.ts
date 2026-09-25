@@ -2,6 +2,7 @@ export type DealCompany = {
     id: number;
     name: string | null;
     logo_url: string | null;
+    website: string | null;
 };
 
 export type DealMetrics = {
