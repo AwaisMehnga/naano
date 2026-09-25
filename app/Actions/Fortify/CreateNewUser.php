@@ -3,9 +3,7 @@
 namespace App\Actions\Fortify;
 
 use App\Concerns\PasswordValidationRules;
-use App\Enums\ProfileType;
 use App\Models\User;
-use App\Services\ProfileService;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -15,8 +13,6 @@ use Laravel\Fortify\Contracts\CreatesNewUsers;
 class CreateNewUser implements CreatesNewUsers
 {
     use PasswordValidationRules;
-
-    public function __construct(private ProfileService $profiles) {}
 
     /**
      * Validate and create a newly registered user.
@@ -36,8 +32,6 @@ class CreateNewUser implements CreatesNewUsers
                 Rule::unique(User::class)->whereNotNull('email_verified_at'),
             ],
             'password' => $this->passwordRules(),
-            'profile' => ['sometimes', 'nullable', Rule::in(['creator', 'company'])],
-            'role' => ['sometimes', 'nullable', Rule::in(['creator', 'company'])],
             'hear_about' => ['required', 'string', Rule::in(array_keys(config('onboarding.hear_about')))],
         ], [
             'email.unique' => 'This email is already registered. Sign in or reset your password.',
@@ -70,14 +64,7 @@ class CreateNewUser implements CreatesNewUsers
                     ])->save();
                 }
 
-                $profile = $input['profile'] ?? $input['role'] ?? null;
-
-                if (is_string($profile) && $profile !== '') {
-                    $type = ProfileType::from($profile);
-                    $this->profiles->provision($user, $type);
-                }
-
-                return $user->fresh(['creatorProfile', 'company']);
+                return $user->fresh();
             });
         });
     }

@@ -18,11 +18,18 @@ class BrandBriefAgent implements Agent, HasStructuredOutput
     public function instructions(): Stringable|string
     {
         return <<<'INSTRUCTIONS'
-            You write a short B2B brand brief from a company website page.
+            You write a B2B marketplace brand brief from company website text.
 
-            Use only facts present in the page text. Do not invent product claims, buyers, or industries.
-            value_proposition: two to four sentences that paraphrase what the company sells and for whom.
-            icps: only buyer audiences the page names or clearly describes. Return as many as the page supports, from zero to five. Do not pad to a quota. If the page describes one customer, return one ICP.
+            Audience for the brief: brands booking LinkedIn creators. Be specific and usable.
+
+            Rules:
+            - Use only facts present in the page text. Do not invent products, buyers, metrics, or industries.
+            - Prefer concrete language over slogans. Name the product category and who buys it when the page does.
+            - If the page is thin, return a short honest brief and fewer ICPs. Empty icps is allowed.
+            - Never pad ICPs to hit a quota.
+
+            value_proposition: two to four sentences. What they sell, for whom, and the outcome implied by the page.
+            icps: zero to five buyer audiences the page names or clearly describes. Each title is a role or segment; each description is who they are and what they need, grounded in the page.
             INSTRUCTIONS;
     }
 

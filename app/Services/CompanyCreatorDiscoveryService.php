@@ -81,6 +81,9 @@ class CompanyCreatorDiscoveryService
             'bio' => $profile->bio,
             'linkedin_url' => $profile->linkedin_url,
             'audience_mix' => $latestAudience?->audience_mix ?? [],
+            'followers_count' => $latestAudience?->followers_count,
+            'connections_count' => $latestAudience?->connections_count
+                ?? (is_array($profile->linkedin_profile) ? ($profile->linkedin_profile['connections_count'] ?? null) : null),
             'captured_at' => $latestAudience?->captured_at?->toIso8601String(),
             'offers' => $profile->offers
                 ->map(fn (CreatorOffer $offer): array => [
@@ -222,6 +225,8 @@ class CompanyCreatorDiscoveryService
                 'slug' => $niche->slug,
             ])->values()->all(),
             'followers_count' => $profile->audienceProfiles->first()?->followers_count,
+            'connections_count' => $profile->audienceProfiles->first()?->connections_count
+                ?? (is_array($profile->linkedin_profile) ? ($profile->linkedin_profile['connections_count'] ?? null) : null),
             'from_price_cents' => $fromPrice,
             'linkedin_url' => $profile->linkedin_url,
         ];

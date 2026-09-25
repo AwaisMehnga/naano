@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property int $creator_profile_id
  * @property string $network
  * @property int|null $followers_count
+ * @property int|null $connections_count
  * @property array<string, mixed>|null $audience_mix
  * @property Carbon|null $captured_at
  */
@@ -22,6 +23,7 @@ use Illuminate\Support\Carbon;
     'creator_profile_id',
     'network',
     'followers_count',
+    'connections_count',
     'audience_mix',
     'captured_at',
 ])]

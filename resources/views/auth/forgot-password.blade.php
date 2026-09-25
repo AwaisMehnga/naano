@@ -1,7 +1,7 @@
 <x-layouts.auth
     title="Forgot password"
     kicker="Account"
-    description="We’ll email you a link to choose a new one."
+    description="We’ll email a reset link."
 >
     <x-slot:heading>
         Forgot your
@@ -28,7 +28,7 @@
             />
         </x-ui.field>
 
-        <x-ui.button data-test="email-password-reset-link-button">
+        <x-ui.button class="w-full" data-test="email-password-reset-link-button">
             Email reset link
         </x-ui.button>
     </form>
@@ -39,13 +39,8 @@
     </p>
 
     <x-slot:panel>
-        <x-ui.kicker>Reset</x-ui.kicker>
-        <p class="mt-6 text-4xl font-normal tracking-tight">
-            One email.
-            <x-ui.em>A new password.</x-ui.em>
-        </p>
-        <p class="mt-6 text-lg leading-relaxed text-muted-foreground">
-            The link expires. If nothing arrives, check spam or request another.
-        </p>
+        <x-ui.kicker tone="on-primary">Reset</x-ui.kicker>
+        <p class="mt-5 text-title font-medium tracking-tight">One email. A new password.</p>
+        <p class="mt-4 text-body text-primary-foreground/80">Check spam if nothing arrives.</p>
     </x-slot:panel>
 </x-layouts.auth>

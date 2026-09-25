@@ -3,22 +3,26 @@
     'steps' => [],
 ])
 
-<ol {{ $attributes->merge(['class' => 'flex flex-wrap gap-3']) }}>
+<ol {{ $attributes->merge(['class' => 'flex flex-wrap gap-2']) }}>
     @foreach ($steps as $index => $label)
         @php
             $number = $index + 1;
+            $done = $number < $step;
+            $current = $number === $step;
         @endphp
-        <li class="flex items-center gap-2 text-sm">
+        <li @class([
+            'inline-flex items-center gap-2 rounded-pill px-3 py-1.5 text-xs font-medium',
+            'bg-primary text-primary-foreground' => $current,
+            'bg-lime-soft text-foreground' => $done,
+            'bg-muted text-muted-foreground' => ! $current && ! $done,
+        ])>
             <span @class([
-                'inline-flex size-6 items-center justify-center rounded-full text-xs font-medium',
-                'bg-primary text-primary-foreground' => $number === $step,
-                'bg-primary/80 text-primary-foreground' => $number < $step,
-                'bg-muted text-muted-foreground' => $number > $step,
+                'inline-flex size-5 items-center justify-center rounded-full text-[10px]',
+                'bg-primary-foreground/20' => $current,
+                'bg-accent/40' => $done,
+                'bg-card' => ! $current && ! $done,
             ])>{{ $number }}</span>
-            <span @class([
-                'text-foreground' => $number === $step,
-                'text-muted-foreground' => $number !== $step,
-            ])>{{ $label }}</span>
+            <span>{{ $label }}</span>
         </li>
     @endforeach
 </ol>

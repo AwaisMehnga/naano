@@ -7,15 +7,40 @@ use App\Services\Stripe\StripeGateway;
 
 test('creators can read audience and refresh a snapshot', function () {
     $user = User::factory()->creator()->onboarded()->create();
+    $user->creatorProfile->update([
+        'linkedin_profile' => [
+            'follower_count' => 1200,
+            'connections_count' => 800,
+            'engagers' => [
+                'people_count' => 2,
+                'reply_rate' => 1.0,
+                'seniority' => [
+                    ['label' => 'Founder / C-level', 'count' => 2],
+                ],
+                'job_title' => [
+                    ['label' => 'Founders', 'count' => 2],
+                ],
+                'locations' => [
+                    ['label' => 'Paris', 'count' => 2],
+                ],
+                'top' => [],
+            ],
+        ],
+    ]);
 
     $this->actingAs($user)
         ->getJson(route('api.creator.audience.show'))
         ->assertOk()
-        ->assertJsonPath('data.followers_count', null);
+        ->assertJsonPath('data.followers_count', 1200)
+        ->assertJsonPath('data.connections_count', 800);
 
     $this->actingAs($user)
         ->postJson(route('api.creator.audience.store'))
-        ->assertOk();
+        ->assertOk()
+        ->assertJsonPath('data.followers_count', 1200)
+        ->assertJsonPath('data.connections_count', 800)
+        ->assertJsonPath('data.audience_mix.seniority.Founder / C-level', 100)
+        ->assertJsonPath('data.audience_mix.geo.Paris', 100);
 
     expect(CreatorAudienceProfile::query()->where('creator_profile_id', $user->creatorProfile->id)->count())->toBe(1);
 

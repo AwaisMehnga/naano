@@ -84,3 +84,28 @@ test('creator linkedin url must be a public profile', function () {
         ->assertRedirect(route('onboarding.creator'))
         ->assertSessionHasErrors('linkedin_url');
 });
+
+test('creator linkedin status reports posts readiness', function () {
+    $user = User::factory()->creator()->create();
+    $user->creatorProfile->update([
+        'linkedin_url' => 'https://www.linkedin.com/in/ada',
+        'linkedin_verified_at' => now(),
+        'linkedin_posts' => [
+            [
+                'id' => '1',
+                'content' => 'Hello',
+                'posted_at' => '2026-09-01T00:00:00Z',
+                'likes' => 1,
+                'comments' => 0,
+                'shares' => 0,
+            ],
+        ],
+    ]);
+
+    $this->actingAs($user)
+        ->getJson(route('onboarding.creator.linkedin.status'))
+        ->assertOk()
+        ->assertJsonPath('status', 'success')
+        ->assertJsonPath('data.posts_ready', true)
+        ->assertJsonPath('data.posts_count', 1);
+});

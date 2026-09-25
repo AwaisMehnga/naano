@@ -93,7 +93,7 @@ class LinkedInPostsNormalizer
      * Build engagers summary from normalized posts' commenters.
      *
      * @param  list<array<string, mixed>>  $posts
-     * @return array{people_count: int, reply_rate: float|null, seniority: list<array{label: string, count: int}>, locations: list<array{label: string, count: int}>, top: list<array{name: string|null, headline: string|null, profile_url: string|null}>}|null
+     * @return array{people_count: int, reply_rate: float|null, seniority: list<array{label: string, count: int}>, job_title: list<array{label: string, count: int}>, locations: list<array{label: string, count: int}>, top: list<array{name: string|null, headline: string|null, profile_url: string|null}>}|null
      */
     public function engagersSummary(array $posts): ?array
     {
@@ -131,13 +131,27 @@ class LinkedInPostsNormalizer
         }
 
         $seniorityBuckets = [];
+        $jobTitleBuckets = [];
         $locationBuckets = [];
 
         foreach ($people as $person) {
-            $seniority = $this->guessSeniority($person['headline'] ?? null);
+            $headline = $person['headline'] ?? null;
+            $seniority = $this->guessSeniority($headline);
 
             if ($seniority !== null) {
                 $seniorityBuckets[$seniority] = ($seniorityBuckets[$seniority] ?? 0) + 1;
+            }
+
+            $jobTitle = $this->guessJobTitle($headline);
+
+            if ($jobTitle !== null) {
+                $jobTitleBuckets[$jobTitle] = ($jobTitleBuckets[$jobTitle] ?? 0) + 1;
+            }
+
+            $location = $this->guessLocation($headline);
+
+            if ($location !== null) {
+                $locationBuckets[$location] = ($locationBuckets[$location] ?? 0) + 1;
             }
         }
 
@@ -148,6 +162,7 @@ class LinkedInPostsNormalizer
             'people_count' => count($people),
             'reply_rate' => $replyRate,
             'seniority' => $this->bucketList($seniorityBuckets),
+            'job_title' => $this->bucketList($jobTitleBuckets),
             'locations' => $this->bucketList($locationBuckets),
             'top' => array_values(array_slice($people, 0, 12)),
         ];
@@ -260,12 +275,61 @@ class LinkedInPostsNormalizer
         $haystack = strtolower($headline);
 
         return match (true) {
-            str_contains($haystack, 'ceo') || str_contains($haystack, 'founder') || str_contains($haystack, 'co-founder') => 'Founder / C-level',
+            str_contains($haystack, 'ceo') || str_contains($haystack, 'founder') || str_contains($haystack, 'co-founder') || str_contains($haystack, 'cfo') || str_contains($haystack, 'cto') || str_contains($haystack, 'coo') => 'Founder / C-level',
             str_contains($haystack, 'vp') || str_contains($haystack, 'vice president') || str_contains($haystack, 'director') => 'Director / VP',
             str_contains($haystack, 'head of') || str_contains($haystack, 'manager') || str_contains($haystack, 'lead') => 'Manager / Lead',
             str_contains($haystack, 'senior') || str_contains($haystack, 'principal') => 'Senior IC',
             default => 'Other',
         };
+    }
+
+    private function guessJobTitle(?string $headline): ?string
+    {
+        if ($headline === null) {
+            return null;
+        }
+
+        $haystack = strtolower($headline);
+
+        return match (true) {
+            str_contains($haystack, 'founder') || str_contains($haystack, 'co-founder') || str_contains($haystack, 'ceo') => 'Founders',
+            str_contains($haystack, 'marketing') || str_contains($haystack, 'growth') || str_contains($haystack, 'demand gen') || str_contains($haystack, 'brand') => 'Marketing',
+            str_contains($haystack, 'sales') || str_contains($haystack, 'account executive') || str_contains($haystack, 'business development') || str_contains($haystack, 'gtm') => 'Sales',
+            str_contains($haystack, 'product') || str_contains($haystack, 'pm ') => 'Product',
+            str_contains($haystack, 'engineer') || str_contains($haystack, 'developer') || str_contains($haystack, 'cto') || str_contains($haystack, 'software') => 'Engineering',
+            str_contains($haystack, 'design') || str_contains($haystack, 'ux') || str_contains($haystack, 'ui') => 'Design',
+            str_contains($haystack, 'ops') || str_contains($haystack, 'operations') || str_contains($haystack, 'people') || str_contains($haystack, 'hr') => 'Operations',
+            default => 'Other',
+        };
+    }
+
+    private function guessLocation(?string $headline): ?string
+    {
+        if ($headline === null) {
+            return null;
+        }
+
+        // Common LinkedIn headline tails: "… | Paris" / "… · London, UK" / "… — Berlin"
+        if (preg_match('/(?:\||·|—|-)\s*([A-Za-z][A-Za-z\s\-]{1,40})(?:,\s*([A-Za-z]{2,}))?\s*$/u', $headline, $match) !== 1) {
+            return null;
+        }
+
+        $city = trim($match[1]);
+        $country = isset($match[2]) ? trim($match[2]) : null;
+
+        if ($city === '' || str_contains(strtolower($city), 'http')) {
+            return null;
+        }
+
+        $noise = ['remote', 'worldwide', 'global', 'open to work', 'hiring'];
+
+        foreach ($noise as $word) {
+            if (str_contains(strtolower($city), $word)) {
+                return null;
+            }
+        }
+
+        return $country !== null && $country !== '' ? $city.', '.$country : $city;
     }
 
     private function stringOrNull(mixed $value): ?string

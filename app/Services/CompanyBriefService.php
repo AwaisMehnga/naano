@@ -28,7 +28,7 @@ class CompanyBriefService
     }
 
     /**
-     * @return array{analyzed: bool}
+     * @return array{analyzed: bool, empty_page: bool}
      */
     public function analyze(Company $company, string $website): array
     {
@@ -37,31 +37,37 @@ class CompanyBriefService
         $text = $this->fetchSiteText($website);
 
         if ($text === '') {
-            return ['analyzed' => false];
+            return ['analyzed' => false, 'empty_page' => true];
         }
 
         try {
             $response = (new BrandBriefAgent)->prompt(
                 implode("\n\n", [
-                    'Write the brief from this page text only. Do not use outside knowledge.',
+                    'Write a B2B marketplace brief from this page text only. Do not use outside knowledge.',
                     'Website: '.$website,
                     'Page text:',
                     $text,
                 ]),
                 provider: Lab::DeepSeek,
-                timeout: 60,
+                timeout: 90,
             );
 
             $brief = $response instanceof StructuredAgentResponse ? $response->toArray() : [];
+            $valueProposition = trim((string) ($brief['value_proposition'] ?? ''));
+            $icps = $this->icpsFromBrief($brief);
+
+            if ($valueProposition === '' && $icps === []) {
+                return ['analyzed' => false, 'empty_page' => false];
+            }
 
             $company->update([
-                'value_proposition' => (string) ($brief['value_proposition'] ?? ''),
-                'icps' => $this->icpsFromBrief($brief),
+                'value_proposition' => $valueProposition !== '' ? $valueProposition : null,
+                'icps' => $icps !== [] ? $icps : null,
             ]);
 
-            return ['analyzed' => true];
+            return ['analyzed' => true, 'empty_page' => false];
         } catch (Throwable) {
-            return ['analyzed' => false];
+            return ['analyzed' => false, 'empty_page' => false];
         }
     }
 
@@ -100,6 +106,10 @@ class CompanyBriefService
         try {
             $html = Http::connectTimeout(5)
                 ->timeout(20)
+                ->withHeaders([
+                    'User-Agent' => 'NaanoBriefBot/1.0 (+https://naano.app)',
+                    'Accept' => 'text/html,application/xhtml+xml',
+                ])
                 ->get($website)
                 ->throw()
                 ->body();
@@ -107,8 +117,34 @@ class CompanyBriefService
             return '';
         }
 
-        $text = trim(preg_replace('/\s+/', ' ', strip_tags($html)) ?? '');
+        $parts = [];
 
-        return Str::limit($text, 8000, '');
+        if (preg_match('/<title[^>]*>(.*?)<\/title>/is', $html, $match) === 1) {
+            $parts[] = 'Title: '.$this->cleanText($match[1]);
+        }
+
+        if (preg_match('/<meta[^>]+name=["\']description["\'][^>]+content=["\'](.*?)["\']/is', $html, $match) === 1
+            || preg_match('/<meta[^>]+content=["\'](.*?)["\'][^>]+name=["\']description["\']/is', $html, $match) === 1) {
+            $parts[] = 'Description: '.$this->cleanText(html_entity_decode($match[1], ENT_QUOTES | ENT_HTML5));
+        }
+
+        if (preg_match('/<main\b[^>]*>(.*?)<\/main>/is', $html, $match) === 1) {
+            $parts[] = $this->cleanText(strip_tags($match[1]));
+        } elseif (preg_match('/<article\b[^>]*>(.*?)<\/article>/is', $html, $match) === 1) {
+            $parts[] = $this->cleanText(strip_tags($match[1]));
+        } else {
+            $body = preg_replace('/<script\b[^>]*>.*?<\/script>/is', ' ', $html) ?? $html;
+            $body = preg_replace('/<style\b[^>]*>.*?<\/style>/is', ' ', $body) ?? $body;
+            $parts[] = $this->cleanText(strip_tags($body));
+        }
+
+        $text = trim(implode("\n\n", array_filter($parts)));
+
+        return Str::limit($text, 12000, '');
+    }
+
+    private function cleanText(string $value): string
+    {
+        return trim(preg_replace('/\s+/', ' ', $value) ?? '');
     }
 }

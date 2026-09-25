@@ -18,58 +18,72 @@
         @vite(['resources/css/app.css'])
     </head>
     <body class="min-h-screen bg-background font-sans text-foreground antialiased">
-        <header class="bg-background">
-            <div class="mx-auto flex max-w-6xl items-center justify-between gap-6 px-6 py-4">
-                <x-ui.logo />
-                <div class="flex items-center gap-2">
-                    @guest
-                        @if (request()->routeIs('login', 'password.request', 'password.reset', 'two-factor.login'))
-                            <x-ui.button href="{{ route('register') }}">Get started</x-ui.button>
-                        @else
-                            <x-ui.button href="{{ route('login') }}" variant="ghost">Log in</x-ui.button>
-                        @endif
-                    @endguest
-                </div>
-            </div>
-        </header>
-
-        <div class="grid min-h-[calc(100svh-4.5rem)] lg:grid-cols-2">
-            <div class="flex flex-col justify-center px-6 py-12 sm:px-10">
-                <div class="mx-auto w-full {{ $wide ? 'max-w-xl' : 'max-w-sm' }}">
-                    @if ($kicker)
-                        <x-ui.kicker>{{ $kicker }}</x-ui.kicker>
-                    @endif
-
-                    @if ($heading)
-                        <h1 @class(['text-4xl font-normal tracking-tight', 'mt-6' => (bool) $kicker, 'mt-2' => ! $kicker])>
-                            {{ $heading }}
-                        </h1>
-                    @endif
-
-                    @if ($description)
-                        <p class="mt-4 text-lg leading-relaxed text-muted-foreground">{{ $description }}</p>
-                    @endif
-
-                    <div class="mt-10">
-                        {{ $slot }}
+        <div class="grid min-h-screen lg:grid-cols-2">
+            <div class="flex min-h-screen flex-col">
+                <header class="border-b border-border bg-background">
+                    <div class="flex items-center justify-between gap-4 px-6 py-4 sm:px-10">
+                        <x-ui.logo />
+                        <div class="flex items-center gap-2">
+                            @guest
+                                @if (request()->routeIs('login', 'password.request', 'password.reset', 'two-factor.login'))
+                                    <x-ui.button href="{{ route('register') }}" variant="accent" size="sm">Get started</x-ui.button>
+                                @else
+                                    <x-ui.button href="{{ route('login') }}" variant="ghost" size="sm">Log in</x-ui.button>
+                                @endif
+                            @endguest
+                        </div>
                     </div>
-                </div>
+                </header>
+
+                <main class="flex flex-1 flex-col justify-center px-6 py-10 sm:px-10 lg:py-14">
+                    <div @class(['mx-auto w-full', 'max-w-xl' => $wide, 'max-w-md' => ! $wide])>
+                        @if ($kicker)
+                            <x-ui.kicker>{{ $kicker }}</x-ui.kicker>
+                        @endif
+
+                        @if ($heading)
+                            <h1 @class([
+                                'text-heading font-medium tracking-tight text-balance',
+                                'mt-4' => (bool) $kicker,
+                            ])>
+                                {{ $heading }}
+                            </h1>
+                        @endif
+
+                        @if ($description)
+                            <p class="mt-3 text-body leading-relaxed text-foreground/80">{{ $description }}</p>
+                        @endif
+
+                        <div @class(['mt-8' => $kicker || $heading || $description])>
+                            {{ $slot }}
+                        </div>
+                    </div>
+                </main>
             </div>
 
-            <div class="hidden items-center px-10 py-16 lg:flex">
-                <div class="w-full max-w-md">
-                    {{ $panel ?? '' }}
-                    @if (! isset($panel))
-                        <x-ui.kicker>Naano</x-ui.kicker>
-                        <p class="mt-6 text-4xl font-normal tracking-tight">
-                            Book vetted LinkedIn
-                            <x-ui.em>creators</x-ui.em>
-                            at a fixed price.
-                        </p>
-                    @endif
+            <aside class="hidden flex-col justify-between bg-primary px-10 py-10 text-primary-foreground lg:flex xl:px-14 xl:py-12">
+                <div>
+                    <x-ui.logo tone="on-primary" />
                 </div>
-            </div>
+                <div class="max-w-md">
+                    @isset($panel)
+                        {{ $panel }}
+                    @else
+                        <x-ui.kicker tone="on-primary">LinkedIn creators</x-ui.kicker>
+                        <p class="mt-5 text-title font-medium tracking-tight text-balance">
+                            Book vetted creators at a fixed price.
+                        </p>
+                        <p class="mt-4 text-body leading-relaxed text-primary-foreground/80">
+                            One workspace for briefs, bookings, and payouts.
+                        </p>
+                    @endisset
+                </div>
+                <p class="text-sm text-primary-foreground/60">
+                    {{ config('app.name') }} · B2B LinkedIn campaigns
+                </p>
+            </aside>
         </div>
+
         <script>
             document.querySelectorAll('form[method="post"], form[method="POST"]').forEach((form) => {
                 form.addEventListener('submit', (event) => {

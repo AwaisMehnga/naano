@@ -22,8 +22,8 @@ Route::get('t/{slug}', [TrackingRedirectController::class, 'show'])
 Route::get('pixel.js', [TrackingPixelController::class, 'show'])->name('tracking.pixel');
 
 Route::middleware('guest')->group(function () {
-    Route::view('register/creator', 'auth.register-form', ['role' => 'creator'])->name('register.creator');
-    Route::view('register/company', 'auth.register-form', ['role' => 'company'])->name('register.company');
+    Route::redirect('register/creator', '/register')->name('register.creator');
+    Route::redirect('register/company', '/register')->name('register.company');
 });
 
 Route::post('email/verify-code', [EmailCodeController::class, 'store'])
@@ -44,6 +44,7 @@ Route::middleware('auth')->group(function () {
         Route::get('onboarding/creator', [CreatorOnboardingController::class, 'show'])->name('onboarding.creator');
         Route::post('onboarding/creator/linkedin', [CreatorOnboardingController::class, 'linkedin'])->name('onboarding.creator.linkedin');
         Route::post('onboarding/creator/linkedin/verify', [CreatorOnboardingController::class, 'linkedinVerify'])->name('onboarding.creator.linkedin.verify');
+        Route::get('onboarding/creator/linkedin/status', [CreatorOnboardingController::class, 'linkedinStatus'])->name('onboarding.creator.linkedin.status');
         Route::post('onboarding/creator/industries', [CreatorOnboardingController::class, 'industries'])->name('onboarding.creator.industries');
         Route::post('onboarding/creator/offer', [CreatorOnboardingController::class, 'offer'])->name('onboarding.creator.offer');
         Route::post('onboarding/creator/complete', [CreatorOnboardingController::class, 'complete'])->name('onboarding.creator.complete');

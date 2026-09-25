@@ -282,6 +282,11 @@ export default function CreatorProfileDialog({
                                                 followers
                                             </span>
                                             <span>
+                                                {creator.connections_count?.toLocaleString() ??
+                                                    '—'}{' '}
+                                                connections
+                                            </span>
+                                            <span>
                                                 {countryLabel(creator.country)}
                                             </span>
                                             {creator.linkedin_url && (
@@ -301,6 +306,10 @@ export default function CreatorProfileDialog({
                                 {tab === 'audience' && (
                                     <AudienceSnapshot
                                         mix={creator.audience_mix}
+                                        followers={creator.followers_count}
+                                        connections={
+                                            creator.connections_count ?? null
+                                        }
                                     />
                                 )}
                                 {tab === 'linkedin' &&
@@ -445,65 +454,91 @@ export default function CreatorProfileDialog({
 
 function AudienceSnapshot({
     mix,
+    followers,
+    connections,
 }: {
     mix: Record<string, unknown> | unknown[];
+    followers: number | null;
+    connections: number | null;
 }) {
-    if (Array.isArray(mix) || mix === null || typeof mix !== 'object') {
-        return (
-            <p className="text-muted-foreground text-sm">
-                No audience mix yet.
-            </p>
+    const hasMix =
+        !Array.isArray(mix) &&
+        mix !== null &&
+        typeof mix === 'object' &&
+        Object.entries(mix).some(
+            (entry) =>
+                typeof entry[1] === 'object' &&
+                entry[1] !== null &&
+                !Array.isArray(entry[1]),
         );
-    }
 
-    const groups = Object.entries(mix).filter(
-        (entry): entry is [string, Record<string, number>] =>
-            typeof entry[1] === 'object' &&
-            entry[1] !== null &&
-            !Array.isArray(entry[1]),
-    );
-
-    if (groups.length === 0) {
-        return (
-            <p className="text-muted-foreground text-sm">
-                No audience mix yet.
-            </p>
-        );
-    }
+    const groups =
+        !Array.isArray(mix) && mix !== null && typeof mix === 'object'
+            ? Object.entries(mix).filter(
+                  (entry): entry is [string, Record<string, number>] =>
+                      typeof entry[1] === 'object' &&
+                      entry[1] !== null &&
+                      !Array.isArray(entry[1]),
+              )
+            : [];
 
     return (
         <div className="space-y-6">
-            <h3 className="text-sm font-semibold">Audience snapshot</h3>
-            <div className="grid gap-6 md:grid-cols-2">
-                {groups.map(([title, shares]) => (
-                    <div key={title} className="space-y-3">
-                        <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-                            {title.replaceAll('_', ' ')}
-                        </p>
-                        {Object.entries(shares)
-                            .sort((left, right) => right[1] - left[1])
-                            .slice(0, 6)
-                            .map(([label, share]) => (
-                                <div key={label} className="space-y-1">
-                                    <div className="flex justify-between text-xs">
-                                        <span>{label}</span>
-                                        <span className="text-muted-foreground">
-                                            {share}%
-                                        </span>
-                                    </div>
-                                    <div className="bg-muted h-1.5 overflow-hidden rounded-full">
-                                        <div
-                                            className="bg-primary h-full rounded-full"
-                                            style={{
-                                                width: `${Math.min(100, Number(share))}%`,
-                                            }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-                    </div>
-                ))}
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl bg-muted/50 p-4">
+                    <p className="text-xs text-muted-foreground">Followers</p>
+                    <p className="mt-1 text-xl font-medium">
+                        {followers?.toLocaleString() ?? '—'}
+                    </p>
+                </div>
+                <div className="rounded-2xl bg-muted/50 p-4">
+                    <p className="text-xs text-muted-foreground">Connections</p>
+                    <p className="mt-1 text-xl font-medium">
+                        {connections?.toLocaleString() ?? '—'}
+                    </p>
+                </div>
             </div>
+
+            {!hasMix ? (
+                <p className="text-muted-foreground text-sm">
+                    No audience mix yet. It appears after the creator’s LinkedIn
+                    posts sync with engagers.
+                </p>
+            ) : (
+                <>
+                    <h3 className="text-sm font-semibold">Audience snapshot</h3>
+                    <div className="grid gap-6 md:grid-cols-2">
+                        {groups.map(([title, shares]) => (
+                            <div key={title} className="space-y-3">
+                                <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
+                                    {title.replaceAll('_', ' ')}
+                                </p>
+                                {Object.entries(shares)
+                                    .sort((left, right) => right[1] - left[1])
+                                    .slice(0, 6)
+                                    .map(([label, share]) => (
+                                        <div key={label} className="space-y-1">
+                                            <div className="flex justify-between text-xs">
+                                                <span>{label}</span>
+                                                <span className="text-muted-foreground">
+                                                    {share}%
+                                                </span>
+                                            </div>
+                                            <div className="bg-muted h-1.5 overflow-hidden rounded-full">
+                                                <div
+                                                    className="bg-primary h-full rounded-full"
+                                                    style={{
+                                                        width: `${Math.min(100, Number(share))}%`,
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                            </div>
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

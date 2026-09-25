@@ -20,7 +20,7 @@ This skill is mandatory. Visual language is the lime system: soft grey canvas, b
 
 1. Colors: only semantic classes from `app.css`. Forbidden: palette utilities (`bg-neutral-*`, `text-white`, `text-black`, `text-red-600`), arbitrary colors (`bg-[#171818]`, `text-[oklch(...)]`), new `--color-*` or `@theme` blocks outside `app.css`, `dark:` on dashboards.
 2. Every button, input, textarea, select, field error, card, alert, logo, stepper, kicker, emphasis, and nav CTA MUST use the Blade components in `components.md`. Duplicating their class strings in a page is a skill violation.
-3. Marketing pages use `x-layouts.marketing`. Auth pages use `x-layouts.auth`. Onboarding pages use `x-layouts.onboarding`. Never put the homepage in the auth split layout.
+3. Marketing pages use `x-layouts.marketing`. Auth pages use `x-layouts.auth` (full-height split: form + primary panel). Onboarding pages use `x-layouts.onboarding` (same). Never put the homepage in the auth layout.
 4. Copy: sentence case, active verbs, one job per control. Primary CTA labels: “Sign in”, “Create account”, “Continue”, “Verify”, “Analyze website”, “Go to workspace”, “Get started”, “Book creators”, “Get booked”. Errors name the field and the fix.
 5. Motion: GSAP only on landing section reveals and the first auth/onboarding paint. `prefers-reduced-motion: reduce` → opacity only. Never animate login submit, keyboard, or repeated controls. Duration 180–400ms, ease `cubic-bezier(0.23, 1, 0.32, 1)`. Enter from `opacity: 0; y: 16` (not `scale(0)`).
 6. Spacing: `gap-2` inside fields, `gap-5` inside forms, section `py-24` / `px-6`, content `max-w-6xl mx-auto`. Buttons `rounded-pill`. Soft cards `rounded-2xl` with soft shadow. No full-width hairline rules between landing sections.

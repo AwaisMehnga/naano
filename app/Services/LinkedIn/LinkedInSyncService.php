@@ -8,6 +8,7 @@ use App\Models\CreatorProfile;
 use App\Services\Apify\ApifyClient;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -18,6 +19,7 @@ class LinkedInSyncService
         private ApifyClient $apify,
         private LinkedInProfileNormalizer $profileNormalizer,
         private LinkedInPostsNormalizer $postsNormalizer,
+        private AudienceMixBuilder $audienceMix,
     ) {}
 
     /**
@@ -68,7 +70,14 @@ class LinkedInSyncService
             'bio' => $normalized['summary'] ?? $profile->bio,
         ]);
 
-        $this->syncAudienceFollowers($profile, $normalized['follower_count'] ?? null);
+        $this->syncAudienceSnapshot(
+            $profile,
+            $normalized['follower_count'] ?? null,
+            $normalized['connections_count'] ?? null,
+            is_string($normalized['country_code'] ?? null) && $normalized['country_code'] !== ''
+                ? ['geo' => [$normalized['country_code'] => 100]]
+                : null,
+        );
     }
 
     /**
@@ -123,11 +132,26 @@ class LinkedInSyncService
             'bio' => $normalized['summary'] ?? $profile->bio,
         ]);
 
-        $this->syncAudienceFollowers($profile, $normalized['follower_count'] ?? null);
+        $this->syncAudienceSnapshot(
+            $profile,
+            $normalized['follower_count'] ?? null,
+            $normalized['connections_count'] ?? null,
+        );
 
-        SyncLinkedInPostsJob::dispatch($profile->id);
+        $fresh = $profile->fresh() ?? $profile;
 
-        return app(LinkedInProfilePresenter::class)->present($profile->fresh() ?? $profile);
+        try {
+            $this->syncPosts($fresh);
+        } catch (\Throwable $e) {
+            Log::warning('LinkedIn posts sync failed during refresh', [
+                'creator_profile_id' => $fresh->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            SyncLinkedInPostsJob::dispatch($fresh->id);
+        }
+
+        return app(LinkedInProfilePresenter::class)->present($fresh->fresh() ?? $fresh);
     }
 
     public function syncPosts(CreatorProfile $profile): void
@@ -136,25 +160,31 @@ class LinkedInSyncService
             return;
         }
 
+        set_time_limit(0);
+
         $actor = (string) config('services.apify.posts_actor');
         $maxPosts = max(1, (int) config('services.apify.max_posts', 50));
-        $scrapeComments = (bool) config('services.apify.scrape_comments', false);
+        $scrapeComments = filter_var(config('services.apify.scrape_comments', true), FILTER_VALIDATE_BOOLEAN);
         $maxComments = max(0, (int) config('services.apify.max_comments', 20));
 
         $input = [
             'targetUrls' => [$profile->linkedin_url],
             'maxPosts' => $maxPosts,
+            'includeQuotePosts' => true,
+            'includeReposts' => false,
         ];
 
         if ($scrapeComments && $maxComments > 0) {
             $input['scrapeComments'] = true;
             $input['maxComments'] = $maxComments;
+            $input['commentsPostedLimit'] = $maxComments;
         }
 
         $items = $this->apify->runActor($actor, $input);
         $posts = $this->postsNormalizer->normalize($items, $maxPosts);
         $engagers = $this->postsNormalizer->engagersSummary($posts);
 
+        $profile->refresh();
         $profileData = is_array($profile->linkedin_profile) ? $profile->linkedin_profile : [];
         $profileData['engagers'] = $engagers;
         $profileData['captured_at'] = $profileData['captured_at'] ?? now()->toIso8601String();
@@ -170,6 +200,19 @@ class LinkedInSyncService
             'linkedin_profile' => $profileData,
             'linkedin_synced_at' => now(),
         ]);
+
+        $mix = $this->audienceMix->fromEngagers($engagers);
+
+        if ($mix === [] && is_string($profileData['country_code'] ?? null) && $profileData['country_code'] !== '') {
+            $mix = ['geo' => [$profileData['country_code'] => 100]];
+        }
+
+        $this->syncAudienceSnapshot(
+            $profile->fresh() ?? $profile,
+            is_int($profileData['follower_count'] ?? null) ? $profileData['follower_count'] : null,
+            is_int($profileData['connections_count'] ?? null) ? $profileData['connections_count'] : null,
+            $mix !== [] ? $mix : null,
+        );
     }
 
     private function storeLinkedInPhoto(CreatorProfile $profile, ?string $pictureUrl): ?string
@@ -209,9 +252,16 @@ class LinkedInSyncService
         }
     }
 
-    private function syncAudienceFollowers(CreatorProfile $profile, ?int $followersCount): void
-    {
-        if ($followersCount === null) {
+    /**
+     * @param  array<string, array<string, int>>|null  $audienceMix
+     */
+    private function syncAudienceSnapshot(
+        CreatorProfile $profile,
+        ?int $followersCount,
+        ?int $connectionsCount,
+        ?array $audienceMix = null,
+    ): void {
+        if ($followersCount === null && $connectionsCount === null && ($audienceMix === null || $audienceMix === [])) {
             return;
         }
 
@@ -221,11 +271,24 @@ class LinkedInSyncService
             ->orderByDesc('id')
             ->first();
 
+        $attributes = [
+            'captured_at' => now(),
+        ];
+
+        if ($followersCount !== null) {
+            $attributes['followers_count'] = $followersCount;
+        }
+
+        if ($connectionsCount !== null) {
+            $attributes['connections_count'] = $connectionsCount;
+        }
+
+        if ($audienceMix !== null && $audienceMix !== []) {
+            $attributes['audience_mix'] = $audienceMix;
+        }
+
         if ($snapshot instanceof CreatorAudienceProfile) {
-            $snapshot->update([
-                'followers_count' => $followersCount,
-                'captured_at' => now(),
-            ]);
+            $snapshot->update($attributes);
 
             return;
         }
@@ -233,7 +296,8 @@ class LinkedInSyncService
         $profile->audienceProfiles()->create([
             'network' => 'linkedin',
             'followers_count' => $followersCount,
-            'audience_mix' => [],
+            'connections_count' => $connectionsCount,
+            'audience_mix' => $audienceMix ?? [],
             'captured_at' => now(),
         ]);
     }

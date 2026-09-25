@@ -1,7 +1,7 @@
 <x-layouts.auth
     title="Reset password"
     kicker="Account"
-    description="Choose a new password for this email."
+    description="Choose a new password, then sign in."
 >
     <x-slot:heading>
         Choose a
@@ -45,16 +45,13 @@
             />
         </x-ui.field>
 
-        <x-ui.button data-test="reset-password-button">
+        <x-ui.button class="w-full" data-test="reset-password-button">
             Reset password
         </x-ui.button>
     </form>
 
     <x-slot:panel>
-        <x-ui.kicker>Almost back</x-ui.kicker>
-        <p class="mt-6 text-4xl font-normal tracking-tight">
-            Then sign in and open your
-            <x-ui.em>workspace.</x-ui.em>
-        </p>
+        <x-ui.kicker tone="on-primary">Almost back</x-ui.kicker>
+        <p class="mt-5 text-title font-medium tracking-tight">Then open your workspace.</p>
     </x-slot:panel>
 </x-layouts.auth>

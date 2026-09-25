@@ -12,7 +12,7 @@
                         class="peer sr-only"
                         @checked(in_array($industry, old('industries', $profile->industries ?? []), true))
                     >
-                    <span class="inline-flex rounded-full border border-border bg-card px-3 py-1 text-sm peer-checked:border-primary peer-checked:bg-primary peer-checked:text-primary-foreground">
+                    <span class="inline-flex rounded-pill border border-border bg-card px-3 py-1.5 text-sm peer-checked:border-accent peer-checked:bg-lime-soft peer-checked:text-foreground">
                         {{ $industry }}
                     </span>
                 </label>

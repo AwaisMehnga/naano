@@ -41,9 +41,11 @@ class CompanyOnboardingController extends Controller
             $request->validated('website'),
         );
 
-        $message = $result['analyzed']
-            ? 'OK'
-            : 'We could not analyze the site. Add your brief below.';
+        $message = match (true) {
+            $result['analyzed'] => 'Brief drafted from your site. Review and continue.',
+            $result['empty_page'] => 'We could not find usable text on that page. Add your brief below.',
+            default => 'We could not analyze the site. Add your brief below.',
+        };
 
         return $this->onboardingDone($request, route('onboarding.company'), $message);
     }

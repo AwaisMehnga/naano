@@ -69,7 +69,37 @@ class CreatorOnboardingController extends Controller
 
         $this->onboarding->verifyLinkedIn($this->onboarding->profile($user));
 
-        return $this->onboardingDone($request, route('onboarding.creator'), 'LinkedIn verified.');
+        if ($request->expectsJson()) {
+            return AjaxResponse::success([
+                'redirect' => route('onboarding.creator'),
+                'wait_for_posts' => true,
+                'status_url' => route('onboarding.creator.linkedin.status'),
+            ], 'LinkedIn verified. Syncing posts…');
+        }
+
+        return redirect()->route('onboarding.creator');
+    }
+
+    /**
+     * Poll LinkedIn posts sync during onboarding.
+     */
+    public function linkedinStatus(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User || ! $user->ownsProfile(ProfileType::Creator)) {
+            abort(403);
+        }
+
+        $profile = $this->onboarding->profile($user)->fresh();
+        $posts = is_array($profile->linkedin_posts) ? $profile->linkedin_posts : [];
+
+        return AjaxResponse::success([
+            'verified' => $profile->isLinkedInVerified(),
+            'posts_count' => count($posts),
+            'posts_ready' => $posts !== [],
+            'synced_at' => $profile->linkedin_synced_at?->toIso8601String(),
+        ]);
     }
 
     /**

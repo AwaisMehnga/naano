@@ -14,6 +14,7 @@ export type CreatorListItem = {
     country: string | null;
     niches: Niche[];
     followers_count: number | null;
+    connections_count?: number | null;
     from_price_cents: number | null;
     linkedin_url?: string | null;
 };

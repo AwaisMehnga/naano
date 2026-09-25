@@ -1,7 +1,7 @@
 <x-layouts.auth
     title="Confirm password"
     kicker="Secure"
-    description="Confirm your password before continuing."
+    description="Confirm your password to continue."
 >
     <x-slot:heading>
         Confirm your
@@ -22,8 +22,13 @@
             />
         </x-ui.field>
 
-        <x-ui.button data-test="confirm-password-button">
+        <x-ui.button class="w-full" data-test="confirm-password-button">
             Confirm password
         </x-ui.button>
     </form>
+
+    <x-slot:panel>
+        <x-ui.kicker tone="on-primary">Security</x-ui.kicker>
+        <p class="mt-5 text-title font-medium tracking-tight">A quick check before sensitive actions.</p>
+    </x-slot:panel>
 </x-layouts.auth>

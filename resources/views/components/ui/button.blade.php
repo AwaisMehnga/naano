@@ -16,16 +16,20 @@
     };
 
     if ($size === 'lg') {
-        $classes .= ' px-6 py-3';
+        $classes .= ' px-6 py-3 text-base';
+    }
+
+    if ($size === 'sm') {
+        $classes .= ' h-8 px-3.5 text-xs';
     }
 @endphp
 
 @if ($href)
-    <a href="{{ $href }}" {{ $attributes->merge(['class' => $classes]) }}>
+    <a href="{{ $href }}" {{ $attributes->class($classes) }}>
         {{ $slot }}
     </a>
 @else
-    <button type="{{ $type }}" {{ $attributes->merge(['class' => $classes]) }}>
+    <button type="{{ $type }}" {{ $attributes->class($classes) }}>
         {{ $slot }}
     </button>
 @endif

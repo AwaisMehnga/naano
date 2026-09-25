@@ -50,10 +50,10 @@ return [
         'profile_actor' => env('APIFY_LINKEDIN_PROFILE_ACTOR', 'supreme_coder~linkedin-profile-scraper'),
         'posts_actor' => env('APIFY_LINKEDIN_POSTS_ACTOR', 'harvestapi~linkedin-profile-posts'),
         'max_posts' => (int) env('APIFY_LINKEDIN_MAX_POSTS', 50),
-        'scrape_comments' => (bool) env('APIFY_LINKEDIN_SCRAPE_COMMENTS', false),
+        'scrape_comments' => filter_var(env('APIFY_LINKEDIN_SCRAPE_COMMENTS', true), FILTER_VALIDATE_BOOLEAN),
         'max_comments' => (int) env('APIFY_LINKEDIN_MAX_COMMENTS', 20),
         'poll_interval_ms' => (int) env('APIFY_POLL_INTERVAL_MS', 2000),
-        'poll_timeout_seconds' => (int) env('APIFY_POLL_TIMEOUT_SECONDS', 120),
+        'poll_timeout_seconds' => (int) env('APIFY_POLL_TIMEOUT_SECONDS', 300),
         'refresh_cooldown_minutes' => (int) env('APIFY_LINKEDIN_REFRESH_COOLDOWN_MINUTES', 60),
     ],
 

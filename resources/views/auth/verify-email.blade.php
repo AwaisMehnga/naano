@@ -1,7 +1,7 @@
 <x-layouts.auth
     title="Verify email"
     kicker="Almost in"
-    description="Enter the 6-digit code we sent you."
+    description="Enter the 6-digit code we emailed you."
 >
     <x-slot:heading>
         Check your
@@ -16,43 +16,45 @@
         @csrf
 
         <x-ui.field label="Code" name="code">
-            <x-ui.input
-                id="code"
-                type="text"
-                name="code"
-                inputmode="numeric"
-                autocomplete="one-time-code"
-                maxlength="6"
-                required
-                autofocus
-                class="text-center text-lg tracking-[0.4em]"
-            />
+            <div class="rounded-2xl bg-muted p-3">
+                <x-ui.input
+                    id="code"
+                    type="text"
+                    name="code"
+                    inputmode="numeric"
+                    autocomplete="one-time-code"
+                    maxlength="6"
+                    required
+                    autofocus
+                    placeholder="000000"
+                    class="border-0 bg-transparent text-center text-lg tracking-[0.4em] focus:ring-0"
+                />
+            </div>
         </x-ui.field>
 
-        <x-ui.button>
+        <x-ui.button class="w-full">
             Verify
         </x-ui.button>
     </form>
 
-    <form method="POST" action="{{ route('verification.send') }}" class="mt-4">
-        @csrf
-        <x-ui.button variant="link">
-            Resend code
-        </x-ui.button>
-    </form>
-
-    <form method="POST" action="{{ route('logout') }}" class="mt-2">
-        @csrf
-        <x-ui.button variant="ghost" class="text-muted-foreground">
-            Log out
-        </x-ui.button>
-    </form>
+    <div class="mt-6 flex flex-wrap items-center gap-4">
+        <form method="POST" action="{{ route('verification.send') }}">
+            @csrf
+            <x-ui.button variant="link">Resend code</x-ui.button>
+        </form>
+        <form method="POST" action="{{ route('logout') }}">
+            @csrf
+            <x-ui.button variant="ghost" class="text-muted-foreground">Log out</x-ui.button>
+        </form>
+    </div>
 
     <x-slot:panel>
-        <x-ui.kicker>Next</x-ui.kicker>
-        <p class="mt-6 text-4xl font-normal tracking-tight">
-            Verify once.
-            <x-ui.em>Then finish your profile.</x-ui.em>
+        <x-ui.kicker tone="on-primary">Then</x-ui.kicker>
+        <p class="mt-5 text-title font-medium tracking-tight text-balance">
+            Choose how you want to start.
+        </p>
+        <p class="mt-4 text-body leading-relaxed text-primary-foreground/80">
+            Creator or company — you can add the other later.
         </p>
     </x-slot:panel>
 </x-layouts.auth>

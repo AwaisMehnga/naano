@@ -1,20 +1,25 @@
 @props([
     'flush' => false,
     'href' => null,
+    'selectable' => false,
 ])
 
 @php
-    $classes = $flush
-        ? 'block overflow-hidden rounded-lg border border-border bg-card text-card-foreground'
-        : 'block rounded-lg border border-border bg-card p-6 text-card-foreground';
+    $base = $flush
+        ? 'block overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-[var(--shadow-soft)]'
+        : 'block rounded-2xl border border-border bg-card p-6 text-card-foreground shadow-[var(--shadow-soft)]';
+
+    if ($selectable) {
+        $base .= ' transition-[border-color,background-color] has-[:checked]:border-accent has-[:checked]:bg-lime-soft';
+    }
 @endphp
 
 @if ($href)
-    <a href="{{ $href }}" {{ $attributes->merge(['class' => $classes]) }}>
+    <a href="{{ $href }}" {{ $attributes->merge(['class' => $base]) }}>
         {{ $slot }}
     </a>
 @else
-    <div {{ $attributes->merge(['class' => $classes]) }}>
+    <div {{ $attributes->merge(['class' => $base]) }}>
         {{ $slot }}
     </div>
 @endif

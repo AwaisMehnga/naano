@@ -74,8 +74,9 @@ export default function CreatorLinkedInPage() {
             setInsights(data);
             setCode(null);
             toast.success(
-                'LinkedIn verified. You can remove the code from your headline.',
+                'LinkedIn verified. Posts and audience are syncing.',
             );
+            await load();
         } catch (caught) {
             toast.error(
                 caught instanceof ApiError
@@ -95,7 +96,7 @@ export default function CreatorLinkedInPage() {
                 creatorApi.linkedinRefresh,
             );
             setInsights(data);
-            toast.success('LinkedIn refresh queued.');
+            toast.success('LinkedIn posts and audience updated.');
         } catch (caught) {
             toast.error(
                 caught instanceof ApiError

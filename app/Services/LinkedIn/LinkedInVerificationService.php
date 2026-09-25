@@ -4,9 +4,11 @@ namespace App\Services\LinkedIn;
 
 use App\Jobs\SyncLinkedInPostsJob;
 use App\Models\CreatorProfile;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
+use Throwable;
 
 class LinkedInVerificationService
 {
@@ -71,11 +73,26 @@ class LinkedInVerificationService
             ]);
         }
 
+        set_time_limit(0);
+
         $this->sync->storeVerifiedProfile($profile, $normalized);
 
-        SyncLinkedInPostsJob::dispatch($profile->id);
+        $fresh = $profile->fresh() ?? $profile;
 
-        return app(LinkedInProfilePresenter::class)->present($profile->fresh() ?? $profile);
+        try {
+            // Run inline so posts + audience exist without a queue worker.
+            $this->sync->syncPosts($fresh);
+        } catch (Throwable $e) {
+            Log::warning('LinkedIn posts sync failed after verify', [
+                'creator_profile_id' => $fresh->id,
+                'message' => $e->getMessage(),
+            ]);
+
+            // Fall back to queued retry when inline sync fails.
+            SyncLinkedInPostsJob::dispatch($fresh->id);
+        }
+
+        return app(LinkedInProfilePresenter::class)->present($fresh->fresh() ?? $fresh);
     }
 
     private function generateCode(): string

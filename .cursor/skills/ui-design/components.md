@@ -6,8 +6,8 @@ Use these Blade components. Do not paste their class strings into pages.
 
 ```php
 @props([
-    'variant' => 'primary', // primary|secondary|inverted|ghost|link
-    'size' => 'md',         // md|lg
+    'variant' => 'primary', // primary|secondary|accent|inverted|ghost|link
+    'size' => 'md',         // sm|md|lg
     'href' => null,
     'type' => 'submit',
 ])
@@ -15,12 +15,11 @@ Use these Blade components. Do not paste their class strings into pages.
 
 If `$href` is set, render `<a>`. Else `<button type="{{ $type }}">`. Merge `$attributes`. Pass `data-test` through the attribute bag.
 
-- Primary: `inline-flex items-center justify-center rounded-sm bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50`
-- Secondary: `bg-card text-foreground border border-border` (white paper fill, ink text)
-- Inverted: `bg-primary-foreground text-primary` (paper fill, blue text — on `bg-primary` bands)
-- Ghost: `bg-transparent text-foreground hover:bg-muted`
-- Link: `bg-transparent text-primary underline-offset-4 hover:underline px-0`
-- Size `lg`: `px-5 py-3`
+- Primary: black pill CTA (`rounded-pill bg-primary text-primary-foreground`)
+- Secondary: bordered white pill
+- Accent: lime pill (`bg-accent`)
+- Ghost / link: text actions
+- Size `sm`: compact; `lg`: larger padding
 
 `:active` scale lives in `app.css` (`scale(0.97)`).
 
@@ -47,11 +46,11 @@ Native `<details>` row. Shared `name` keeps one item open. Slot is the answer.
 
 ## `x-ui.em`
 
-Italic Instrument Serif inside a display headline: `font-serif italic font-normal`. One emphasized word per headline.
+Italic emphasis inside a display headline: `font-serif italic font-normal`. One emphasized word per headline.
 
 ## `x-ui.input` / `x-ui.textarea` / `x-ui.select`
 
-`w-full rounded-md border border-input bg-card px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30`
+Pill inputs: `w-full rounded-pill border border-input bg-card px-4 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30`
 
 ## `x-ui.field`
 
@@ -63,9 +62,9 @@ Slot is the control. Label: `text-sm font-medium`. Hint: `text-sm text-muted-for
 
 ## `x-ui.card`
 
-Default: `block rounded-lg border border-border bg-card p-6 text-card-foreground`
+Default: `rounded-2xl border border-border bg-card p-6 shadow-[var(--shadow-soft)]`
 
-`flush` (bool): drop padding for split lists. `href` (string|null): render as a block link. No drop shadow.
+`flush` (bool): drop padding. `href` (string|null): block link. `selectable` (bool): lime selected state via `has-[:checked]:border-accent has-[:checked]:bg-lime-soft`.
 
 ## `x-ui.alert`
 
@@ -95,6 +94,7 @@ Props: `step` (int, 1-based), `steps` (list of labels).
 
 ## Layouts
 
-- `x-layouts.marketing` — paper masthead, hairline footer columns, landing Vite entry. No backdrop blur.
-- `x-layouts.auth` — paper masthead, two columns, no divider line. Form `max-w-sm` (`max-w-xl` when `wide`). `kicker` + `heading` slot for italic display. Panel slot is editorial copy, not a muted slab.
-- `x-layouts.onboarding` — auth chrome, `wide`, stepper above heading, onboarding.js.
+- `x-layouts.marketing` — paper masthead, landing Vite entry. No backdrop blur.
+- `x-layouts.auth` — full-height split screen: form column + `bg-primary` info panel. Top bar with logo + CTA. Short copy; lime accent on panel steps/dots.
+- `x-layouts.onboarding` — same split screen; stepper above the form; primary preview panel.
+- company/creator SPA → `x-layouts.spa` (Inter; `font-dashboard`)

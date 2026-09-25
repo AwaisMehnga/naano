@@ -1,15 +1,16 @@
 @if ($profile->linkedin_verify_code && ! $profile->linkedin_verified_at)
     <div class="flex flex-col gap-5">
-        <div class="rounded-xl border border-border bg-muted/40 p-4">
-            <p class="text-sm text-muted-foreground">Add this code at the <strong>end</strong> of your LinkedIn headline, save on LinkedIn, then verify.</p>
+        <x-ui.card class="bg-lime-soft/50">
+            <p class="text-sm text-muted-foreground">Add this code at the <strong class="text-foreground">end</strong> of your LinkedIn headline, save on LinkedIn, then verify.</p>
             <p class="mt-3 font-mono text-2xl font-semibold tracking-widest">{{ $profile->linkedin_verify_code }}</p>
             <p class="mt-2 text-xs text-muted-foreground">Example: Your headline here {{ $profile->linkedin_verify_code }}</p>
             <p class="mt-2 text-xs text-muted-foreground break-all">{{ $profile->linkedin_url }}</p>
-        </div>
+        </x-ui.card>
 
         <form
             data-ajax
             data-analyze
+            data-wait-posts
             data-loading-label="Checking LinkedIn…"
             method="POST"
             action="{{ route('onboarding.creator.linkedin.verify') }}"
@@ -17,10 +18,15 @@
         >
             @csrf
 
-            <div data-analyze-status class="hidden space-y-2 text-sm">
+            <div data-analyze-status class="hidden space-y-2 rounded-2xl bg-muted/60 p-4 text-sm">
                 <p data-check class="hidden text-muted-foreground">Fetching your public profile…</p>
                 <p data-check class="hidden text-muted-foreground">Looking for {{ $profile->linkedin_verify_code }} in your headline…</p>
                 <p data-check class="hidden text-muted-foreground">Saving profile insights…</p>
+            </div>
+
+            <div data-posts-sync class="hidden space-y-2 rounded-2xl bg-muted/60 p-4 text-sm">
+                <p class="font-medium text-foreground">Syncing posts…</p>
+                <p data-posts-sync-message class="text-muted-foreground">Pulling your recent LinkedIn posts in the background.</p>
             </div>
 
             <x-ui.button>
@@ -91,7 +97,7 @@
         </x-ui.field>
 
         <p class="text-sm text-muted-foreground">
-            We&rsquo;ll give you a short code to add at the end of your LinkedIn headline so we can confirm the profile is yours.
+            We’ll give you a short code to add at the end of your LinkedIn headline so we can confirm the profile is yours.
         </p>
 
         <x-ui.button>

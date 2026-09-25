@@ -1,8 +1,14 @@
-import { createRoot } from 'react-dom/client';
+import { createRoot, type Root } from 'react-dom/client';
 import { BrowserRouter } from 'react-router';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import AppRouter from './app-router';
+
+declare global {
+    interface Window {
+        __naanoCreatorRoot?: Root;
+    }
+}
 
 function App() {
     if (!window.Naano) {
@@ -19,10 +25,12 @@ function App() {
     );
 }
 
-const root = document.getElementById('app');
+const el = document.getElementById('app');
 
-if (!root) {
+if (!el) {
     throw new Error('Missing #app');
 }
 
-createRoot(root).render(<App />);
+const root = window.__naanoCreatorRoot ?? createRoot(el);
+window.__naanoCreatorRoot = root;
+root.render(<App />);
