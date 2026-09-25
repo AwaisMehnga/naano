@@ -60,6 +60,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::getConnection()->getDriverName() === 'sqlite') {
+            return;
+        }
+
         $tables = array_values(array_filter(
             $this->tables,
             fn (string $table): bool => Schema::hasTable($table),

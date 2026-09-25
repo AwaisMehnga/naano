@@ -95,64 +95,6 @@ function startAnalyze(status) {
     });
 }
 
-async function waitForLinkedInPosts(form, statusUrl, redirectUrl) {
-    const analyzeStatus = form.querySelector('[data-analyze-status]');
-    const postsSync = form.querySelector('[data-posts-sync]');
-    const postsMessage = form.querySelector('[data-posts-sync-message]');
-    const submit = form.querySelector('[type="submit"]');
-
-    if (analyzeStatus instanceof HTMLElement) {
-        analyzeStatus.classList.add('hidden');
-    }
-
-    if (postsSync instanceof HTMLElement) {
-        postsSync.classList.remove('hidden');
-    }
-
-    if (submit instanceof HTMLButtonElement) {
-        submit.disabled = true;
-        submit.textContent = 'Syncing posts…';
-    }
-
-    const timeoutMs = 45000;
-    const intervalMs = 2000;
-    const started = Date.now();
-
-    while (Date.now() - started < timeoutMs) {
-        try {
-            const response = await fetch(statusUrl, {
-                headers: {
-                    Accept: 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest',
-                },
-            });
-            const data = await response.json();
-
-            if (response.ok && data.status === 'success' && data.data?.posts_ready) {
-                if (postsMessage instanceof HTMLElement) {
-                    const count = Number(data.data.posts_count ?? 0);
-                    postsMessage.textContent = count > 0
-                        ? `Synced ${count} post${count === 1 ? '' : 's'}. Continuing…`
-                        : 'Posts ready. Continuing…';
-                }
-
-                window.location.href = redirectUrl;
-                return;
-            }
-        } catch {
-            // Keep polling until timeout.
-        }
-
-        await new Promise((resolve) => window.setTimeout(resolve, intervalMs));
-    }
-
-    if (postsMessage instanceof HTMLElement) {
-        postsMessage.textContent = 'Posts are still syncing in the background. You can continue.';
-    }
-
-    window.location.href = redirectUrl;
-}
-
 document.addEventListener('submit', async (event) => {
     const form = event.target;
 
@@ -201,11 +143,6 @@ document.addEventListener('submit', async (event) => {
                 submit.textContent = originalLabel;
             }
 
-            return;
-        }
-
-        if (form.hasAttribute('data-wait-posts') && data.data?.wait_for_posts && data.data?.status_url && data.data?.redirect) {
-            await waitForLinkedInPosts(form, data.data.status_url, data.data.redirect);
             return;
         }
 

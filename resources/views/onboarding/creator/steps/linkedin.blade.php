@@ -10,7 +10,6 @@
         <form
             data-ajax
             data-analyze
-            data-wait-posts
             data-loading-label="Checking LinkedIn…"
             method="POST"
             action="{{ route('onboarding.creator.linkedin.verify') }}"
@@ -22,11 +21,6 @@
                 <p data-check class="hidden text-muted-foreground">Fetching your public profile…</p>
                 <p data-check class="hidden text-muted-foreground">Looking for {{ $profile->linkedin_verify_code }} in your headline…</p>
                 <p data-check class="hidden text-muted-foreground">Saving profile insights…</p>
-            </div>
-
-            <div data-posts-sync class="hidden space-y-2 rounded-2xl bg-muted/60 p-4 text-sm">
-                <p class="font-medium text-foreground">Syncing posts…</p>
-                <p data-posts-sync-message class="text-muted-foreground">Pulling your recent LinkedIn posts in the background.</p>
             </div>
 
             <x-ui.button>

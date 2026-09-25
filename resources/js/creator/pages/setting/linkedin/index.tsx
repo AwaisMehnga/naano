@@ -56,11 +56,7 @@ export default function CreatorLinkedInPage() {
             return;
         }
 
-        const shouldPoll =
-            insights.posts_status === 'syncing' ||
-            (insights.posts_count === 0 &&
-                insights.posts_status !== 'ready' &&
-                insights.posts_status !== 'failed');
+        const shouldPoll = insights.posts_status === 'syncing';
 
         if (!shouldPoll) {
             pollStartedAt.current = null;
@@ -124,7 +120,7 @@ export default function CreatorLinkedInPage() {
             applyInsights(data);
             setCode(null);
             toast.success(
-                'LinkedIn verified. Posts and audience are syncing.',
+                'LinkedIn verified. Posts sync when you open the dashboard.',
             );
         } catch (caught) {
             toast.error(

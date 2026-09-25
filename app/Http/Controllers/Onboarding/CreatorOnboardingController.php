@@ -72,9 +72,7 @@ class CreatorOnboardingController extends Controller
         if ($request->expectsJson()) {
             return AjaxResponse::success([
                 'redirect' => route('onboarding.creator'),
-                'wait_for_posts' => true,
-                'status_url' => route('onboarding.creator.linkedin.status'),
-            ], 'LinkedIn verified. Syncing posts…');
+            ], 'LinkedIn verified.');
         }
 
         return redirect()->route('onboarding.creator');

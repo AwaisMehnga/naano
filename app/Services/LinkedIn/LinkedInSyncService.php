@@ -9,7 +9,6 @@ use App\Models\CreatorProfile;
 use App\Services\Apify\ApifyClient;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
@@ -142,7 +141,7 @@ class LinkedInSyncService
 
         $fresh = $profile->fresh() ?? $profile;
 
-        $this->syncPostsOrQueue($fresh);
+        $this->deferPostsSync($fresh, force: true);
 
         return app(LinkedInProfilePresenter::class)->present($fresh->fresh() ?? $fresh);
     }
@@ -166,8 +165,7 @@ class LinkedInSyncService
             ]);
         }
 
-        $this->markPostsSyncing($profile);
-        $this->syncPostsOrQueue($profile->fresh() ?? $profile);
+        $this->deferPostsSync($profile, force: true);
 
         return app(LinkedInProfilePresenter::class)->present($profile->fresh() ?? $profile);
     }
@@ -261,31 +259,31 @@ class LinkedInSyncService
     }
 
     /**
-     * Run posts sync inline; on failure or empty result, queue a retry.
+     * Start posts sync after the HTTP response (queued job — does not block the request).
      */
-    public function syncPostsOrQueue(CreatorProfile $profile): void
+    public function deferPostsSync(CreatorProfile $profile, bool $force = false): void
     {
-        try {
-            $this->syncPosts($profile);
-        } catch (Throwable $e) {
-            Log::warning('LinkedIn posts sync failed', [
-                'creator_profile_id' => $profile->id,
-                'message' => $e->getMessage(),
-            ]);
-
-            $this->markPostsSyncing($profile->fresh() ?? $profile);
-            SyncLinkedInPostsJob::dispatch($profile->id);
-
+        if (! $profile->isLinkedInVerified()) {
             return;
         }
 
-        $fresh = $profile->fresh() ?? $profile;
-        $posts = is_array($fresh->linkedin_posts) ? $fresh->linkedin_posts : [];
-
-        if ($posts === []) {
-            $this->markPostsSyncing($fresh);
-            SyncLinkedInPostsJob::dispatch($fresh->id);
+        if (! is_string($profile->linkedin_url) || $profile->linkedin_url === '') {
+            return;
         }
+
+        $posts = is_array($profile->linkedin_posts) ? $profile->linkedin_posts : [];
+        $status = $profile->linkedin_posts_sync_status;
+
+        if ($status === LinkedInPostsSyncStatus::Syncing->value) {
+            return;
+        }
+
+        if (! $force && ($status === LinkedInPostsSyncStatus::Ready->value || $posts !== [])) {
+            return;
+        }
+
+        $this->markPostsSyncing($profile);
+        SyncLinkedInPostsJob::dispatch($profile->id)->afterResponse();
     }
 
     private function storeLinkedInPhoto(CreatorProfile $profile, ?string $pictureUrl): ?string

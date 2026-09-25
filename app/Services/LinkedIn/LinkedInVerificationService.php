@@ -70,15 +70,11 @@ class LinkedInVerificationService
             ]);
         }
 
-        set_time_limit(0);
-
         $this->sync->storeVerifiedProfile($profile, $normalized);
 
         $fresh = $profile->fresh() ?? $profile;
 
-        $this->sync->syncPostsOrQueue($fresh);
-
-        return app(LinkedInProfilePresenter::class)->present($fresh->fresh() ?? $fresh);
+        return app(LinkedInProfilePresenter::class)->present($fresh);
     }
 
     private function generateCode(): string
